@@ -1,2 +1,3 @@
-# Polaris
-Build, track, and review personal systems. Navigate by the fixed star.
+# Polaris: Navigate by the Fixed Star
+
+Build systems that survive your worst days. Define your floor. Log daily. Review weekly.
