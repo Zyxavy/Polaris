@@ -68,11 +68,13 @@ Everything except MongoDB Atlas lives inside Cloudflare's network. Auth is also 
 **Why:** generous, genuinely free tiers across compute (Workers), database (D1), storage (R2), and scheduling (Cron Triggers) -- no other platform covers all four under one free account.
 **Used for:** static asset hosting, API compute, the primary database, workspace file storage, and the nightly Instance pre-generation job. All four are in active v1 use -- see §5.7 and §5.8.
 
-### 5.2 Frontend -- SvelteKit (CSR-only) & Tailwind CSS
+### 5.2 Frontend -- SvelteKit (CSR-only) + Tailwind CSS
 
 **Why SvelteKit over Next.js:** Next.js/React is already known -- the goal here was new ground. SvelteKit's compiler-driven reactivity (no virtual DOM, far less boilerplate per route) is a genuine departure, and it has first-class, production-ready support on Cloudflare Workers.
 
 **Why CSR instead of SSR:** Cloudflare's free Workers plan caps CPU time at 10ms per request -- but that only counts actual computation, not time spent waiting on I/O. Full-page SSR is one of the most common ways to burn that budget, which lines up with hitting "CPU limit exceeded" on past projects. Serving SvelteKit as pure static files means **zero Worker invocation for the frontend at all** -- it can't hit a CPU limit by definition.
+
+**Why Tailwind CSS:** utility-first CSS framework that compiles to a small, scoped stylesheet (no runtime, no unused styles purged at build). Tailwind is the standard pairing with SvelteKit in 2026 -- it avoids the mental overhead of separate CSS files for each component while keeping styles co-located with markup. No CSS-in-JS runtime, no CSS modules convention to learn -- just inline utility classes that map directly to design tokens. The `tailwind.config.js` will define the custom color palette and spacing scale; all component styling stays in the Svelte files.
 
 **Used for:** all UI -- dashboards, forms, and lists for Systems, Instances, and Review entries.
 
