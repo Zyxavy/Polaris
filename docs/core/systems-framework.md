@@ -16,7 +16,7 @@ Goals give you direction. Systems make success inevitable. The key insight: **de
 
 | Goals | Systems |
 |-------|---------|
-| Conditional — depend on high motivation | Reliable — work even on bad days |
+| Conditional - depend on high motivation | Reliable - work even on bad days |
 | Outcome-focused | Process-focused |
 | Fail when motivation fades | Built to survive motivation fading |
 | Celebrate arrival | Celebrate consistency |
@@ -32,7 +32,7 @@ Building a system requires more effort upfront. But over time, it drastically re
 
 ### 1. Systems over willpower
 
-Motivation is unreliable. A good system works even when you don't feel like it — because it removes the decision entirely. You don't decide whether to do it. The system decides for you.
+Motivation is unreliable. A good system works even when you don't feel like it - because it removes the decision entirely. You don't decide whether to do it. The system decides for you.
 
 ### 2. Failures are system errors, not personal flaws
 
@@ -44,11 +44,11 @@ If a habit takes too much setup, you won't do it on hard days. Every extra step 
 
 ### 4. Build for repeatability
 
-Temporary fixes (naps, timers, willpower sprints) are fine short-term — but always work toward solving the root cause. Retraining habits is an essential part of the system. Patch it, then fix it.
+Temporary fixes (naps, timers, willpower sprints) are fine short-term - but always work toward solving the root cause. Retraining habits is an essential part of the system. Patch it, then fix it.
 
 ### 5. Embrace identity shift
 
-Don't just chase outcomes. Act like the person who already has the results you want. True discipline comes from aligning daily actions with the identity of who you're becoming — not just the goal you're chasing.
+Don't just chase outcomes. Act like the person who already has the results you want. True discipline comes from aligning daily actions with the identity of who you're becoming - not just the goal you're chasing.
 
 ---
 
@@ -61,16 +61,16 @@ These five systems cover the major domains of a balanced, productive life. Each 
 **GPS Method:** Goal -> Plan -> System
 
 - Define a long-term vision (3-5 years out)
-- Sketch a 3-year milestone — what does progress look like?
-- Break it into quarterly quests — 90-day focused sprints
+- Sketch a 3-year milestone - what does progress look like?
+- Break it into quarterly quests - 90-day focused sprints
 - Each quarter: pick 1-3 objectives, not 10
 
 ### Time Management System
 
-**Time Blocking** — schedule the important things first
+**Time Blocking** - schedule the important things first
 
 - Block health, relationships, and deep work before anything else
-- Don't fit important things in — protect them in advance
+- Don't fit important things in - protect them in advance
 - Treat blocked time like a meeting you cannot cancel
 - Review and re-block every Sunday for the coming week
 
@@ -78,9 +78,9 @@ These five systems cover the major domains of a balanced, productive life. Each 
 
 Systematize sleep, diet, and movement
 
-- Fixed wake time — same daily, even weekends (this is your anchor)
+- Fixed wake time - same daily, even weekends (this is your anchor)
 - Meal prep once a week to eliminate daily food decisions
-- Schedule gym sessions like appointments — not "when I feel like it"
+- Schedule gym sessions like appointments - not "when I feel like it"
 - Set a daily step goal as a floor, not a target
 
 ### Relationship System
@@ -90,22 +90,22 @@ Intentional scheduling of connection
 - Weekly standing social event (dinner, call, activity)
 - Monthly one-on-one time with people who matter most
 - Annual trip or shared experience to create shared memory
-- Don't leave relationships to "whenever I have time" — it never comes
+- Don't leave relationships to "whenever I have time" - it never comes
 
 ### Personal Finance System
 
-Allocate before you spend — automate the rest
+Allocate before you spend - automate the rest
 
 - On payday: immediately allocate to savings and investment buckets
-- Spend only what remains after allocation — never "save what's left"
+- Spend only what remains after allocation - never "save what's left"
 - Automate savings transfers so no decision is needed
-- Weekly 5-minute review — not daily anxiety, not monthly panic
+- Weekly 5-minute review - not daily anxiety, not monthly panic
 
 ---
 
-## Part 04: The Learning System — PERO Framework
+## Part 04: The Learning System - PERO Framework
 
-PERO structures every learning session into four phases. Use this for any knowledge-based goal — studying, skill-building, or exam prep.
+PERO structures every learning session into four phases. Use this for any knowledge-based goal - studying, skill-building, or exam prep.
 
 ### Priming (2-5 min)
 
@@ -120,7 +120,7 @@ Prepare your brain before the main session. Find relevance. Reduce overload.
 Actively process and simplify. Never passively re-read.
 
 - Explain concepts in your own words as you go
-- Draw diagrams and mind maps — force the brain to reorganize ideas
+- Draw diagrams and mind maps - force the brain to reorganize ideas
 - Break complex ideas into the simplest possible terms
 
 ### Reference (During session)
@@ -128,7 +128,7 @@ Actively process and simplify. Never passively re-read.
 Park fine details so your brain can focus on concepts.
 
 - Use Anki or a notes app to capture specifics
-- Keep notes short — single sentences, not paragraphs
+- Keep notes short - single sentences, not paragraphs
 - This frees working memory for understanding, not memorization
 
 ### Retrieval (15-20 min)
@@ -137,9 +137,9 @@ Test yourself. This is the most important phase.
 
 - Recall everything without looking at notes
 - Solve practice problems, explain concepts aloud, or write from memory
-- Interleave topics — mix subjects to strengthen connections
+- Interleave topics - mix subjects to strengthen connections
 
-**Overlearning (Optional):** Go beyond basic understanding for enhanced fluency and faster recall. Only necessary for highly competitive assessments or very difficult material. Do not overlearn everything — it is expensive. Reserve it for what really matters.
+**Overlearning (Optional):** Go beyond basic understanding for enhanced fluency and faster recall. Only necessary for highly competitive assessments or very difficult material. Do not overlearn everything - it is expensive. Reserve it for what really matters.
 
 ---
 
@@ -155,7 +155,7 @@ This is the core process. Follow these five steps in order to design a system th
 
 #### What it means
 
-The MVA is the smallest version of your system that counts as a win. It must be so small that doing it on your absolute worst day — sick, exhausted, overwhelmed — feels almost effortless. This is your floor, not your ceiling.
+The MVA is the smallest version of your system that counts as a win. It must be so small that doing it on your absolute worst day - sick, exhausted, overwhelmed - feels almost effortless. This is your floor, not your ceiling.
 
 #### Why it matters
 
@@ -167,8 +167,8 @@ Ask yourself: *"If I had zero energy and only 10 minutes, what is the one thing 
 
 **Example - Reading Habit**
 
-- Bad MVA: "Read 30 pages per day" — too heavy on hard days
-- Better MVA: "Read 1 page before bed" — almost impossible to skip
+- Bad MVA: "Read 30 pages per day" - too heavy on hard days
+- Better MVA: "Read 1 page before bed" - almost impossible to skip
 - Even better: "Open the book and read one paragraph"
 
 *Note: On good days you will read far more. The MVA is just the minimum. The streak stays alive. The habit survives. That is all that matters.*
@@ -179,7 +179,7 @@ Ask yourself: *"If I had zero energy and only 10 minutes, what is the one thing 
 
 #### What it means
 
-Every step between you and the habit is a potential drop-off point. Friction accumulates invisibly — a charger in the wrong room, an app on the second screen, a book buried under other things. Remove all of it.
+Every step between you and the habit is a potential drop-off point. Friction accumulates invisibly - a charger in the wrong room, an app on the second screen, a book buried under other things. Remove all of it.
 
 #### The Friction Audit
 
@@ -260,7 +260,7 @@ Weekly review: How many days did I hit the MVA? Target 5/7 minimum. Aim for cons
 
 #### What it means
 
-Successful systems include a built-in review mechanism. Every week, you analyze what worked, what broke, and what you can simplify. The system should get easier over time — not harder.
+Successful systems include a built-in review mechanism. Every week, you analyze what worked, what broke, and what you can simplify. The system should get easier over time - not harder.
 
 #### The weekly review questions
 
@@ -280,7 +280,7 @@ Never blame yourself for a system failure. A system error is just data. Identify
 
 Week 1 review: "I read 5/7 days. I skipped Tuesday and Thursday."
 
-- Diagnosis: "Tuesday I fell asleep before brushing teeth — missed the trigger."
+- Diagnosis: "Tuesday I fell asleep before brushing teeth - missed the trigger."
 - Fix: Add a phone reminder at 9:45pm as a backup trigger
 - Diagnosis: "Thursday I was too tired even for 1 page."
 - Fix: Lower MVA to "touch the book and read the chapter title only"
@@ -289,26 +289,26 @@ Week 2: New trigger + smaller MVA. System is now more robust.
 
 ---
 
-## Part 06: Putting It All Together — The Full Build Process
+## Part 06: Putting It All Together - The Full Build Process
 
 Here is the complete process condensed into a single reference. Use this as a checklist every time you design a new system.
 
 | Step | Focus | Key Question |
 |------|-------|--------------|
-| **1 — MVA** | Define the smallest possible win | What can I do at 10% energy that keeps this alive? |
-| **2 — Friction** | Remove every obstacle | What makes this hard to start? Eliminate each one. |
-| **3 — Trigger** | Stack onto existing habit | After I do [X], I will do [new habit]. |
-| **4 — Scoreboard** | Track the action daily | Did I do it today? (Yes/No — not "how much") |
-| **5 — Review** | Iterate every week | What broke? What can I simplify? What is one upgrade? |
+| **1 - MVA** | Define the smallest possible win | What can I do at 10% energy that keeps this alive? |
+| **2 - Friction** | Remove every obstacle | What makes this hard to start? Eliminate each one. |
+| **3 - Trigger** | Stack onto existing habit | After I do [X], I will do [new habit]. |
+| **4 - Scoreboard** | Track the action daily | Did I do it today? (Yes/No - not "how much") |
+| **5 - Review** | Iterate every week | What broke? What can I simplify? What is one upgrade? |
 
 ---
 
 ## Key Reminders
 
-- **Design for your WORST day** — not your best. The system must survive hard weeks.
-- **A failure is a system error** — not a personal flaw. Fix the process, not yourself.
-- **Aim for 80% consistency** — Sustainable beats perfect. Always.
-- **Every week, make the system slightly easier** — It should compound, not compound stress.
+- **Design for your WORST day** - not your best. The system must survive hard weeks.
+- **A failure is a system error** - not a personal flaw. Fix the process, not yourself.
+- **Aim for 80% consistency** - Sustainable beats perfect. Always.
+- **Every week, make the system slightly easier** - It should compound, not compound stress.
 
 ---
 
@@ -316,7 +316,7 @@ Here is the complete process condensed into a single reference. Use this as a ch
 
 ---
 
-## System Build Process — Quick Reference
+## System Build Process - Quick Reference
 
 ```mermaid
 flowchart TD
