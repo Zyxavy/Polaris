@@ -3,7 +3,7 @@
 **Project:** *Polaris*
 **Document type:** Testing Strategy - defines testing layers, tooling choices, scope per layer, and the approach for tricky cases (auto-save debounce, Workers AI mocking, D1 bindings in tests).
 **Status:** Draft - v1 scope
-**Last updated:** July 1, 2026
+**Last updated:** July 2, 2026
 
 ---
 
@@ -235,3 +235,134 @@ Deployment (`wrangler deploy` for both packages) only runs on push to `main` aft
 | R2 in E2E | Local R2 in Playwright requires a running Miniflare instance separate from the dev server; deferred to integration layer |
 | Workspace drag-and-drop interaction | Playwright has limited support for drag events in headless mode; tested manually; the *result* of a drag (saved `layout` JSON) is covered in unit tests |
 | Auth edge cases (password reset, session expiry) | Covered by Better Auth's own test suite; not re-testing the library's internals |
+
+---
+
+## 7. Testability by Design: Hybrid Service Layer
+
+### 7.1 What
+
+A pragmatic hybrid between "route handlers call D1 directly" and "every endpoint has a service function." The API is structured into three tiers, each with a different testability contract:
+
+```
+packages/api/src/
+├── routes/          # Hono handlers -- parse request, validate body, call service or bindings, return response
+├── services/        # Business-logic functions -- accept DB + params, return data, zero Hono/framework imports
+├── lib/             # Pure utility functions -- no DB access, no I/O
+```
+
+**Frontend** (`packages/web/src/lib/services/`): domain modules wrapping `apiFetch` -- always, no exceptions. Components never call `fetch()` directly.
+
+### 7.2 Why
+
+Three observations drove this design, specific to this architecture's constraints:
+
+**Mocking D1 is a trap.** To unit-test a service function that calls `db.prepare().bind().first()` without Miniflare, you must mock `D1Database` -- replicating `.prepare()`, `.bind()`, `.first()`, `.all()`, `.run()`, and `.batch()`. That mock becomes its own maintenance burden. Meanwhile, integration tests via `@cloudflare/vitest-pool-workers` give you real D1 in ~200ms boot + ~50ms per test. *The faster feedback cycle of unit tests doesn't materialize when the mock is as complex as the real thing.*
+
+**Simple CRUD doesn't benefit from a service layer.** A `DELETE /api/counter-logs/:id` handler that does `db.prepare("DELETE FROM counter_logs WHERE id = ?").bind(id).run()` and nothing else gains nothing from an intermediate function -- it's the same inline logic either way, and it's tested via the integration layer either way. Adding a service file per endpoint doubles the file count with no testability return.
+
+**Extraction is easy; over-abstraction is hard to undo.** Inline `db.prepare()` calls are trivial to extract into a service function later -- pure mechanical refactoring, no behavior change. Starting with services everywhere and discovering half are unnecessary is harder to reverse. This matches the "Ship it" constraint (ADR 001 S2): avoid premature abstraction.
+
+### 7.3 How
+
+**Rule 1: Simple CRUD lives in the route handler.**
+
+```typescript
+// routes/counter-logs.ts -- no service layer needed
+router.delete('/:id', async (c) => {
+  const { id } = c.req.param();
+  const row = await getOwnedCounterLog(c.env.DB, id, c.get('userId'));
+  if (!row) return c.json({ error: 'not_found', message: 'Counter log not found.' }, 404);
+
+  await c.env.DB.prepare('DELETE FROM counter_logs WHERE id = ?').bind(id).run();
+  return c.json({ id, deleted: true });
+});
+```
+
+Tested via the Miniflare integration layer (S3.2). No unit test needed -- the logic is a single DML statement with an ownership check that's tested as part of the route's integration coverage.
+
+**Rule 2: Business logic lives in a service function, unit-tested without Miniflare.**
+
+Extract a service function when the handler contains any of:
+- Multi-step logic (read A, decide, write B)
+- Date/time calculations (timezone math, day-of-week bitmask matching)
+- AI output parsing (strip think tokens, validate JSON, merge with defaults)
+- Cross-table write-back (Review route writes to two tables)
+
+Example -- Instance generation:
+
+```typescript
+// services/instances.ts -- pure function accepting D1 as explicit dependency
+export async function generateTodayInstances(db: D1Database, userId: string, today: string): Promise<void> {
+  const systems = await db.prepare(`
+    SELECT systems.id, schedules.days_of_week, schedules.time_window_start
+    FROM systems
+    JOIN schedules ON schedules.system_id = systems.id
+    WHERE systems.user_id = ? AND systems.status = 'active'
+  `).bind(userId).all();
+
+  for (const system of systems.results) {
+    if (!dayMatchesBitmask(today, system.days_of_week)) continue;
+    await db.prepare(
+      'INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, ?, ?)'
+    ).bind(system.id, today, 'pending').run();
+  }
+}
+
+// lib/calendar.ts -- pure utility, unit-tested independently
+export function dayMatchesBitmask(dateStr: string, bitmask: number): boolean { ... }
+```
+
+The service function accepts `D1Database` as a parameter -- it's tested with real D1, not a mock. The *pure utility* (`dayMatchesBitmask`) is unit-tested without D1 at all. This split is the key: the service function doesn't need a mock because you run it against Miniflare's real D1 (which is fast enough for unit-speed feedback at the few-dozen-test scale of this project), and the pure function underneath is tested in plain Vitest with no runtime at all.
+
+**Rule 3: Frontend service modules always.**
+
+```typescript
+// packages/web/src/lib/services/systems.ts
+import { apiFetch } from '$lib/api';
+import type { System } from '$lib/types';
+
+export async function getSystems(status?: string): Promise<System[]> {
+  const params = status ? `?status=${status}` : '';
+  const res = await apiFetch<{ systems: System[] }>(`/api/systems${params}`);
+  return res.systems;
+}
+
+export async function createSystem(input: CreateSystemInput): Promise<System> {
+  return apiFetch<System>('/api/systems', { method: 'POST', body: JSON.stringify(input) });
+}
+```
+
+Components import from `$lib/services/systems`, never from `$lib/api` directly. In tests, `vi.mock('$lib/services/systems')` replaces the module with stubs -- no fetch mocking, no Miniflare, no network.
+
+### 7.4 File structure summary
+
+```
+packages/api/src/
+├── index.ts                    # fetch + scheduled + queue exports
+├── routes/
+│   ├── systems.ts              # CRUD passthroughs inline; POST /confirm calls services/confirm
+│   ├── dashboard.ts
+│   ├── instances.ts
+│   ├── counter-logs.ts         # simple CRUD inline
+│   ├── timer-sessions.ts       # simple CRUD inline
+│   ├── checklist.ts
+│   ├── schedules.ts
+│   ├── workspaces.ts
+│   ├── reviews.ts              # write-back logic calls services/reviews
+│   ├── templates.ts
+│   ├── attachments.ts
+│   └── ai.ts
+├── services/
+│   ├── instances.ts            # Instance generation, date-matching logic
+│   ├── reviews.ts              # cross-table write-back, change_applied derivation
+│   └── dashboard.ts            # lazy generation + window-gated filter
+├── lib/
+│   ├── auth-middleware.ts
+│   ├── ownership.ts            # getOwnedInstance, getOwnedSystem, etc.
+│   ├── calendar.ts             # dayMatchesBitmask, toManilaDate, tomorrowManilaDate
+│   ├── ai-parser.ts            # stripThinkTokens, parseSystemDraft
+│   └── layout-upgrade.ts       # upgradeLayout for workspace v1 -> v2 -> ...
+```
+
+Services are only created when Rule 2's criteria are met. The rest of the API stays flat -- route handler calls D1 directly, tested in the integration layer. This keeps the codebase proportional to complexity and avoids the mock-D1 trap.
