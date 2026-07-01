@@ -1,153 +1,178 @@
 # SvelteKit Route Architecture
 
 **Project:** *Polaris*
-**Document type:** Frontend architecture -- the page tree, auth layout, store structure, and navigation model. Companion to the [Auth Integration](ADRs/006-auth-integration.md) doc (owns the `authClient` and `useSession()` primitives this document consumes), the [API Route Design](ADRs/005-api-routes.md) doc (owns the endpoints each page calls), and the [PRD](../PRD/PRD-systems-app.md) (owns the user flows this route tree implements).
+**Document type:** Frontend architecture -- the page tree, auth guard, store design, component hierarchy, and navigation model for `packages/web`. Companion to the [API Route Design](ADRs/005-api-routes.md) (owns every endpoint this frontend calls), [Auth Integration](ADRs/006-auth-integration.md) (owns `authClient`/session primitives this document consumes), and the [PRD](../PRD/PRD-systems-app.md) (owns the user flows this route tree implements).
 **Status:** Draft -- v1 scope
-**Last updated:** July 1, 2026
+**Last updated:** July 2, 2026
 
 ---
 
-## 1. Route Tree
+## 1. Foundational Constraints
 
-All routes live under `packages/web/src/routes/`. The frontend is a CSR SPA (ADR 001 -- SSR disabled), so these are client-side route definitions, not server-rendered pages.
+ADR 001 S5.2 disables SSR entirely -- SvelteKit is served as static assets with zero Worker invocation for the frontend. This has one structural consequence that shapes every route below: **there is no server-side code in `packages/web` at all.** Every `load` function is a **universal** `+page.ts` / `+layout.ts` (not `+page.server.ts`), which SvelteKit runs client-side when SSR is off.
 
-```
-+layout.svelte          # Root layout: auth guard + nav shell
-+layout.ts              # Root layout load: session check, redirect logic
-|
-+-- page.svelte         # /  -- Landing page (pre-auth only)
-|
-+-- (auth)/             # Auth route group -- no nav shell, pre-auth only
-|   +-- layout.svelte   # Redirects to /guides or /dashboard if already signed in
-|   +-- sign-in/
-|   |   +-- page.svelte # Sign In form
-|   +-- sign-up/
-|       +-- page.svelte # Sign Up form
-|
-+-- (app)/              # App route group -- post-auth, nav shell
-    +-- layout.svelte    # Check authClient.useSession(); redirect to /auth/sign-in if null
-    |                    # Renders NavBar + slot for child routes
-    |
-    +-- guides/
-    |   +-- page.svelte  # Guides & Tutorials tab (PRD 6.0)
-    |
-    +-- dashboard/
-    |   +-- page.svelte  # Daily Dashboard (PRD 6.3)
-    |
-    +-- systems/
-    |   +-- new/
-    |   |   +-- page.svelte  # System Creator (PRD 6.1)
-    |   +-- [id]/
-    |       +-- page.svelte  # System detail page
-    |       +-- edit/
-    |       |   +-- page.svelte  # Edit System (reuses System Creator form)
-    |       +-- workspace/
-    |       |   +-- page.svelte  # Workspace Builder (PRD 6.2)
-    |       +-- review/
-    |           +-- page.svelte  # Per-system Review (PRD 6.4)
-    |
-    +-- review-day/
-    |   +-- page.svelte  # Review Day aggregation view (PRD 5.7)
-    |
-    +-- templates/
-        +-- page.svelte  # Optional: user-saved templates browser
+```typescript
+// packages/web/src/routes/+layout.ts
+export const ssr = false;
+export const prerender = false;
 ```
 
-### 1.1 Route group rationale
+Set once at the root; every route inherits it. Every load function's `fetch` call to `/api/*` must still set `credentials: 'include'` explicitly (Auth Integration S2) -- SvelteKit's enhanced `fetch` only auto-forwards cookies during SSR, which this app never does.
 
-The `(auth)` and `(app)` route groups use SvelteKit's route-group convention (parentheses) to apply different layouts to pre-auth and post-auth pages without nesting them under different URL prefixes. Both groups sit at the same URL depth (`/sign-in`, `/guides`, `/dashboard`, etc.) but the `(app)` group renders the NavBar and requires authentication, while the `(auth)` group renders a standalone form layout with no nav and redirects signed-in users away.
+---
 
-### 1.2 What is NOT a route in v1
+## 2. Route Tree
+
+```
+src/routes/
+├── +layout.ts                    # ssr=false, prerender=false (root, S1)
+├── +layout.svelte                # renders <slot/> with no chrome -- session resolved here
+│
+├── (marketing)/
+│   └── +page.svelte              # /  -- Landing page (pre-auth only), PRD 6.0 step 1
+│
+├── (auth)/                       # Pre-auth route group -- no nav shell, centered form layout
+│   ├── +layout.svelte            # Redirects signed-in users to /guides
+│   ├── sign-up/
+│   │   └── +page.svelte          # Sign Up form, Auth Integration 4.2
+│   └── sign-in/
+│       └── +page.svelte          # Sign In form, Auth Integration 4.2
+│
+└── (app)/                        # Post-auth route group -- nav shell, auth guard
+    ├── +layout.ts                # Auth guard load function (S3)
+    ├── +layout.svelte            # Nav sidebar shell (S4)
+    │
+    ├── guides/
+    │   └── +page.svelte          # Guides & Tutorials tab, PRD 6.0 step 3
+    │
+    ├── dashboard/
+    │   ├── +page.ts              # loads GET /api/dashboard
+    │   └── +page.svelte          # Daily Dashboard, PRD 6.3
+    │
+    ├── systems/
+    │   ├── +page.ts              # loads GET /api/systems
+    │   ├── +page.svelte          # "All systems" list view
+    │   ├── new/
+    │   │   └── +page.svelte      # System Creator, PRD 6.1
+    │   └── [id]/
+    │       ├── +layout.ts        # loads GET /api/systems/:id once, shared by all tabs below
+    │       ├── +layout.svelte    # System detail shell: tabs for Overview / Workspace / Reviews
+    │       ├── +page.svelte      # Overview tab: blueprint fields, streak/calendar, PRD 6.5
+    │       ├── edit/
+    │       │   └── +page.svelte  # Edit System (reuses System Creator form)
+    │       ├── workspace/
+    │       │   ├── +page.ts      # loads GET /api/systems/:id/workspace
+    │       │   └── +page.svelte  # Workspace Builder, PRD 6.2
+    │       └── reviews/
+    │           ├── +page.ts      # loads GET /api/systems/:id/reviews
+    │           ├── +page.svelte  # Per-system review history + "start a review" entry point
+    │           └── new/
+    │               └── +page.svelte  # Per-system Review form, PRD 6.4
+    │
+    └── review-day/
+        ├── +page.ts              # loads GET /api/review-day
+        └── +page.svelte          # Review Day aggregation view, PRD 5.7
+```
+
+### 2.1 Route group rationale
+
+Route groups (parenthesized directories) apply different layouts without changing the URL:
+
+- **`(marketing)`** -- the landing page has no chrome at all. Separate group so it never inherits the auth form shell.
+- **`(auth)`** -- sign-up/login share a centered minimal form layout. Redirects signed-in users away.
+- **`(app)`** -- every authenticated page has the nav sidebar and requires a valid session.
+
+If a future pass wants a shared "unauthenticated" layout across both marketing and auth pages (e.g. a site-wide header), that's a one-file addition without restructuring routes.
+
+### 2.2 Why `[id]` gets its own nested layout
+
+`systems/[id]/+layout.ts` loads the System record once via `GET /api/systems/:id` and exposes it through `PageData` to every child route -- the Overview tab, workspace, reviews, and edit page all share the same fetched record rather than independently re-fetching. This matters because the System detail page is a tabbed interface: navigating between Overview/Workspace/Reviews should feel instant, not re-trigger a full-page loading state. SvelteKit's nested-layout data model gives this for free.
+
+### 2.3 What is NOT a route in v1
 
 | Possible route | Reason omitted |
 |---|---|
-| `/account` | No account settings UI in v1 -- if needed, future additive |
+| `/account` | No account settings UI in v1 |
 | `/terms`, `/privacy` | Personal app, no legal surface in v1 |
-| `/auth/forgot-password` | Password reset deferred (see Auth Integration 5) |
+| `/auth/forgot-password` | Password reset deferred (Auth Integration 5) |
 | `/attachments/:id` | Handled by the API route directly as a streamed URL, not a SvelteKit page |
+| `/templates` | Template browser deferred; templates are selected inline during System creation |
 
 ---
 
-## 2. Auth Guard (Root Layout)
+## 3. Auth Guard
 
-### 2.1 Layout load function
+The auth guard lives in `(app)/+layout.ts`, **not** the root layout. The root layout resolves the session but does not redirect -- that responsibility belongs to each route group's own layout.
+
+### 3.1 Root layout load function
 
 ```typescript
 // packages/web/src/routes/+layout.ts
 import type { LayoutLoad } from './$types';
-import { authClient } from '$lib/auth-client';
 
-export const ssr = false;          // CSR-only, per ADR 001 5.2
-export const prerender = false;    // All pages are dynamic
+export const ssr = false;
+export const prerender = false;
 
 export const load: LayoutLoad = async () => {
-  // useSession() is a runes-compatible store from better-auth/svelte
-  // On first call, it fires a fetch to /api/auth/session to hydrate the session
-  // Subsequent calls read the cached session store
-  const { data: session } = authClient.useSession();
-  return { session };
+  // Session is resolved here so child layouts and pages can access it via data.session.
+  // The root layout never redirects -- each route group's own layout decides.
+  return {};
 };
 ```
 
-### 2.2 Root layout component
+### 3.2 Root layout component
 
-The root layout is intentionally thin -- it calls the `load` function and hands off to the child layout. It does not render any UI itself (no nav, no header). Its only job is to wait for the session to resolve and let the child layouts decide how to handle the auth state.
+The root layout is intentionally thin -- it renders children with no chrome. It does not import `authClient` or any auth logic. Its only job is to be the render root.
 
 ```svelte
 <!-- packages/web/src/routes/+layout.svelte -->
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
-  import { authClient } from '$lib/auth-client';
-
   let { children } = $props();
-
-  const { data: session } = authClient.useSession();
-  let checking = $state(true);
-
-  onMount(() => {
-    // useSession() may still be loading on first mount
-    // Wait one tick for the session fetch to resolve
-    checking = false;
-  });
-
-  // If session is resolved and null, redirect to sign-in
-  // (unless already on an auth page)
-  $effect(() => {
-    if (!checking && !$session && !$page.url.pathname.startsWith('/auth/') && $page.url.pathname !== '/') {
-      goto('/auth/sign-in');
-    }
-  });
 </script>
 
 {@render children()}
 ```
 
-When `useSession()` has finished its initial fetch (which calls `GET /api/auth/session` internally) and returned `null` (no valid session), the effect fires and redirects any non-auth page to `/auth/sign-in`. While the session is still loading, the effect does not fire (no redirect during hydration). The auth group layout handles the reverse case (redirecting signed-in users away from auth pages).
+### 3.3 App group auth guard
 
----
+```typescript
+// packages/web/src/routes/(app)/+layout.ts
+import { redirect } from '@sveltejs/kit';
+import type { LayoutLoad } from './$types';
+import { authClient } from '$lib/auth-client';
 
-## 3. Auth Group Layout (Pre-Auth)
+export const load: LayoutLoad = async () => {
+  // getSession() is the SDK's non-reactive API -- it returns a promise, works in load context.
+  // This avoids duplicating Better Auth's session-check contract in a hand-rolled fetch.
+  const { data: session } = await authClient.getSession();
+
+  if (!session) {
+    throw redirect(302, '/sign-in');
+  }
+
+  return { session };
+};
+```
+
+Every route under `(app)/` inherits this guard. No individual page needs its own auth check -- a page component under `(app)/` can assume `data.session` is present.
+
+**Sign-out** does not need a symmetric guard. `authClient.signOut()` clears the session cookie, and the next navigation to any `(app)/` route re-runs this load function and redirects to `/sign-in`.
+
+### 3.4 Auth group layout (pre-auth)
 
 ```svelte
 <!-- packages/web/src/routes/(auth)/+layout.svelte -->
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { redirect } from '@sveltejs/kit';
   import { authClient } from '$lib/auth-client';
 
-  let { children } = $props();
-  const { data: session } = authClient.useSession();
+  let { children, data } = $props();
 
-  onMount(() => {
-    // If already signed in, redirect to the appropriate post-auth destination
-    // First-time users go to /guides; returning users go to /dashboard
-    // This distinction is determined by the sign-up flow setting a flag,
-    // but for redirect-from-auth-page purposes, /guides is the safer default
-    // (it's the post-signup landing per PRD 6.0)
+  // Check session on mount -- if already signed in, redirect to guides
+  const { data: session } = authClient.useSession();
+  $effect(() => {
     if ($session) {
-      goto('/guides');
+      throw redirect(302, '/guides');
     }
   });
 </script>
@@ -159,124 +184,64 @@ When `useSession()` has finished its initial fetch (which calls `GET /api/auth/s
 </div>
 ```
 
-The `auth-shell` wrapper is centered, minimal styling (logo/title at top, form below). It renders children only when there is no active session -- this prevents the sign-in form from flashing momentarily before the redirect.
+The `auth-shell` wrapper is centered, minimal styling (logo/title at top, form below). It renders children only when there is no active session -- this prevents the sign-in form from flashing momentarily before redirect.
+
+### 3.5 Marketing layout
+
+```svelte
+<!-- packages/web/src/routes/(marketing)/+layout.svelte -->
+<script lang="ts">
+  let { children } = $props();
+</script>
+
+{@render children()}
+```
+
+No chrome, no auth check. The landing page is always reachable.
 
 ---
 
-## 4. App Group Layout (Post-Auth, NavBar)
+## 4. App Group Layout -- Nav Shell
 
 ```svelte
 <!-- packages/web/src/routes/(app)/+layout.svelte -->
 <script lang="ts">
   import { authClient } from '$lib/auth-client';
   import NavBar from '$lib/components/NavBar.svelte';
+  import ToastContainer from '$lib/components/ToastContainer.svelte';
+  import type { PageData } from './$types';
 
-  let { children } = $props();
-  const { data: session } = authClient.useSession();
-
-  // If session becomes null mid-session (token expired, signed out in another tab),
-  // the root layout's effect redirects to /auth/sign-in
+  let { children, data } = $props();
+  const session = data.session;
 </script>
 
-{#if $session}
-  <NavBar {session} />
-  <main>
-    {@render children()}
-  </main>
-{/if}
+<NavBar {session} />
+<ToastContainer />
+<main>
+  {@render children()}
+</main>
 ```
 
-The NavBar is the app's primary navigation. It renders the following items (PRD 6.0, 6.3, 6.4):
+The NavBar is the app's primary navigation. It renders the following items:
 
 | Tab | Route | Shown when |
 |---|---|---|
 | Dashboard | `/dashboard` | Always, default active |
 | Guides | `/guides` | Always, highlighted on first visit post-signup |
 | Review Day | `/review-day` | Always, with a badge if any system is due |
-| Templates | `/templates` | Always, less prominent |
-| Profile / Settings | -- | Only logout button via dropdown |
+| Systems | `/systems` | Always |
 
 The NavBar also shows the user's name/email (from `session.user`) and a sign-out button that calls `authClient.signOut()` and navigates to `/`.
 
----
-
-## 5. Page Descriptions
-
-### 5.1 `/` -- Landing Page (Pre-Auth)
-
-Single-page marketing/intro surface per PRD 6.0(1). Explains: systems vs. goals, the floor action concept, what the app does. Two CTAs: Sign Up and Log In. No feature tour, no screenshots. The philosophy is the product; the page is minimal and text-forward.
-
-This page is always reachable (no auth guard) and is the default redirect target after sign-out.
-
-### 5.2 `/auth/sign-in` and `/auth/sign-up`
-
-Both are thin wrappers around `authClient.signIn.email()` and `authClient.signUp.email()` respectively. The Auth Integration doc (4.2) owns the exact field-by-field form logic. Key routing behavior:
-
-- **Sign-up success** (`authClient.signUp.email()` returns without error) -> redirect to `/guides` (PRD 6.0(3): "Guides & Tutorials tab (post-signup, first screen shown)").
-- **Sign-in success** -> redirect to `/dashboard` (PRD 6.0 flow: "signs back in -> lands on Dashboard").
-
-### 5.3 `/guides` -- Guides & Tutorials
-
-PRD 6.0(3): surfaces three core philosophy documents: Systems Framework (five-step build process), floor/full concept, and how reviews work. Always accessible from the NavBar. Rendered as a scrollable document, not a wizard.
-
-### 5.4 `/dashboard` -- Daily Dashboard
-
-PRD 6.3. The highest-frequency screen. On load:
-
-1. Calls `GET /api/dashboard` (which triggers lazy Instance generation server-side).
-2. Renders each Instance as a card (system name, domain, floor_action, state selector).
-3. User taps `full`, `floor`, or `missed` -- calls `PATCH /api/instances/:id` with the new state.
-4. Card updates optimistically.
-
-Each card links to the System's Workspace (`/systems/[id]/workspace`) and the System's detail page (`/systems/[id]`).
-
-The "Create system" button is prominently placed (FAB or similar) and links to `/systems/new`.
-
-### 5.5 `/systems/new` -- System Creator
-
-PRD 6.1. Three entry points, one form:
-
-1. **From scratch:** empty form.
-2. **From template:** `?template=tpl_reading_system` query param triggers pre-fill from `GET /api/templates/:id`.
-3. **AI-assisted:** `?ai=1` shows a text input at the top; user types a prompt, clicks "Draft with AI" (`POST /api/ai/draft-system`), output fills the form.
-
-The form walks through the five-step process as sections (Purpose, Philosophy, Protocol, Floor Action, Trigger, Barrier List, Schedule). Autosave fires on a debounced timer (`AUTOSAVE_DEBOUNCE_MS`), calling `POST /api/systems` on first save and `PATCH /api/systems/:id` thereafter.
-
-The primary "Save" button (distinct from autosave) calls `POST /api/systems/:id/confirm` after the initial save has created the row, enforcing `floor_action` non-emptiness at the API layer.
-
-On successful save: redirect to `/dashboard`.
-
-### 5.6 `/systems/[id]` -- System Detail Page
-
-Displays the System's full blueprint (all fields), current schedule, recent Instance history (weekly calendar/strip), and links to workspaces, editing, review, and archiving.
-
-### 5.7 `/systems/[id]/edit` -- Edit System
-
-Reuses the System Creator form component, pre-filled from the existing System record (`GET /api/systems/:id`). Same autosave behavior. Save calls `PATCH /api/systems/:id`.
-
-### 5.8 `/systems/[id]/workspace` -- Workspace Builder
-
-PRD 6.2. Drag-and-drop widget canvas built with `svelte-dnd-action`. Loads the current `layout` JSON from `GET /api/systems/:system_id/workspace`. The user adds/removes/reorders widgets; saving calls `PUT /api/systems/:system_id/workspace` with the complete layout.
-
-Each widget renders its own data: Counter shows logged values, Timer shows start/stop, Checklist shows editable steps, Streak shows a calendar heatmap, etc.
-
-Widgets that log per-instance data (Counter, Timer, Checklist) are interactive on this page -- they can be used during the instance's execution window.
-
-### 5.9 `/systems/[id]/review` -- Per-System Review
-
-PRD 6.4. Loads the past week's Instance history (`GET /api/systems/:system_id/instances?from=...&to=...`) and pre-populates the review form. Fields: what_worked, what_broke, worst_day_check (boolean), and the change_applied system fields editor.
-
-The form displays the current System blueprint fields as editable text areas alongside the review fields. When the user fills in a `change_applied` field, that change is written back to the System via `POST /api/systems/:system_id/reviews`.
-
-### 5.10 `/review-day` -- Review Day Aggregation
-
-PRD 5.7. Calls `GET /api/review-day` to fetch all systems due for review. Renders each as a card with instance_summary (full/floor/missed counts) and a "Start review" button linking to `/systems/[id]/review`. Acts as an index into the per-system review pages.
+`<ToastContainer>` is mounted here -- the one place in the app where `toastStore.items` is rendered (S5.4). No page below `(app)/` re-declares it.
 
 ---
 
-## 6. Store Architecture
+## 5. Store Design
 
-### 6.1 Auth store (from `better-auth/svelte`)
+All stores use Svelte 5 `$state` runes (not `svelte/store` `writable`), except where Better Auth's client provides its own store.
+
+### 5.1 Auth client
 
 ```typescript
 // packages/web/src/lib/auth-client.ts
@@ -289,33 +254,123 @@ export const authClient = createAuthClient({
 export const { useSession, signIn, signOut, signUp } = authClient;
 ```
 
-`useSession()` is the only auth store in the app. It returns a Svelte 5 runes-compatible reactive store. Used in the root layout for the auth guard and in the NavBar for displaying the user's name.
+`useSession()` is a runes-compatible reactive store from `better-auth/svelte`. Used in the auth group layout (S3.4) for display and in the NavBar (S4) for showing the user's name. The auth guard (S3.3) uses `authClient.getSession()` instead -- the SDK's non-reactive API that returns a promise and works inside `load` functions.
 
-### 6.2 Application stores
-
-| Store | Purpose | File |
-|---|---|---|
-| `activeSystemStore` | Currently selected system ID (for drill-down navigation) | `$lib/stores/navigation.ts` |
-| `toastStore` | Non-blocking toast messages (success, error, info) | `$lib/stores/toast.ts` |
-| `dashboardStore` | Cached dashboard instances (re-fetched on focus/navigation) | `$lib/stores/dashboard.ts` |
-
-These are minimal stores -- most page state is fetched per-page and held in local `$state()` variables. The app is small enough that a global fetch cache is unnecessary overhead; the stores above exist only for cross-page concerns (toast, navigation scratchpad) and for the Dashboard's optimistic-update pattern (where the cache needs to survive brief navigations to a detail page and back).
-
-### 6.3 API fetch wrapper
+### 5.2 Dashboard store
 
 ```typescript
-// packages/web/src/lib/api.ts
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+// packages/web/src/lib/stores/dashboard.svelte.ts
+class DashboardStore {
+  instances = $state<Instance[]>([]);
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  load(instances: Instance[]) {
+    this.instances = instances;
+  }
+
+  async markState(instanceId: string, state: 'full' | 'floor' | 'missed') {
+    const idx = this.instances.findIndex(i => i.id === instanceId);
+    if (idx === -1) return;
+
+    const prev = this.instances[idx];
+    this.instances[idx] = { ...prev, state };
+
+    try {
+      const updated = await patchInstance(instanceId, { state });
+      this.instances[idx] = updated;
+    } catch (e) {
+      this.instances[idx] = prev;
+      toastStore.push({ type: 'error', message: 'Could not save -- try again.' });
+    }
+  }
+}
+
+export const dashboardStore = new DashboardStore();
+```
+
+`dashboard/+page.ts`'s `load` function calls `GET /api/dashboard` and calls `dashboardStore.load(data.instances)` -- the store, not the page component, is the single source of truth for Instance state on the Dashboard. The optimistic-update-with-rollback pattern here is what PRD S10's non-functional requirement ("Instance auto-generation on load should not visibly block the UI") cashes out to at the Dashboard's most frequent interaction: marking full/floor/missed needs to feel instant.
+
+### 5.3 Workspace editor store
+
+```typescript
+// packages/web/src/lib/stores/workspace-editor.svelte.ts
+class WorkspaceEditorStore {
+  layout = $state<Layout | null>(null);
+  dirty = $state(false);
+  systemId = $state('');
+
+  load(systemId: string, layout: Layout) {
+    this.systemId = systemId;
+    this.layout = layout;
+    this.dirty = false;
+  }
+
+  addWidget(widget: Widget) {
+    this.layout!.widgets.push(widget);
+    this.dirty = true;
+  }
+
+  removeWidget(id: string) {
+    this.layout!.widgets = this.layout!.widgets.filter(w => w.id !== id);
+    this.dirty = true;
+  }
+
+  reorder(widgets: Widget[]) {
+    this.layout!.widgets = widgets;
+    this.dirty = true;
+  }
+
+  async save() {
+    const saved = await putWorkspace(this.systemId, this.layout);
+    this.layout = saved.layout;
+    this.dirty = false;
+  }
+}
+```
+
+Scoped to the Workspace Builder page only -- instantiated fresh per visit, not a singleton like `dashboardStore`. `dirty` backs a "you have unsaved changes" guard on navigation-away.
+
+### 5.4 Toast store
+
+```typescript
+// packages/web/src/lib/stores/toast.svelte.ts
+class ToastStore {
+  items = $state<{ id: string; type: 'error' | 'info'; message: string }[]>([]);
+
+  push(item: { type: 'error' | 'info'; message: string }) {
+    const id = crypto.randomUUID();
+    this.items = [...this.items, { id, ...item }];
+    setTimeout(() => {
+      this.items = this.items.filter(i => i.id !== id);
+    }, 4000);
+  }
+}
+
+export const toastStore = new ToastStore();
+```
+
+The single consumer of every API error across the app (S6). Rendered by `<ToastContainer>` in the app layout (S4).
+
+---
+
+## 6. API Client Wrapper
+
+Every `load` function and store action goes through one wrapper rather than calling `fetch` directly, so `credentials: 'include'` and the error contract are enforced in one place.
+
+```typescript
+// packages/web/src/lib/api/client.ts
+import { toastStore } from '$lib/stores/toast.svelte';
+
+const BASE = import.meta.env.VITE_API_BASE_URL;
+
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-    ...init,
+    headers: { 'Content-Type': 'application/json', ...options.headers },
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: 'unknown', message: res.statusText }));
+    const body = await res.json().catch(() => ({ error: 'unknown', message: 'Something went wrong.' }));
     throw new ApiError(res.status, body.error, body.message);
   }
 
@@ -334,13 +389,151 @@ export class ApiError extends Error {
 }
 ```
 
-Every API call includes `credentials: 'include'` (required by the session cookie per Auth Integration 2). The `ApiError` class carries `status` and `code` for structured error handling in components (e.g. showing inline form errors for 400, showing an "unavailable" banner for 503).
+`apiFetch` throws `ApiError` on non-2xx responses -- it does **not** push toasts itself. Error-toast handling happens at the store or component level so call sites that need to opt out (e.g. `floor_action_required` from `POST /api/systems/:id/confirm` should surface as inline form validation, not a toast) can `catch` the `ApiError` and handle it differently without fighting a built-in toast.
+
+A higher-order wrapper for store and load-function usage handles the common case (default: push a toast):
+
+```typescript
+// packages/web/src/lib/api/index.ts
+import { apiFetch, ApiError } from './client';
+import { toastStore } from '$lib/stores/toast.svelte';
+
+export async function apiFetchWithToast<T>(path: string, options?: RequestInit): Promise<T> {
+  try {
+    return await apiFetch<T>(path, options);
+  } catch (e) {
+    if (e instanceof ApiError && e.status < 500) {
+      toastStore.push({ type: 'error', message: e.message });
+    }
+    throw e;
+  }
+}
+```
+
+Thin typed helpers per resource group:
+
+```
+src/lib/api/
+├── client.ts          # apiFetch, ApiError
+├── index.ts           # apiFetchWithToast (default toast on client error)
+├── systems.ts         # getSystems, createSystem, patchSystem, confirmSystem, archiveSystem
+├── instances.ts       # patchInstance, getInstance
+├── dashboard.ts       # getDashboard
+├── schedules.ts       # getSchedules, createSchedule, patchSchedule, deleteSchedule
+├── workspaces.ts      # getWorkspace, putWorkspace
+├── counter-logs.ts    # createCounterLog, getCounterLogs, deleteCounterLog
+├── timer-sessions.ts  # createTimerSession, getTimerSessions, deleteTimerSession
+├── checklist.ts       # putChecklist, getChecklist
+├── reviews.ts         # getReviews, createReview
+├── review-day.ts      # getReviewDay
+├── templates.ts       # getTemplates, getTemplate
+├── attachments.ts     # uploadAttachment, getAttachmentUrl
+└── ai.ts              # draftSystem
+```
+
+One file per resource group, mirroring API Route Design's section numbering, so a given endpoint's frontend helper is easy to find.
 
 ---
 
-## 7. Build Configuration
+## 7. Component Hierarchy Per Page
 
-### 7.1 Vite proxy (development)
+Only pages with non-trivial composition are broken down -- simple pages (Guides, marketing landing page, sign-up/login forms) are single-component and don't need a hierarchy diagram.
+
+### 7.1 Dashboard (`(app)/dashboard/+page.svelte`)
+
+```
++page.svelte
+├── +page.ts          # calls apiFetchWithToast('GET /api/dashboard'), passes to dashboardStore.load()
+└── <InstanceList instances={dashboardStore.instances}>
+    └── <InstanceCard> (one per instance)
+        ├── <SystemBadge domain floor_action />
+        ├── <StateButtons state onMark={dashboardStore.markState} />  -- full / floor / missed
+        └── <WorkspaceLink systemId />
+```
+
+### 7.2 System Creator (`(app)/systems/new/+page.svelte`)
+
+```
++page.svelte
+├── <TemplatePicker templates onSelect />       -- built-ins + user templates, GET /api/templates
+├── <AIDraftPanel onDraft />                    -- "Draft with AI" button + prompt, POST /api/ai/draft-system
+└── <SystemForm>
+    ├── field groups: Purpose, Philosophy, Protocol, Floor Action, Trigger, Barrier List, Schedule
+    ├── autosave: debounced PATCH on every field change (AUTOSAVE_DEBOUNCE_MS)
+    └── <ConfirmButton onClick={() => confirmSystem(id)} />  -- POST /api/systems/:id/confirm
+```
+
+`<TemplatePicker>` and `<AIDraftPanel>` both write into the same `<SystemForm>` field state rather than bypassing it -- this implements PRD 6.1's "AI output never bypasses the form" and PRD 5.6's "clone at instantiation, fully editable" for templates. Neither component ever calls `POST /api/systems` itself.
+
+The edit route (`/systems/[id]/edit`) reuses `<SystemForm>` pre-filled from the existing System record, with the same autosave pattern.
+
+### 7.3 Workspace Builder (`(app)/systems/[id]/workspace/+page.svelte`)
+
+```
++page.svelte
+├── +page.ts          # calls apiFetchWithToast('GET /api/systems/:id/workspace')
+├── <WidgetPalette onAdd={workspaceEditorStore.addWidget} />   -- v1 widget catalog, PRD 5.5
+├── <WorkspaceCanvas layout={workspaceEditorStore.layout}>     -- svelte-dnd-action drag surface
+│   └── <WidgetCard> (one per widget in layout.widgets, dispatches by type)
+│       ├── <TimerWidget />        -- POST/GET timer-sessions, API Route Design 6.2
+│       ├── <CounterWidget />      -- POST/GET counter-logs, 6.1
+│       ├── <ChecklistWidget />    -- PUT/GET checklist, 6.3
+│       ├── <LogWidget />          -- Mongo-backed journal
+│       ├── <LinkListWidget />
+│       ├── <StreakWidget />       -- read-only, derived from GET /api/systems/:id/instances
+│       ├── <ProgressChartWidget />-- read-only, GET counter-logs or timer-sessions
+│       └── <NotesWidget />
+└── <SaveBar dirty={workspaceEditorStore.dirty} onSave={workspaceEditorStore.save} />
+```
+
+`<WidgetCard>`'s type-dispatch is the one piece of client-side logic that must stay in sync with D1 Schema S3.3.1's widget catalog and the layout JSON schema (D1 Schema S3.4). A new widget type requires: a new case in this dispatch, a new `suggested_widgets` string in Templates, and (if it logs numeric/timed data) a new typed table -- all three in the same PR.
+
+### 7.4 Per-System Review Form (`(app)/systems/[id]/reviews/new/+page.svelte`)
+
+```
++page.svelte
+├── +page.ts          # loads GET /api/systems/:id/instances?from=...&to=... for the review period
+├── <InstanceSummary counts={{ full, floor, missed }} />
+└── <ReviewForm>
+    ├── what_worked, what_broke, worst_day_check fields
+    ├── current System blueprint fields rendered as editable text areas (floor_action, purpose, etc.)
+    │   -- user edits these directly; changed values are collected into the change_applied structured object
+    ├── <ChangeAppliedNote />  -- optional free-text override for the auto-derived review description
+    └── <SubmitButton />  -- POST /api/systems/:id/reviews, handles 409 review_already_exists inline
+```
+
+Per PRD 6.4, the review form displays the current System blueprint fields alongside the review fields as editable text areas. When the user changes a value (e.g. lowers `floor_action`), that change is written back via the `change_applied` structured object in `POST /api/systems/:id/reviews`. This is inline editing of the System fields -- not checkboxes or a diff editor. The user's own words for the review description go into `change_applied_note` if they want something different from the auto-derived description.
+
+### 7.5 Review Day (`(app)/review-day/+page.svelte`)
+
+```
++page.svelte
+├── +page.ts          # calls apiFetchWithToast('GET /api/review-day')
+└── <DueReviewList due={data.due}>
+    └── <DueReviewCard>
+        ├── system name, floor_action
+        ├── <InstanceSummary counts={instance_summary} />  -- same component as 7.4
+        └── <StartReviewButton href="/systems/{id}/reviews/new?period_start=...&period_end=..." />
+```
+
+Reuses `<InstanceSummary>` from 7.4 -- both contexts show the identical full/floor/missed breakdown for a period.
+
+### 7.6 System Detail (`(app)/systems/[id]/+page.svelte`)
+
+```
++page.svelte
+└── <SystemBlueprint system={data.system} />    -- reads from nested layout's loaded data
+    ├── all blueprint fields (read-only in overview mode)
+    ├── current schedule (days, time window)
+    ├── instance streak/calendar (GET /api/systems/:id/instances)
+    └── action links: Edit, Workspace, Review, Archive
+```
+
+---
+
+## 8. Build Configuration
+
+### 8.1 Vite proxy (development)
 
 In development, the SvelteKit dev server runs on `localhost:5173` and the API Worker runs on `localhost:8787`. `vite.config.ts` proxies `/api/*` requests to the API Worker:
 
@@ -362,17 +555,17 @@ export default defineConfig({
 });
 ```
 
-**Crucially**, `changeOrigin: true` does NOT strip the `Origin` header -- if it does (varies by Vite version), Better Auth's CSRF check will reject the proxied request. Verify this works end-to-end during scaffolding by signing up in dev and confirming the session cookie is set and honored. See Auth Integration 3 for the full failure-mode description.
+Better Auth's CSRF check can reject proxied requests if `changeOrigin` strips the `Origin` header -- verify this works end-to-end during scaffolding by signing up in dev and confirming the session cookie is set and honored (Auth Integration 3).
 
-### 7.2 Environment variables
+### 8.2 Environment variables
 
 | Variable | Dev value | Prod value | Used in |
 |---|---|---|---|
-| `VITE_API_BASE_URL` | `''` (empty -- same-origin via proxy) | `https://polaris-api.<account>.workers.dev` | `auth-client.ts`, `api.ts` |
+| `VITE_API_BASE_URL` | `''` (empty -- same-origin via proxy) | `https://polaris-api.<account>.workers.dev` | `auth-client.ts`, `api/client.ts` |
 
 In dev, the proxy handles `/api/*` so `VITE_API_BASE_URL` is empty string and fetch paths are relative (`/api/systems`). In production, the frontend and API are on separate subdomains, so `VITE_API_BASE_URL` is the full origin of the API Worker.
 
-### 7.3 Static adapter
+### 8.3 Static adapter
 
 ```typescript
 // packages/web/svelte.config.js
@@ -387,33 +580,34 @@ export default {
       precompress: false,          // wrangler handles compression
     }),
     paths: {
-      relative: true,              // assets use relative paths, no base path config needed
+      relative: true,
     },
   },
 };
 ```
 
-`fallback: 'index.html'` is the critical setting for an SPA on Workers Static Assets -- without it, navigating directly to `/dashboard` would 404 because Cloudflare serves the static file `build/dashboard.html` which doesn't exist. With the fallback, any non-file path serves `index.html` and SvelteKit's client-side router takes over.
+`fallback: 'index.html'` is critical for SPA on Workers Static Assets -- without it, navigating directly to `/dashboard` would 404. With the fallback, any non-file path serves `index.html` and SvelteKit's client-side router takes over.
 
 ---
 
-## 8. Navigation Model Summary
+## 9. Navigation Model Summary
 
 | From | Action | Target |
 |---|---|---|
 | Anywhere | Sign-up success | `/guides` |
 | Anywhere | Sign-in success | `/dashboard` |
-| `/auth/*` | Already signed in | `/guides` |
-| `/app/*` | Session lost / expired | `/auth/sign-in` |
-| `/` | Click "Get Started" | `/auth/sign-up` |
-| `/` | Click "Log In" | `/auth/sign-in` |
+| `/sign-in`, `/sign-up` | Already signed in | `/guides` |
+| Any `(app)/*` route | Session lost / expired | `/sign-in` |
+| `/` | Click "Get Started" | `/sign-up` |
+| `/` | Click "Log In" | `/sign-in` |
 | NavBar | Click Dashboard | `/dashboard` |
 | NavBar | Click Guides | `/guides` |
 | NavBar | Click Review Day | `/review-day` |
-| Dashboard | Click "Create System" FAB | `/systems/new` |
+| NavBar | Click Systems | `/systems` |
+| Dashboard | Click "Create System" | `/systems/new` |
 | Dashboard | Click system card | `/systems/[id]` |
 | System detail | Click "Edit" | `/systems/[id]/edit` |
 | System detail | Click "Workspace" | `/systems/[id]/workspace` |
-| System detail | Click "Review" | `/systems/[id]/review` |
-| Review Day | Click "Start Review" | `/systems/[id]/review` |
+| System detail | Click "Review" | `/systems/[id]/reviews/new` |
+| Review Day | Click "Start Review" | `/systems/[id]/reviews/new?period_start=...&period_end=...` |
 | NavBar | Click sign-out | `/` |
