@@ -16,11 +16,11 @@ Two route trees exist in the same Hono Worker:
 - **`/api/auth/*`** -- owned entirely by Better Auth's own handler (`auth.handler`). Not designed here; see the Auth Integration doc.
 - **`/api/*`** (everything else) -- the application API surface this document defines.
 
-There is no `/api/v1` prefix. This is a single-developer personal app with one frontend consumer that deploys in lockstep with the API (ADR 001 §5.10, root `pnpm -r deploy`) -- a version prefix defends against a compatibility problem (old client, new server) that structurally can't happen here. If the API is ever opened to a second consumer, that's the point to introduce versioning, not before.
+There is no `/api/v1` prefix. This is a single-developer personal app with one frontend consumer that deploys in lockstep with the API (ADR 001 S5.10, root `pnpm -r deploy`) -- a version prefix defends against a compatibility problem (old client, new server) that structurally can't happen here. If the API is ever opened to a second consumer, that's the point to introduce versioning, not before.
 
 ### 1.2 Auth requirement -- default is "required"
 
-Every route under `/api/*` requires a valid session **except none in v1** -- including the AI draft route (already stated in ADR 003 §5). There is no public read-only API surface. The auth middleware runs before every route handler in this tree; a request with no valid session cookie gets `401` before any handler-specific logic runs, including before request body validation.
+Every route under `/api/*` requires a valid session **except none in v1** -- including the AI draft route (already stated in ADR 003 S5). There is no public read-only API surface. The auth middleware runs before every route handler in this tree; a request with no valid session cookie gets `401` before any handler-specific logic runs, including before request body validation.
 
 ### 1.3 Response envelope
 
@@ -37,8 +37,8 @@ Every route under `/api/*` requires a valid session **except none in v1** -- inc
 | `201` | Successful POST that created a new resource |
 | `400` | Request body failed validation (missing required field, wrong type, value outside allowed range) |
 | `401` | No valid session |
-| `404` | Resource doesn't exist, **or** exists but isn't owned by the session user (see §1.5 -- these are intentionally indistinguishable to the client) |
-| `409` | A state-machine violation (e.g. archiving an already-archived System, or double-submitting a Review for a period that already has one, returns `409`) |
+| `404` | Resource doesn't exist, **or** exists but isn't owned by the session user (see S1.5 -- these are intentionally indistinguishable to the client) |
+| `409` | A state-machine violation (e.g. trying to mark an already-`full` Instance as `full` again isn't an error, but archiving an already-archived System, or double-submitting a Review for a period that already has one, returns `409`) |
 | `422` | Body is syntactically valid but semantically rejected by a business rule (e.g. `time_window_end` before `time_window_start`) |
 | `502` | Upstream dependency (Workers AI, MongoDB via Queue) failed -- already precedented in ADR 003 |
 | `503` | Upstream dependency's quota/capacity is exhausted (Workers AI neuron quota -- ADR 003) |
@@ -47,7 +47,7 @@ Every route under `/api/*` requires a valid session **except none in v1** -- inc
 
 ### 1.5 Ownership checks (cross-cutting -- read this before any route below)
 
-Only `systems` and `templates` carry `user_id` directly (D1 Schema §3.1, §3.5). Every other resource (`schedules`, `instances`, `workspaces`, `reviews`, `attachments`, `counter_logs`, `timer_sessions`, `widget_entries`) is scoped to a user only transitively, through its `system_id` / `workspace_id` chain back to a `systems` row. **Every route that reads or mutates one of these must join back to `systems.user_id` and compare against the session user -- not just look the row up by its own `id`.**
+Only `systems` and `templates` carry `user_id` directly (D1 Schema S3.1, S3.5). Every other resource (`schedules`, `instances`, `workspaces`, `reviews`, `attachments`, `counter_logs`, `timer_sessions`, `widget_entries`) is scoped to a user only transitively, through its `system_id` / `workspace_id` chain back to a `systems` row. **Every route that reads or mutates one of these must join back to `systems.user_id` and compare against the session user -- not just look the row up by its own `id`.**
 
 Concretely, this means a helper used by every non-`systems` route, e.g.:
 
@@ -69,7 +69,7 @@ A row that exists but belongs to another account returns the same `404` as a row
 
 ### 1.6 Pagination
 
-Not implemented in v1. Every list endpoint returns its full result set. PRD §10 puts the ceiling at a few thousand rows/year across all tables at heavy personal use -- well within a single unpaginated response. If this stops being true, pagination is an additive query-param change (`?cursor=`), not a breaking one, since the envelope is already a named array key rather than a bare array.
+Not implemented in v1. Every list endpoint returns its full result set. PRD S10 puts the ceiling at a few thousand rows/year across all tables at heavy personal use -- well within a single unpaginated response. If this stops being true, pagination is an additive query-param change (`?cursor=`), not a breaking one, since the envelope is already a named array key rather than a bare array.
 
 ---
 
@@ -81,13 +81,13 @@ Not implemented in v1. Every list endpoint returns its full result set. PRD §10
 | `POST` | `/api/systems` | insert with `user_id` from session |
 | `GET` | `/api/systems/:id` | ownership-scoped lookup |
 | `PATCH` | `/api/systems/:id` | ownership-scoped lookup, then update |
-| `POST` | `/api/systems/:id/confirm` | ownership-scoped lookup, then update -- see §2.4 |
+| `POST` | `/api/systems/:id/confirm` | ownership-scoped lookup, then update -- see S2.4 |
 | `POST` | `/api/systems/:id/archive` | ownership-scoped lookup, then update |
 | `POST` | `/api/systems/:id/save-as-template` | ownership-scoped lookup on system, insert into `templates` |
 
 ### 2.1 `GET /api/systems`
 
-Backs the Dashboard's system list and any "all systems" view. **Not** the Dashboard's Instance view -- see §4.1 for that.
+Backs the Dashboard's system list and any "all systems" view. **Not** the Dashboard's Instance view -- see S4.1 for that.
 
 ```
 Query params: ?status=active   (optional; omit for all statuses)
@@ -111,7 +111,7 @@ Response 200:
 
 ### 2.2 `POST /api/systems`
 
-Creates a System. Used by all three entry points in PRD §6.1 (from scratch, from template, AI-assisted) -- all three converge on this one endpoint because all three land in the same editable form before save (PRD §6.1). The `template_origin` field is how "from template" is distinguished from "from scratch" at the data level; the AI-assisted path has no special marker at all, since AI output is edited into the same form fields and saved the same way a manual entry would be (ADR 003 §1: "AI output never bypasses the form").
+Creates a System. Used by all three entry points in PRD S6.1 (from scratch, from template, AI-assisted) -- all three converge on this one endpoint because all three land in the same editable form before save (PRD S6.1). The `template_origin` field is how "from template" is distinguished from "from scratch" at the data level; the AI-assisted path has no special marker at all, since AI output is edited into the same form fields and saved the same way a manual entry would be (ADR 003 S1: "AI output never bypasses the form").
 
 ```
 Request body:
@@ -121,21 +121,21 @@ Request body:
   "purpose": "",                      // optional, default ''
   "philosophy": "",                   // optional, default ''
   "protocol": "",                     // optional, default ''
-  "floor_action": "",                 // optional at this call -- see §2.4
+  "floor_action": "",                 // optional at this call -- see S2.4
   "trigger": "",                      // optional, default ''
   "barrier_list": [],                 // optional, default []
   "template_origin": "tpl_reading_system"  // optional, null if from scratch or AI
 }
 
-Response 201: the created System (same shape as §2.1's list items)
+Response 201: the created System (same shape as S2.1's list items)
 Response 400: { "error": "invalid_input", "message": "name is required." }
 ```
 
-This is also the endpoint the autosave flow calls on the very first debounced save (PRD §4.3) -- the moment the System Creator form opens and the user types a name, the first autosave tick fires this `POST` (not a `PATCH`, since no `id` exists yet). Every subsequent autosave tick calls `PATCH /api/systems/:id`.
+This is also the endpoint the autosave flow calls on the very first debounced save (PRD S4.3) -- the moment the System Creator form opens and the user types a name, the first autosave tick fires this `POST` (not a `PATCH`, since no `id` exists yet). Every subsequent autosave tick calls `PATCH /api/systems/:id`.
 
 ### 2.3 `PATCH /api/systems/:id`
 
-Partial update -- only fields present in the body are changed. This is the workhorse route: autosave ticks after the first one, direct edits from the System detail page, and the `change_applied` write-back from a Review submission (D1 Schema §3.6's note -- that write-back is a second call to this same endpoint, not a special-cased path).
+Partial update -- only fields present in the body are changed. This is the workhorse route: autosave ticks after the first one, direct edits from the System detail page, and the `change_applied` write-back from a Review submission (D1 Schema S3.6's note -- that write-back is a second call to this same endpoint, not a special-cased path).
 
 ```
 Request body: any subset of the POST body's fields
@@ -143,11 +143,11 @@ Response 200: the updated System
 Response 404: not found / not owned
 ```
 
-No field in this body is ever required to be present -- `PATCH` semantics mean partial. This is where the tension with `floor_action` in D1 Schema §5 lives: a `PATCH` with `floor_action: ""` is accepted without complaint, because it's still a draft.
+No field in this body is ever required to be present -- `PATCH` semantics mean partial. This is where the tension with `floor_action` in D1 Schema S5 lives: a `PATCH` with `floor_action: ""` is accepted without complaint, because it's still a draft.
 
 ### 2.4 `POST /api/systems/:id/confirm`
 
-The one place `floor_action` is actually enforced as required, per D1 Schema §5's resolution. Called when the user explicitly saves/finalizes a System from the Creator form (as opposed to the ambient autosave that's been running the whole time).
+The one place `floor_action` is actually enforced as required, per D1 Schema S5's resolution. Called when the user explicitly saves/finalizes a System from the Creator form (as opposed to the ambient autosave that's been running the whole time).
 
 ```
 Request body: {}   (no body -- this validates the System's current stored state, it doesn't accept new field values)
@@ -169,15 +169,15 @@ Response 200: the System with status: "archived"
 Response 409: { "error": "already_archived", "message": "This system is already archived." }
 ```
 
-Per D1 Schema §4, this only flips `status` -- it never touches `instances` or `reviews` rows, and the frontend continues to show full history from the System's detail page after archiving.
+Per D1 Schema S4, this only flips `status` -- it never touches `instances` or `reviews` rows, and the frontend continues to show full history from the System's detail page after archiving.
 
 ### 2.6 `POST /api/systems/:id/save-as-template`
 
-Implements PRD §5.6 ("any System the user has built can be saved back as a personal template"). Snapshots the System's current field values into a new `templates` row with `source: 'user'`.
+Implements PRD S5.6 ("any System the user has built can be saved back as a personal template"). Snapshots the System's current field values into a new `templates` row with `source: 'user'`.
 
 ```
 Request body: { "name": "My Studying Shape" }   // template display name, defaults to the System's name if omitted
-Response 201: the created Template (see §7 for shape)
+Response 201: the created Template (see S7 for shape)
 ```
 
 ---
@@ -197,7 +197,7 @@ Nested under `systems` for creation/listing (a schedule doesn't exist independen
 POST /api/systems/:system_id/schedules
 Request body:
 {
-  "days_of_week": 62,              // bitmask, bit 0 = Monday .. bit 6 = Sunday (D1 Schema §3.2)
+  "days_of_week": 62,              // bitmask, bit 0 = Monday .. bit 6 = Sunday (D1 Schema S3.2)
   "time_window_start": "06:00",    // "HH:MM", Asia/Manila local time, no timezone in payload
   "time_window_end": "08:00"
 }
@@ -205,7 +205,7 @@ Response 201: { "id": "...", "system_id": "...", "days_of_week": 62, "time_windo
 Response 422: { "error": "invalid_window", "message": "End time must be after start time." }
 ```
 
-`recurrence` is not accepted in the request body in v1 -- it's always `'weekly'`, set server-side, matching the `CHECK` constraint in D1 Schema §3.2. Sending it is silently ignored rather than rejected, so the field can be safely wired up client-side ahead of a future `'daily'`/`'biweekly'` migration without a breaking change.
+`recurrence` is not accepted in the request body in v1 -- it's always `'weekly'`, set server-side, matching the `CHECK` constraint in D1 Schema S3.2. Sending it is silently ignored rather than rejected, so the field can be safely wired up client-side ahead of a future `'daily'`/`'biweekly'` migration without a breaking change.
 
 ---
 
@@ -213,7 +213,7 @@ Response 422: { "error": "invalid_window", "message": "End time must be after st
 
 ### 4.1 `GET /api/dashboard`
 
-The single most important route in the app -- backs PRD §6.3. This is the one intentional exception to "GET has no side effects": on every call, it performs the lazy Instance-generation check (PRD §5.3, path 1) for the session user before returning results. This is safe to call repeatedly because it's guarded by the same `UNIQUE (system_id, date)` constraint the nightly Cron job relies on (D1 Schema §3.3) -- a second call the same day is a no-op past the first.
+The single most important route in the app -- backs PRD S6.3. This is the one intentional exception to "GET has no side effects": on every call, it performs the lazy Instance-generation check (PRD S5.3, path 1) for the session user before returning results. This is safe to call repeatedly because it's guarded by the same `UNIQUE (system_id, date)` constraint the nightly Cron job relies on (D1 Schema S3.3) -- a second call the same day is a no-op past the first.
 
 ```
 Response 200:
@@ -234,31 +234,26 @@ Response 200:
 }
 ```
 
-The `system` object embedded per instance is intentionally a narrow projection (not the full System record from §2.1) -- the Dashboard card only ever needs name, domain, and floor_action for its collapsed state; the full record is fetched separately if the user drills into a specific System. Keeping this response small matters more here than anywhere else in the API, since PRD §10 calls this out as the one screen with a hard non-blocking-render requirement.
+The `system` object embedded per instance is intentionally a narrow projection (not the full System record from S2.1) -- the Dashboard card only ever needs name, domain, and floor_action for its collapsed state; the full record is fetched separately if the user drills into a specific System. Keeping this response small matters more here than anywhere else in the API, since PRD S10 calls this out as the one screen with a hard non-blocking-render requirement.
 
 **Generation logic (server-side, not a separate endpoint):**
 
-The dashboard path and the nightly Cron path have different scope but share the same idempotency guarantee:
+```
+For each active System belonging to this user:
+  For each of its Schedules where days_of_week matches today (Asia/Manila):
+    INSERT INTO instances (system_id, date, state) VALUES (?, today, 'pending')
+    -- on UNIQUE conflict: do nothing, this instance already exists
+Then: SELECT all instances for this user where date = today
+  Filter instances to only those whose time_window has opened
+  (WHERE time_window_start <= current_time Asia/Manila or window hasn't ended yet)
+```
 
-**Nightly Cron Trigger** (date-only, no window check):
-Runs once per night at `0 15 * * *` UTC (~11 PM Asia/Manila). For every active System belonging to this user whose schedule matches tomorrow's day-of-week bitmask:
-- `INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, tomorrow, 'pending')`
-
-This pre-generates the DB row regardless of time windows. The row exists but the dashboard won't surface it until the window opens (see below).
-
-**Lazy dashboard load** (date + window check):
-On every `GET /api/dashboard` call:
-- Step 1 (generation): for each active System whose `days_of_week` matches today's day-of-week bitmask, `INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, today, 'pending')`. The `IGNORE` handles the Cron-pre-generated case -- the insert is a no-op if the row already exists.
-- Step 2 (filter): `SELECT` today's Instances for this user, but only return those whose associated Schedule's `time_window_start <= current_time Asia/Manila`. An Instance whose window hasn't opened yet exists in D1 but is excluded from the response.
-
-This ensures: (a) tomorrow's Instance is visible the night before (the Cron row exists), but today's Instance for a 6 PM window doesn't clutter the morning Dashboard, and (b) the Cron job and dashboard path never fight over duplicates.
-
-**Why two passes instead of one query with a window check on the insert?** The insert must be date-only because the Cron job has no concept of "current time" when it runs at 11 PM for tomorrow -- inserting with a `WHERE time_window_start <= tomorrow_08_00` would skip systems whose window is in the afternoon, meaning those rows never get pre-generated. Keeping the insert date-only and the filter window-gated avoids coupling the generation logic to the Cron's execution time window.
+**Window-gated matching (confirmed):** Instance generation is date-only (the row is created regardless of window), but the Dashboard response filters out Instances whose scheduled time window hasn't opened yet. A "Morning Workout" with a 6 AM window won't appear on the Dashboard at 3 AM, but it will appear as soon as 6 AM hits -- no page reload required if the frontend re-fetches periodically or on focus. The nightly Cron job pre-generates the row (date-only, same as the lazy path); the window gate is applied at query time, so pre-generation never accidentally reveals tomorrow's early-morning Instances tonight.
 
 ### 4.2 `GET /api/instances/:id`
 
 ```
-Response 200: the Instance (same shape as embedded in §4.1's "instances" array, minus the "system" projection)
+Response 200: the Instance (same shape as embedded in S4.1's "instances" array, minus the "system" projection)
 Response 404: not found / not owned
 ```
 
@@ -268,11 +263,11 @@ Needed for deep-linking to a single Instance and for refreshing one Instance's s
 
 ```
 Request body: { "state": "full" }   // or "floor" | "missed"
-Response 200: the updated Instance (same shape as embedded in §4.1, minus the "system" projection)
+Response 200: the updated Instance (same shape as embedded in S4.1, minus the "system" projection)
 Response 422: { "error": "invalid_transition", "message": "Cannot set state to 'pending' directly." }
 ```
 
-`state: "pending"` is never a valid value in this body -- per ADR 003 Appendix A.5 (`instance.mark`)'s own note, there's no supported path back to `pending` once an Instance has been marked. This route is also how the Workspace's optional "log details" flow (PRD §6.3) sets `notes`:
+`state: "pending"` is never a valid value in this body -- per ADR 003 Appendix A.5 (`instance.mark`)'s own note, there's no supported path back to `pending` once an Instance has been marked. This route is also how the Workspace's optional "log details" flow (PRD S6.3) sets `notes`:
 
 ```
 Request body: { "state": "full", "notes": "Finished chapter 3" }
@@ -282,11 +277,11 @@ Request body: { "state": "full", "notes": "Finished chapter 3" }
 
 ### 4.4 `GET /api/systems/:system_id/instances`
 
-Instance history for one System -- backs the System detail page's streak/calendar view and the Review flow's week-of-history lookup (§8.1).
+Instance history for one System -- backs the System detail page's streak/calendar view and the Review flow's week-of-history lookup (S8.1).
 
 ```
 Query params: ?from=2026-06-24&to=2026-06-30   (both optional; omitting both returns full history)
-Response 200: { "instances": [ ...same shape as §4.3's response, one per matching date... ] }
+Response 200: { "instances": [ ...same shape as S4.3's response, one per matching date... ] }
 ```
 
 ---
@@ -298,7 +293,7 @@ Response 200: { "instances": [ ...same shape as §4.3's response, one per matchi
 | `GET` | `/api/systems/:system_id/workspace` |
 | `PUT` | `/api/systems/:system_id/workspace` |
 
-`PUT`, not `POST`/`PATCH` -- the one-to-one relationship (D1 Schema §3.4) and the upgrade-on-read/write-always-current versioning scheme (ADR 001 §5.4) mean "create" and "replace the whole layout" are the same operation from the client's point of view: the Workspace Builder always sends the complete current `layout` JSON on every save (drag-drop reorder, add widget, resize), never a partial patch to it. `PUT` being idempotent and always specifying the full resource state matches that.
+`PUT`, not `POST`/`PATCH` -- the one-to-one relationship (D1 Schema S3.4) and the upgrade-on-read/write-always-current versioning scheme (ADR 001 S5.4) mean "create" and "replace the whole layout" are the same operation from the client's point of view: the Workspace Builder always sends the complete current `layout` JSON on every save (drag-drop reorder, add widget, resize), never a partial patch to it. `PUT` being idempotent and always specifying the full resource state matches that.
 
 ```
 PUT /api/systems/:system_id/workspace
@@ -315,7 +310,7 @@ Response 200:
 { "id": "ws_...", "system_id": "sys_...", "layout": { "v": 1, "widgets": [...] }, "created_at": "...", "updated_at": "..." }
 ```
 
-Server-side, this route is also where `layout.v` gets forced to `CURRENT_VERSION` on write (ADR 001 §5.4's "on write: always write `layout.v = CURRENT_VERSION`") -- if the client sends a stale `v`, the server does not trust it; `upgradeLayout()` runs server-side before persisting, not just on read. This means the Workspace Builder never needs to know about the upgrade chain at all -- it always receives an already-current layout from `GET` and always sends whatever it received (plus edits) back on `PUT`.
+Server-side, this route is also where `layout.v` gets forced to `CURRENT_VERSION` on write (ADR 001 S5.4's "on write: always write `layout.v = CURRENT_VERSION`") -- if the client sends a stale `v`, the server does not trust it; `upgradeLayout()` runs server-side before persisting, not just on read. This means the Workspace Builder never needs to know about the upgrade chain at all -- it always receives an already-current layout from `GET` and always sends whatever it received (plus edits) back on `PUT`.
 
 ```
 GET /api/systems/:system_id/workspace
@@ -327,7 +322,7 @@ Response 404: no workspace exists yet for this system -- the frontend treats thi
 
 ## 6. Widget Data
 
-Three tables, three endpoint groups, matching D1 Schema §3.3.1's hybrid design exactly. All are ownership-scoped through `instances -> systems` or `workspaces -> systems`.
+Three tables, three endpoint groups, matching D1 Schema S3.3.1's hybrid design exactly. All are ownership-scoped through `instances -> systems` or `workspaces -> systems`.
 
 ### 6.1 Counter logs
 
@@ -337,7 +332,7 @@ Request body: { "widget_id": "w_counter1", "value": 12, "unit_label": "pages" }
 Response 201: { "id": "...", "workspace_id": "...", "widget_id": "...", "instance_id": "...", "value": 12, "unit_label": "pages", "created_at": "..." }
 
 GET /api/widgets/:widget_id/counter-logs?from=&to=
-Response 200: { "counter_logs": [...] }   -- cross-instance, powers the Progress chart widget's SUM/trend query (D1 Schema §3.3.1)
+Response 200: { "counter_logs": [...] }   -- cross-instance, powers the Progress chart widget's SUM/trend query (D1 Schema S3.3.1)
 
 DELETE /api/counter-logs/:id
 Response 200: { "id": "...", "deleted": true }
@@ -345,7 +340,7 @@ Response 200: { "id": "...", "deleted": true }
 
 The `GET` is keyed by `widget_id` rather than nested under an instance or a system, because a Progress chart widget's whole purpose is aggregating *across* instances -- there is no single-instance version of this query that makes sense. Ownership is still checked, just via a join from `widget_id`'s owning `workspace_id -> system_id -> user_id` rather than through an instance.
 
-`DELETE` exists here deliberately, unlike Instances (§4.3, no supported path back to `pending`). A mistyped Counter tally is a raw data-entry error, not a historical record the way an Instance's daily state is -- PRD §6.5's "past Instances are never retroactively altered" is a statement about the Instance state machine specifically, not a blanket rule against ever correcting logged numbers. Letting a fat-fingered "120 pages" become "12 pages" via delete-and-re-add (no update endpoint, since these rows are treated as immutable once correct) keeps the correction path simple without reopening the bigger question of whether Instance history itself should ever be editable.
+`DELETE` exists here deliberately, unlike Instances (S4.3, no supported path back to `pending`). A mistyped Counter tally is a raw data-entry error, not a historical record the way an Instance's daily state is -- PRD S6.5's "past Instances are never retroactively altered" is a statement about the Instance state machine specifically, not a blanket rule against ever correcting logged numbers. Letting a fat-fingered "120 pages" become "12 pages" via delete-and-re-add (no update endpoint, since these rows are treated as immutable once correct) keeps the correction path simple without reopening the bigger question of whether Instance history itself should ever be editable.
 
 ### 6.2 Timer sessions
 
@@ -361,7 +356,7 @@ DELETE /api/timer-sessions/:id
 Response 200: { "id": "...", "deleted": true }
 ```
 
-Same correction rationale as §6.1.
+Same correction rationale as S6.1.
 
 ### 6.3 Checklist state
 
@@ -374,7 +369,7 @@ GET /api/instances/:instance_id/checklist/:widget_id
 Response 200: same shape, or 404 if the checklist hasn't been touched for this instance yet (frontend renders all-unchecked in that case)
 ```
 
-`PUT` here too, same reasoning as the Workspace layout -- the client always sends the complete current step list, not a single-step toggle, since a `widget_entries` row is replaced wholesale rather than patched (D1 Schema §3.3.1 stores it as one JSON blob per instance+widget, not one row per step). No `DELETE` for Checklist specifically: correcting a mis-checked step is already a `PUT` with the corrected `steps` array, so a separate delete path would be redundant rather than a missing capability.
+`PUT` here too, same reasoning as the Workspace layout -- the client always sends the complete current step list, not a single-step toggle, since a `widget_entries` row is replaced wholesale rather than patched (D1 Schema S3.3.1 stores it as one JSON blob per instance+widget, not one row per step). No `DELETE` for Checklist specifically: correcting a mis-checked step is already a `PUT` with the corrected `steps` array, so a separate delete path would be redundant rather than a missing capability.
 
 ---
 
@@ -385,7 +380,7 @@ Response 200: same shape, or 404 if the checklist hasn't been touched for this i
 | `GET` | `/api/templates` |
 | `GET` | `/api/templates/:id` |
 
-No `POST`/`PATCH`/`DELETE` here -- creation happens via `POST /api/systems/:id/save-as-template` (§2.6), and v1 has no template-editing or template-deletion flow (PRD doesn't call for one; a user who wants a different shape just saves a new template from a different System).
+No `POST`/`PATCH`/`DELETE` here -- creation happens via `POST /api/systems/:id/save-as-template` (S2.6), and v1 has no template-editing or template-deletion flow (PRD doesn't call for one; a user who wants a different shape just saves a new template from a different System).
 
 ```
 GET /api/templates?source=built_in
@@ -404,7 +399,7 @@ Response 200:
 }
 ```
 
-`source` is not required -- omitting it returns both built-in and the session user's own saved templates together, which is what the System Creator's template picker (PRD §6.1) actually needs: one list, built-ins first by convention (sorted server-side, `source = 'built_in'` before `'user'`, then alphabetical within each group).
+`source` is not required -- omitting it returns both built-in and the session user's own saved templates together, which is what the System Creator's template picker (PRD S6.1) actually needs: one list, built-ins first by convention (sorted server-side, `source = 'built_in'` before `'user'`, then alphabetical within each group).
 
 ---
 
@@ -418,7 +413,7 @@ Response 200:
 
 ### 8.1 `POST /api/systems/:system_id/reviews`
 
-The loop-closing route (PRD §5.7, §6.4). This is the one endpoint in the whole API that writes to two tables in one request: it inserts the `reviews` row, then -- if `change_applied` is non-empty -- issues a second `UPDATE` against `systems` for whichever fields the description implies changed, per D1 Schema §3.6's note that this is plain sequential application code, not a trigger.
+The loop-closing route (PRD S5.7, S6.4). This is the one endpoint in the whole API that writes to two tables in one request: it inserts the `reviews` row, then -- if `change_applied` is non-empty -- issues a second `UPDATE` against `systems` for whichever fields the description implies changed, per D1 Schema S3.6's note that this is plain sequential application code, not a trigger.
 
 ```
 Request body:
@@ -434,24 +429,19 @@ Request body:
 }
 Response 201:
 {
-  "review": { "id": "...", "system_id": "...", "period_start": "...", "period_end": "...", "what_worked": "...", "what_broke": "...", "worst_day_check": true, "change_applied": "I lowered the floor action: Touch the book and read the chapter title only", "created_at": "...", "updated_at": "..." },
+  "review": { "id": "...", "system_id": "...", "period_start": "...", "period_end": "...", "what_worked": "...", "what_broke": "...", "worst_day_check": true, "change_applied": "Touch the book and read the chapter title only", "created_at": "...", "updated_at": "..." },
   "updated_system": { ...full System record, post-write-back... }
 }
 Response 409: { "error": "review_already_exists", "message": "A review for this period already exists." }
 ```
 
-**`change_applied` design:** The request body accepts `change_applied` as a structured object (`{ field_name: "new value", ... }`) for two reasons:
+**`change_applied` format (confirmed):** structured object in the request, stored as derived text. The API receives `{ floor_action: "..." }`, performs the write-back against `systems`, and derives a human-readable description (e.g. "Updated floor_action: '...'") to store in `reviews.change_applied`. If the user wants their own voice in that text, an optional `change_applied_note` string field in the request body overrides the auto-derived description -- the write-back always uses the structured object, but the stored text becomes the user's own words instead. This avoids double-entry (PRD S5.7: "the change_applied field is what closes the loop") while preserving the option for personal reflection.
 
-1. **Write-back is unambiguous.** The API maps each key directly to an `UPDATE systems SET field = ?` -- no guessing which field changed.
-2. **No double-entry.** The Review screen already exposes editable System fields. If the user changes `floor_action` in the review form, they shouldn't have to *also* type "I lowered the floor action" as free text.
-
-The stored text is auto-derived from the structured object (concatenating field names and values) **unless** the request also includes an optional `change_description` string field. If present, that string is stored verbatim in `reviews.change_applied` instead. This preserves the PRD's intent of `change_applied` being a human-readable reflective statement when the user wants to write one, while keeping the write-back path unambiguous in the common case (user just edits fields without writing a separate note).
-
-**Duplicate reviews are blocked** (`409`). If the user double-clicks submit or refreshes after posting, they get a clear error rather than a silent duplicate. If they genuinely want to re-review a period early, they submit with an earlier `period_end`.
+**`409` on duplicate period (confirmed):** blocked. Prevents accidentally submitting two reviews for the same week for the same system. If a genuine re-review is needed, the frontend can prompt the user to extend the period or start a new one starting the next day.
 
 ### 8.2 `GET /api/review-day`
 
-Backs PRD §5.7's aggregation view -- "every system due for review, one after another."
+Backs PRD S5.7's aggregation view -- "every system due for review, one after another."
 
 ```
 Response 200:
@@ -467,7 +457,7 @@ Response 200:
 }
 ```
 
-"Due" is computed server-side as: every active System belonging to the user with no `reviews` row whose `period_start`/`period_end` covers the most recently completed 7-day window. This intentionally does not filter by the user's designated Review Day -- per PRD §5.7, the Review Day is "a convenience aggregation view, not an exclusivity lock," so this endpoint returns whatever's due regardless of which day it's called on; the frontend decides when to surface it prominently.
+"Due" is computed server-side as: every active System belonging to the user with no `reviews` row whose `period_start`/`period_end` covers the most recently completed 7-day window. This intentionally does not filter by the user's designated Review Day -- per PRD S5.7, the Review Day is "a convenience aggregation view, not an exclusivity lock," so this endpoint returns whatever's due regardless of which day it's called on; the frontend decides when to surface it prominently.
 
 ---
 
@@ -478,7 +468,7 @@ Response 200:
 | `POST` | `/api/attachments` |
 | `GET` | `/api/attachments/:id` |
 
-Implements ADR 001 §5.7's proxied-upload flow exactly -- this document just pins down the HTTP contract around it.
+Implements ADR 001 S5.7's proxied-upload flow exactly -- this document just pins down the HTTP contract around it.
 
 ```
 POST /api/attachments
@@ -486,7 +476,7 @@ Content-Type: multipart/form-data
 Fields: file (binary), workspace_id, widget_id
 
 Response 201: { "id": "att_...", "workspace_id": "...", "widget_id": "...", "filename": "notes.pdf", "content_type": "application/pdf", "size_bytes": 48213, "created_at": "..." }
-Response 400: { "error": "file_too_large", "message": "..." }   // if a size limit is set -- Testing Strategy §3.1 flags this as conditional ("if a limit is set")
+Response 400: { "error": "file_too_large", "message": "..." }   // if a size limit is set -- Testing Strategy S3.1 flags this as conditional ("if a limit is set")
 ```
 
 `GET /api/attachments/:id` streams the R2 object back directly (`Content-Type` set from the stored `content_type`, `Content-Disposition: inline` so PDFs/images render in-browser rather than force-downloading) rather than returning a JSON pointer -- the frontend links directly to this URL as an `<a href>` / `<img src>`.
@@ -495,7 +485,7 @@ Response 400: { "error": "file_too_large", "message": "..." }   // if a size lim
 
 ## 10. AI Assist
 
-Already fully specified in ADR 003 §5 (`POST /api/ai/draft-system`) -- not repeated here. Included in this document's route inventory (§11) for completeness only.
+Already fully specified in ADR 003 S5 (`POST /api/ai/draft-system`) -- not repeated here. Included in this document's route inventory (S11) for completeness only.
 
 ---
 
@@ -537,22 +527,3 @@ Already fully specified in ADR 003 §5 (`POST /api/ai/draft-system`) -- not repe
 | `POST` | `/api/attachments` | ownership-scoped (via workspace_id) | proxied R2 upload |
 | `GET` | `/api/attachments/:id` | ownership-scoped | streams R2 object |
 | `POST` | `/api/ai/draft-system` | session only | see ADR 003 |
-
----
-
-## 12. Nightly Cron Handler
-
-Not an HTTP route, but lives in the same Worker as the Hono API (exported as `scheduled`) and is part of the API's total surface area. Documented here for completeness.
-
-```
-Export: scheduled(event, env, ctx)
-Schedule: 0 15 * * * (11 PM Asia/Manila, UTC+8)
-Idempotency: INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, ?, 'pending')
-
-Logic:
-For each active System belonging to any user:
-  For each of its Schedules where days_of_week matches tomorrow's day-of-week bitmask:
-    INSERT OR IGNORE INTO instances (system_id, tomorrow_date, state) VALUES (?, ?, 'pending')
-```
-
-No window-gating on generation -- the Cron pre-generates the DB row for all matching systems regardless of their time window. Window filtering is the dashboard's responsibility (§4.1). Idempotency is guaranteed by the `UNIQUE (system_id, date)` constraint -- running the Cron twice for the same date is safe.
