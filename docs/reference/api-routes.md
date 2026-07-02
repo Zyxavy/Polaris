@@ -128,6 +128,7 @@ Response 200:
       "purpose": "...", "philosophy": "...", "protocol": "...",
       "floor_action": "...", "trigger": "...",
       "barrier_list": ["...", "..."],
+      "environment_cue": "Book on the nightstand, phone in the kitchen",
       "template_origin": "tpl_reading_system",
       "status": "active",
       "created_at": "...", "updated_at": "..."
@@ -153,6 +154,7 @@ Request body:
   "floor_action": "",                 // optional at this call -- see S2.4
   "trigger": "",                      // optional, default ''
   "barrier_list": [],                 // optional, default []
+  "environment_cue": "",              // optional, default ''
   "template_origin": "tpl_reading_system"  // optional, null if from scratch or AI
 }
 
@@ -430,6 +432,36 @@ Response 200: same shape, or 404 if the checklist hasn't been touched for this i
 
 `PUT` here too, same reasoning as the Workspace layout -- the client always sends the complete current step list, not a single-step toggle, since a `widget_entries` row is replaced wholesale rather than patched (D1 Schema S3.3.1 stores it as one JSON blob per instance+widget, not one row per step). No `DELETE` for Checklist specifically: correcting a mis-checked step is already a `PUT` with the corrected `steps` array, so a separate delete path would be redundant rather than a missing capability.
 
+### 6.4 Link List
+
+```
+PUT /api/workspaces/:workspace_id/link-list/:widget_id
+Request body: { "links": [ { "label": "Study guide PDF", "url": "https://..." } ] }
+Response 200: { "id": "...", "workspace_id": "...", "widget_id": "...", "entry_type": "link_list", "data": { "links": [...] }, "created_at": "..." }
+
+GET /api/workspaces/:workspace_id/link-list/:widget_id
+Response 200: same shape, or 404 if untouched (frontend renders empty list)
+```
+
+`PUT`-only, same reasoning as Checklist (S6.3) — the client always sends the
+complete link list, not a single add/remove diff. Ownership-scoped via
+`workspace_id -> system_id -> user_id`.
+
+### 6.5 Notes
+
+```
+PUT /api/workspaces/:workspace_id/notes/:widget_id
+Request body: { "text": "Free-form notes content" }
+Response 200: { "id": "...", "workspace_id": "...", "widget_id": "...", "entry_type": "notes", "data": { "text": "..." }, "created_at": "..." }
+
+GET /api/workspaces/:workspace_id/notes/:widget_id
+Response 200: same shape, or 404 if untouched (frontend renders empty editor)
+```
+
+Same `PUT`-only pattern. No `instance_id` in the path for either route —
+this is the API-level expression of the "workspace-scoped, not
+instance-scoped" decision in D1 Schema S3.3.1.
+
 ---
 
 ## 7. Templates
@@ -589,6 +621,10 @@ Already fully specified in the [AI Workers reference](ai-workers.md) S5 (`POST /
 | `DELETE` | `/api/timer-sessions/:id` | ownership-scoped | |
 | `PUT` | `/api/instances/:instance_id/checklist/:widget_id` | ownership-scoped | |
 | `GET` | `/api/instances/:instance_id/checklist/:widget_id` | ownership-scoped | |
+| `PUT` | `/api/workspaces/:workspace_id/link-list/:widget_id` | ownership-scoped | |
+| `GET` | `/api/workspaces/:workspace_id/link-list/:widget_id` | ownership-scoped | |
+| `PUT` | `/api/workspaces/:workspace_id/notes/:widget_id` | ownership-scoped | |
+| `GET` | `/api/workspaces/:workspace_id/notes/:widget_id` | ownership-scoped | |
 | `GET` | `/api/templates` | `user_id` (+ built-in) | |
 | `GET` | `/api/templates/:id` | `user_id` (+ built-in) | |
 | `GET` | `/api/systems/:system_id/reviews` | ownership-scoped | |

@@ -325,7 +325,7 @@ For system trackers (floor/full states):
 |------|---------|-------|
 | Landing/marketing | Storytelling-Driven | Hero > Features > CTA > Footer |
 | Dashboard (daily view) | Bento Grid | Widget grid, today's status at top, floating nav |
-| System Creator | Wizard/Stepper | Step-by-step form with progress |
+| System Creator | Sectioned Form | Stepper-styled visual progress, but all fields live in one autosaving form |
 | Workspace | Bento Grid | Drag-and-drop widget layout |
 | Weekly Review | List + Summary | Reflective, not transactional |
 

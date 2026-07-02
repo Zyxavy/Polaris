@@ -95,13 +95,15 @@ REQUIRED JSON SCHEMA:
   "protocol": "The full version - 3 to 6 numbered steps, specific and actionable",
   "floor_action": "The absolute minimum. One sentence. Must be completable in under 5 minutes with zero energy.",
   "trigger": "After I [specific existing habit], I will [first step of this system].",
-  "barrier_list": ["barrier 1", "barrier 2", "barrier 3"]
+  "barrier_list": ["barrier 1", "barrier 2", "barrier 3"],
+  "environment_cue": "One sentence: the physical/visual cue that triggers this system (e.g. 'book left open on the pillow')"
 }
 
 RULES:
 - floor_action must be genuinely minimal. If the user's description implies a big action, make the floor action a dramatically smaller version.
 - trigger must reference a specific, daily existing habit (brushing teeth, making coffee, sitting at a desk), not a vague one ("when I have time").
 - barrier_list must be realistic obstacles, not generic advice. Think about what actually gets in the way of this specific system.
+- environment_cue must be concrete and physical/visual, not abstract ("motivation" is not a cue; "gym bag by the door" is).
 - All text fields are written in second person ("you" / "your") or first person ("I") - not third person.
 - Return valid JSON only. No trailing commas. No comments inside the JSON.
 `.trim();
@@ -134,6 +136,7 @@ export interface SystemDraft {
   floor_action: string;
   trigger: string;
   barrier_list: string[];
+  environment_cue: string;
 }
 
 export function parseSystemDraft(raw: string): SystemDraft {
@@ -148,7 +151,7 @@ export function parseSystemDraft(raw: string): SystemDraft {
 
   // Validate required fields
   const required: (keyof SystemDraft)[] = [
-    'name', 'purpose', 'philosophy', 'protocol', 'floor_action', 'trigger', 'barrier_list'
+    'name', 'purpose', 'philosophy', 'protocol', 'floor_action', 'trigger', 'barrier_list', 'environment_cue'
   ];
   for (const field of required) {
     if (!(field in (parsed as object))) {
@@ -194,7 +197,8 @@ export class AIParseError extends Error {
     "protocol": "...",
     "floor_action": "Open the book and read one paragraph",
     "trigger": "After I brush my teeth, I will open my book",
-    "barrier_list": ["Phone on nightstand is easier to reach", "Falling asleep before starting", "No specific book chosen"]
+    "barrier_list": ["Phone on nightstand is easier to reach", "Falling asleep before starting", "No specific book chosen"],
+    "environment_cue": "Book left open on the pillow, phone charging in another room"
   }
 }
 ```
@@ -314,6 +318,8 @@ The system prompt is the primary mechanism by which the five-step framework is e
 5. Document the reason for the change in a comment at the top of the new prompt file.
 
 **Old prompt files are kept** (not deleted) so git blame gives a complete history of what the AI was instructed to do and when it changed. They can be deleted once a subsequent version has been stable for a few weeks.
+
+**Current prompt (v1) includes `environment_cue` in the JSON schema.** This was added alongside the D1 schema column and PRD field (July 2026). If a future field is added to the System blueprint, the checklist above applies: new prompt version, new SystemDraft field, new test fixtures.
 
 ---
 

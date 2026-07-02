@@ -103,6 +103,7 @@ These test the Hono routes with **real D1 bindings** (Miniflare in-memory SQLite
 - **Review write-back:** POST a Review with `change_applied` containing a new `floor_action`; assert the parent System's `floor_action` field is updated.
 - **R2 attachment upload:** POST a small test file to `/api/attachments`; assert the R2 object exists at the generated key; assert a D1 pointer row was created with correct `r2_key`.
 - **Auth flows:** sign-up, sign-in, session validation, sign-out - all against the real Better Auth + D1 integration.
+- **Link List / Notes upsert:** PUT with a full payload, assert row created with `instance_id = NULL`; PUT again with a different payload, assert the row is replaced (not duplicated) for the same `(workspace_id, widget_id)`.
 
 **What is not integration-tested:**
 - MongoDB (Atlas) write path - this is tested in unit tests with a mock, and manually against a real Atlas connection in dev. Miniflare does not emulate external TCP services.

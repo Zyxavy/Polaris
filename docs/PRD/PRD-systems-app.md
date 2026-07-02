@@ -67,6 +67,7 @@ The top-level entity. A designed protocol, not a task.
 | `floor_action` | The MVA - smallest version that counts as a win. Required field, not optional, at creation time |
 | `trigger` | "After I [existing habit], I will [system]." Stored as structured text, optionally with a chosen anchor habit from a short list |
 | `barrier_list` | *(new, research-backed addition - see S9)* What has prevented this system before |
+| `environment_cue` | *(new)* What visually/physically triggers this system — e.g. "book on pillow." Research-backed per `insights.md`'s "Environment cue field" suggestion. Optional at creation, same tier as `barrier_list`. |
 | `schedule` | Day(s)/time window(s) this system runs against - see S5.2 |
 | (workspace) | One-to-one relationship resolved via `Workspace.system_id`, not a FK on System (see ADR 002 S1.3) |
 | `template_origin` | Nullable FK - which template/blueprint this was created from, if any |
@@ -248,9 +249,9 @@ Edited Systems take effect on their next scheduled Instance. Past Instances are 
 
 | Priority | Feature |
 |---|---|
-| **P0** | System Creator (manual), Instance auto-generation, Dashboard (full/floor/missed), basic Workspace with 3-4 widget types (Timer, Counter, Log, Checklist), Schedule (day/time window), per-System Review, Review Day aggregation view, Auth |
+| **P0** | System Creator (manual), Instance auto-generation, Dashboard (full/floor/missed), basic Workspace with 3-4 widget types (Timer, Counter, Log, Checklist), Schedule (day/time window), per-System Review, Review Day aggregation view, Auth, barrier_list, environment_cue in the System Creator form |
 | **P1** | Built-in Systems Framework template library, user-saved templates, remaining widget types (Link list, Streak view, Progress chart, Notes), AI-assisted creation (suggest-only) |
-| **P2** | Barrier List field, Environment cue field (both flagged in `insights.md` as research-backed additions, not yet validated against real usage), workspace widget reordering/resizing polish, export/backup |
+| **P2** | workspace widget reordering/resizing polish, export/backup |
 
 ## 8. AI Assist Scope (v1)
 
@@ -331,7 +332,7 @@ Previously open questions, now closed:
 |---|---|---|
 | 1 | Instance pre-generation timing | Dual-path: lazy on dashboard load (safety net) + nightly Cron Trigger at ~11 PM Manila time (convenience). See S5.3 and ADR S5.8. |
 | 2 | File storage in workspaces | R2 is a v1 dependency. Attachments are supported from day one on the Log and Link List widgets. See ADR S5.7. |
-| 3 | Barrier List & Environment Cue fields in System Creator | Included from day one - both are directly research-backed (S4 principles) and belong in the creation flow, not deferred. |
+| 3 | Barrier List & Environment Cue fields in System Creator | Both included from day one — both are directly research-backed (S4 principles) and belong in the creation flow, not deferred. `environment_cue` mirrors `barrier_list`'s optional-at-creation tier in the schema (D1 Schema S3.1). |
 | 4 | Template-to-System divergence | Templates are clone-on-instantiation. The user's System is always independent of the template it came from; the built-in templates are never mutated by user edits. Personal templates work the same way. |
 
 ---

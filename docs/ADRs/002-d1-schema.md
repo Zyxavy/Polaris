@@ -81,6 +81,7 @@ CREATE TABLE systems (
   floor_action    TEXT NOT NULL DEFAULT '',       -- placeholder during autosave; API enforces non-empty on final save
   trigger         TEXT NOT NULL DEFAULT '',
   barrier_list    TEXT NOT NULL DEFAULT '[]',      -- JSON array of strings
+  environment_cue TEXT NOT NULL DEFAULT '',        -- "What triggers this system?" per insights.md
   template_origin TEXT REFERENCES templates(id) ON DELETE SET NULL,
   status          TEXT NOT NULL DEFAULT 'active'
                     CHECK (status IN ('active', 'paused', 'archived')),
@@ -193,16 +194,29 @@ CREATE TABLE widget_entries (
   workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   widget_id    TEXT NOT NULL,
   instance_id  TEXT REFERENCES instances(id) ON DELETE CASCADE,
-  entry_type   TEXT NOT NULL CHECK (entry_type IN ('checklist_state', 'log_meta')),
+  entry_type   TEXT NOT NULL CHECK (entry_type IN ('checklist_state', 'log_meta', 'link_list', 'notes')),
   data         TEXT NOT NULL,     -- JSON, shape depends on entry_type (see below)
   created_at   TEXT NOT NULL
 );
 
 CREATE INDEX idx_widget_entries_instance_id  ON widget_entries(instance_id);
-CREATE INDEX idx_widget_entries_workspace_id ON widget_entries(workspace_id);
+CREATE INDEX idx_widget_entries_workspace_widget ON widget_entries(workspace_id, widget_id);
 ```
 
 **Why Checklist stayed generic instead of getting a `checklist_states` table:** Counter and Timer both aggregate into a single number over time (total pages, total minutes) -- that's exactly what a typed numeric column with an index is for. Checklist state is a per-instance list of `{step, checked}` pairs whose length depends on that widget's configured step count; nothing in the app sums or charts it. Normalizing it into real rows would mean a *fourth* table (one row per checklist item per instance) purely to get typed columns nothing queries against -- that's the table-per-type tax without the aggregation payoff. It stays in `widget_entries` as `entry_type = 'checklist_state'`, `data = '{"steps":[{"label":"Warm-up","checked":true}, ...]}'`.
+
+**Why Link List and Notes use `instance_id = NULL`:** Unlike Checklist/Log
+(one state per instance, per day), Link List and Notes are workspace-level
+content that persists across instances — PRD S5.5 is explicit that Notes is
+"not per-instance." Both are stored in `widget_entries` with
+`instance_id = NULL` and exactly one row per `(workspace_id, widget_id)`
+pair, upserted (delete-then-insert, or `INSERT ... ON CONFLICT`) rather than
+appended. This reuses the same table rather than adding two more
+single-purpose tables, consistent with the normalization tradeoff already
+made for Checklist.
+
+`entry_type = 'link_list'`: `data = '{"links":[{"label":"...", "url":"..."}]}'`
+`entry_type = 'notes'`: `data = '{"text":"..."}'`
 
 **Shared notes for all three tables:**
 
@@ -245,6 +259,7 @@ CREATE TABLE templates (
   default_floor_action      TEXT NOT NULL DEFAULT '',
   default_trigger_pattern   TEXT NOT NULL DEFAULT '',
   default_barrier_list      TEXT NOT NULL DEFAULT '[]',   -- JSON array
+  default_environment_cue   TEXT NOT NULL DEFAULT '',
   suggested_widgets         TEXT NOT NULL DEFAULT '[]',   -- JSON array of widget type strings
   created_at                TEXT NOT NULL,
   updated_at                TEXT NOT NULL
@@ -351,6 +366,7 @@ Per ADR 001 S5.10, migrations live in `packages/api/migrations/`, managed via `w
 0011_attachments.sql
 0012_seed_builtin_templates.sql
 0013_recovery_codes.sql
+0014_widget_entries_link_notes.sql
 ```
 
 Split by table rather than one monolithic migration so future schema changes (e.g. a `system_version` column per PRD S5.7's contingency note) are isolated, reviewable diffs against a specific table's history -- consistent with the "log migrations in `LAYOUT_MIGRATIONS.md`" convention described in ADR 001 S5.10 (not yet created -- to be written during scaffolding).
@@ -364,6 +380,7 @@ INSERT INTO templates (
   id, user_id, name, source,
   default_purpose, default_philosophy, default_protocol,
   default_floor_action, default_trigger_pattern, default_barrier_list,
+  default_environment_cue,
   suggested_widgets, created_at, updated_at
 ) VALUES
 (
@@ -374,6 +391,7 @@ INSERT INTO templates (
   'Open the book and read one paragraph',
   'After I brush my teeth at night',
   '["Phone on nightstand", "No fixed reading time", "Fall asleep before reading"]',
+  'Book visible on the pillow or nightstand, phone charging in another room',
   '["counter", "log", "streak"]',
   '2026-07-01T00:00:00.000Z', '2026-07-01T00:00:00.000Z'
 ),
@@ -385,6 +403,7 @@ INSERT INTO templates (
   'Open notes and read one heading',
   'After I sit at my desk in the morning',
   '["Phone distractions", "No clear stopping point", "Jumping straight to passive re-reading"]',
+  'Notes left open on the desk from the night before',
   '["timer", "checklist", "log", "counter"]',
   '2026-07-01T00:00:00.000Z', '2026-07-01T00:00:00.000Z'
 ),
@@ -396,6 +415,7 @@ INSERT INTO templates (
   'Put on workout clothes and do one set',
   'After I eat breakfast',
   '["No energy after work", "Skipping when traveling", "No logged baseline"]',
+  'Gym bag packed and by the door the night before',
   '["log", "counter", "chart", "checklist"]',
   '2026-07-01T00:00:00.000Z', '2026-07-01T00:00:00.000Z'
 );

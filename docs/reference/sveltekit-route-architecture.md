@@ -21,6 +21,22 @@ export const prerender = false;
 
 Set once at the root; every route inherits it. Every load function's `fetch` call to `/api/*` must still set `credentials: 'include'` explicitly (Auth Integration S2) -- SvelteKit's enhanced `fetch` only auto-forwards cookies during SSR, which this app never does.
 
+### 1.1 Theme boot before first paint
+
+Because SSR is disabled, the frontend must set the theme before Svelte mounts or users will see a flash of the wrong theme. `packages/web/src/app.html` should include a tiny inline script in `<head>` that reads `localStorage.theme`, falls back to `prefers-color-scheme`, and sets `document.documentElement.dataset.theme` to `light` or `dark` before the app bundle loads. The Svelte theme toggle then updates the same `data-theme` attribute and persists the value back to `localStorage`.
+
+```html
+<script>
+  (() => {
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.dataset.theme = stored || (prefersDark ? 'dark' : 'light');
+  })();
+</script>
+```
+
+Keep this script dependency-free and synchronous. It exists only to prevent theme flash; all interactive theme UI still lives in Svelte.
+
 ---
 
 ## 2. Route Tree
@@ -426,6 +442,8 @@ src/lib/api/
 ├── counter-logs.ts    # createCounterLog, getCounterLogs, deleteCounterLog
 ├── timer-sessions.ts  # createTimerSession, getTimerSessions, deleteTimerSession
 ├── checklist.ts       # putChecklist, getChecklist
+├── link-list.ts       # getLinkList, putLinkList
+├── notes.ts           # getNotes, putNotes
 ├── reviews.ts         # getReviews, createReview
 ├── review-day.ts      # getReviewDay
 ├── templates.ts       # getTemplates, getTemplate
@@ -455,12 +473,14 @@ Only pages with non-trivial composition are broken down -- simple pages (Guides,
 
 ### 7.2 System Creator (`(app)/systems/new/+page.svelte`)
 
+Design override: `design-system/polaris/pages/system-creator.md`. This page is a single scrollable form with stepper-styled section markers, not a gated wizard, so autosave can track every field from one form state.
+
 ```
 +page.svelte
 ├── <TemplatePicker templates onSelect />       -- built-ins + user templates, GET /api/templates
 ├── <AIDraftPanel onDraft />                    -- "Draft with AI" button + prompt, POST /api/ai/draft-system
 └── <SystemForm>
-    ├── field groups: Purpose, Philosophy, Protocol, Floor Action, Trigger, Barrier List, Schedule
+    ├── field groups: Purpose, Philosophy, Protocol, Floor Action, Trigger, Barrier List, Environment Cue, Schedule
     ├── autosave: debounced PATCH on every field change (AUTOSAVE_DEBOUNCE_MS)
     └── <ConfirmButton onClick={() => confirmSystem(id)} />  -- POST /api/systems/:id/confirm
 ```
@@ -470,6 +490,8 @@ Only pages with non-trivial composition are broken down -- simple pages (Guides,
 The edit route (`/systems/[id]/edit`) reuses `<SystemForm>` pre-filled from the existing System record, with the same autosave pattern.
 
 ### 7.3 Workspace Builder (`(app)/systems/[id]/workspace/+page.svelte`)
+
+Design override: `design-system/polaris/pages/workspace-builder.md`. This page uses a drag-and-drop bento canvas with palette/canvas/save zones and widget-specific persistent content rules.
 
 ```
 +page.svelte
@@ -481,10 +503,10 @@ The edit route (`/systems/[id]/edit`) reuses `<SystemForm>` pre-filled from the 
 │       ├── <CounterWidget />      -- POST/GET counter-logs, 6.1
 │       ├── <ChecklistWidget />    -- PUT/GET checklist, 6.3
 │       ├── <LogWidget />          -- Mongo-backed journal
-│       ├── <LinkListWidget />
+│       ├── <LinkListWidget />     -- PUT/GET link-list, API Route Design 6.4
 │       ├── <StreakWidget />       -- read-only, derived from GET /api/systems/:id/instances
 │       ├── <ProgressChartWidget />-- read-only, GET counter-logs or timer-sessions
-│       └── <NotesWidget />
+│       └── <NotesWidget />        -- PUT/GET notes, API Route Design 6.5
 └── <SaveBar dirty={workspaceEditorStore.dirty} onSave={workspaceEditorStore.save} />
 ```
 
