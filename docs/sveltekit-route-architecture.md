@@ -92,7 +92,7 @@ If a future pass wants a shared "unauthenticated" layout across both marketing a
 
 | Possible route | Reason omitted |
 |---|---|
-| `/account` | No account settings UI in v1 |
+| `/account` | Recovery codes display + regenerate; no other account settings in v1 |
 | `/terms`, `/privacy` | Personal app, no legal surface in v1 |
 | `/auth/forgot-password` | Password reset deferred (Auth Integration 5) |
 | `/attachments/:id` | Handled by the API route directly as a streamed URL, not a SvelteKit page |

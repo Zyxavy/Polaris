@@ -32,7 +32,7 @@ There is no `/api/v1` prefix. This is a single-developer personal app with one f
 
 ### 1.2 Auth requirement -- default is "required"
 
-Every route under `/api/*` requires a valid session **except none in v1** -- including the AI draft route (already stated in ADR 003 S5). There is no public read-only API surface. The auth middleware runs before every route handler in this tree; a request with no valid session cookie gets `401` before any handler-specific logic runs, including before request body validation.
+Every route under `/api/*` requires a valid session **except the password recovery route (`POST /api/auth/recover`)** -- the user is by definition locked out when they need this endpoint. The auth guard middleware (Auth Integration S1.3) already passes `/api/auth/*` through without auth, so `POST /api/auth/recover` is included in Better Auth's route space and reaches its custom handler without middleware changes. The AI draft route (ADR 003 S5) remains auth-required. All other routes -- no exceptions.
 
 ### 1.3 Response envelope
 
@@ -553,6 +553,9 @@ Already fully specified in ADR 003 S5 (`POST /api/ai/draft-system`) -- not repea
 | Method | Path | Ownership check | Notes |
 |---|---|---|---|
 | `*` | `/api/auth/*` | Better Auth-managed | See Auth Integration doc |
+| `POST` | `/api/auth/recover` | none (public) | Password reset via recovery code; see Auth Integration S5.2 |
+| `GET` | `/api/recovery-codes` | `user_id` | Returns unused recovery codes for settings display |
+| `POST` | `/api/recovery-codes/generate` | `user_id` | Generates 3 new codes, returns `{ "codes": [...] }` |
 | `GET` | `/api/systems` | `user_id` | |
 | `POST` | `/api/systems` | `user_id` on insert | |
 | `GET` | `/api/systems/:id` | ownership-scoped | |

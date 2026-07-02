@@ -1,8 +1,11 @@
 # CI/CD & Deployment
 
 **Project:** *Polaris*
+
 **Document type:** Deployment reference -- defines the CI pipeline, deploy order, environment configuration, and rollback strategy. Companion to the [Tech Stack ADR](ADRs/001-tech-stack-adr.md) (owns the monorepo structure and deployment targets this document operationalizes), the [Testing Strategy](ADRs/002-testing-strategy.md) (owns the CI pipeline's test stages), and the [API Route Design](ADRs/005-api-routes.md) / [SvelteKit Route Architecture](sveltekit-route-architecture.md) (which define the two deployable artifacts).
+
 **Status:** Draft -- v1 scope
+
 **Last updated:** July 1, 2026
 
 ---
