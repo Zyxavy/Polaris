@@ -20,7 +20,7 @@
 
 ### Color Palette
 
-Sophisticated interplay of deep sage, warm taupe, and organic off-whites. Tonal depth over structural containment.
+Sophisticated interplay of deep sage, warm taupe, and warm cream tones. Tonal depth over structural containment.
 
 **Tailwind v4 with `data-theme` attribute strategy:**
 
@@ -32,9 +32,9 @@ Toggle via `localStorage` + `prefers-color-scheme`.
 
 | Role | Light Hex | Dark Hex | Tailwind Class |
 |------|-----------|----------|----------------|
-| Surface (base background) | `#f8faf3` | `#101519` | `bg-surface` |
-| Surface Container Low | `#f2f4ed` | `#1A1F24` | `bg-surface-container-low` |
-| Surface Container Lowest | `#ffffff` | `#22282E` | `bg-surface-container-lowest` |
+| Surface (base background) | `#E9E4D7` | `#101519` | `bg-surface` |
+| Surface Container Low | `#DDD5C3` | `#1A1F24` | `bg-surface-container-low` |
+| Surface Container Lowest | `#F4F0E6` | `#22282E` | `bg-surface-container-lowest` |
 | On Surface (foreground) | `#191c18` | `#D1CFC0` | `text-on-surface` |
 | Primary (accent) | `#55624d` | `#8FA88A` | `text-primary`, `bg-primary` |
 | On Primary | `#ffffff` | `#101519` | `text-on-primary` |
@@ -50,7 +50,7 @@ Toggle via `localStorage` + `prefers-color-scheme`.
 
 **Color Notes:**
 
-- Surface is organic off-white (`#f8faf3`) — not pure white, reduces eye strain
+- Surface is warm cream (`#E9E4D7`) — not pure white, adds warmth and reduces eye strain
 - Dark mode uses deep charcoal-blue (`#101519`) for a calm night feel
 - Primary is deep sage (`#55624d`) — grounded, natural, never loud
 - Secondary/warm taupe (`#755754`) adds emotional warmth to callouts and highlights
@@ -64,9 +64,9 @@ Toggle via `localStorage` + `prefers-color-scheme`.
 **Surface nesting pattern:**
 
 ```
-surface (#f8faf3)           →  outermost page background
-  └─ surface-container-low (#f2f4ed)  →  section grouping
-       └─ surface-container-lowest (#ffffff) →  interactive cards
+surface (#E9E4D7)           →  outermost page background
+  └─ surface-container-low (#DDD5C3)  →  section grouping
+       └─ surface-container-lowest (#F4F0E6) →  interactive cards
 ```
 
 **Exception:** Input fields and form controls may use a subtle `border-border` stroke to define the interactive zone.

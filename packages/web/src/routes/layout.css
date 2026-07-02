@@ -5,9 +5,9 @@
 @variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-  --color-surface: #f8faf3;
-  --color-surface-container-low: #f2f4ed;
-  --color-surface-container-lowest: #ffffff;
+  --color-surface: #e9e4d7;
+  --color-surface-container-low: #DDD5C3;
+  --color-surface-container-lowest: #F4F0E6;
   --color-on-surface: #191c18;
   --color-primary: #55624d;
   --color-on-primary: #ffffff;

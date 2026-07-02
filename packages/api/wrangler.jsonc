@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "polaris-api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-07-02",
+  "compatibility_date": "2026-06-30",
   "compatibility_flags": ["nodejs_compat"],
 
   "d1_databases": [
