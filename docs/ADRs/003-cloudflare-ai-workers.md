@@ -56,7 +56,7 @@ binding = "AI"
 
 ## 3. System Prompt
 
-The system prompt is the most important maintainable asset in the AI feature. It encodes the five-step framework from `Systems Framework.md` and tells the model exactly what schema to return. It lives as a versioned constant in the codebase - **not** inlined in the route handler.
+The system prompt is the most important maintainable asset in the AI feature. It encodes the five-step framework from `docs/core/systems-framework.md` and tells the model exactly what schema to return. It lives as a versioned constant in the codebase - **not** inlined in the route handler.
 
 **Location:** `packages/api/src/ai/prompts/system-prompt.v1.ts`
 
@@ -433,7 +433,7 @@ Output:
   instance: Instance
 ```
 
-Used for: backfilling missed days, correcting accidental marks. Intentionally does not support `pending` -> `pending` (no-op) or `full` -> `pending` (historical state is preserved per PRD §6.5).
+Used for: backfilling missed days, correcting accidental marks. Intentionally does not support `pending` -> `pending` (no-op) or `full` -> `pending` (historical state is preserved per PRD S6.5).
 
 #### review.read
 
@@ -503,7 +503,7 @@ User message
 
 Each `->` is a round-trip through the Worker runtime. Every tool execution and every model inference call incurs CPU time. On the free tier (10ms CPU limit), even two sequential tool calls risk timeout. On the Workers Paid plan (30s CPU limit), this loop is practical for conversations of 5-15 turns.
 
-All mutation tools (`system.create`, `system.edit`, `instance.mark`, `review.create`) require explicit user confirmation. The AI proposes; the user approves before any data changes. This mirrors the confirmation model in §1 of this document.
+All mutation tools (`system.create`, `system.edit`, `instance.mark`, `review.create`) require explicit user confirmation. The AI proposes; the user approves before any data changes. This mirrors the confirmation model in S1 of this document.
 
 ### A.3 When This Becomes Viable
 

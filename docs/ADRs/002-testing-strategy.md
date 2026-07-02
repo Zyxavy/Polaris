@@ -70,7 +70,7 @@ export default defineWorkersConfig({
 ### 3.1 Unit Tests (Vitest, no Workers runtime)
 
 **Svelte components (`packages/web`):**
-- System Creator form: field validation, auto-save trigger (see §4), template pre-fill behaviour.
+- System Creator form: field validation, auto-save trigger (see S4), template pre-fill behaviour.
 - Dashboard: Instance state transitions (pending -> full/floor/missed), correct display of today's Instances.
 - Workspace Builder: widget add/remove, layout serialisation to the `v: N` JSON schema, `upgradeLayout()` migration function for each version bump.
 - Review form: `change_applied` write-back only fires when the field is non-empty.
@@ -103,7 +103,7 @@ These test the Hono routes with **real D1 bindings** (Miniflare in-memory SQLite
 
 **What is not integration-tested:**
 - MongoDB (Atlas) write path - this is tested in unit tests with a mock, and manually against a real Atlas connection in dev. Miniflare does not emulate external TCP services.
-- Workers AI calls - mocked in all automated tests (see §4).
+- Workers AI calls - mocked in all automated tests (see S4).
 
 ### 3.3 E2E Tests (Playwright)
 
@@ -204,7 +204,7 @@ All tests that involve "today" or "tomorrow" must use the `toManilaDate()` / `to
 
 ## 5. CI Pipeline
 
-Runs on every push to `main` and every PR:
+Runs on every push to `main` and every PR (config not yet created -- to be written during scaffolding as `.github/workflows/ci.yml`):
 
 ```
 pnpm install

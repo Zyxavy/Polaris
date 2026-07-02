@@ -11,7 +11,7 @@
 
 This is a web app for designing, running, and iterating on personal **systems** - repeatable processes that produce results without depending on daily motivation. It is not a habit tracker and not a to-do list. The unit of the product is the *system*: a defined protocol with a floor action, a schedule, a dedicated workspace, and a recurring review loop that feeds changes back into the design.
 
-The product's source of truth is three documents already in the project: `Philosophy.md` (the research base - eight creators' frameworks on systems vs. goals), `Systems Framework.md` (the synthesized five-step build process: MVA -> Friction -> Trigger -> Scoreboard -> Review), and `insights.md` (the product-specific synthesis of what that research implies for this app). Every feature in this PRD should trace back to a principle in those three files. Where a feature doesn't trace back to one, that's a flag to question it, not a green light.
+The product's source of truth is three documents already in the project: `docs/core/sources.md` (the research base -- eight creators' frameworks on systems vs. goals), `docs/core/systems-framework.md` (the synthesized five-step build process: MVA -> Friction -> Trigger -> Scoreboard -> Review), and `docs/core/insights.md` (the product-specific synthesis of what that research implies for this app). Every feature in this PRD should trace back to a principle in those three files. Where a feature doesn't trace back to one, that's a flag to question it, not a green light.
 
 ## 2. Problem Statement
 
@@ -63,8 +63,8 @@ The top-level entity. A designed protocol, not a task.
 | `protocol` | The full-version steps |
 | `floor_action` | The MVA - smallest version that counts as a win. Required field, not optional, at creation time |
 | `trigger` | "After I [existing habit], I will [system]." Stored as structured text, optionally with a chosen anchor habit from a short list |
-| `barrier_list` | *(new, research-backed addition - see §9)* What has prevented this system before |
-| `schedule` | Day(s)/time window(s) this system runs against - see §5.2 |
+| `barrier_list` | *(new, research-backed addition - see S9)* What has prevented this system before |
+| `schedule` | Day(s)/time window(s) this system runs against - see S5.2 |
 | (workspace) | One-to-one relationship resolved via `Workspace.system_id` — not a FK on System (see ADR 004 S1.3) |
 | `template_origin` | Nullable FK - which template/blueprint this was created from, if any |
 | `status` | active / paused / archived |
@@ -99,13 +99,13 @@ A single day's occurrence of a System. This is the thing the user actually marks
 Instances are generated via **two complementary paths** - both are v1:
 
 1. **Lazy (on dashboard load):** any active System whose schedule matches today and has no existing Instance gets one auto-created in `pending` state. This is the safety net - it guarantees a correct Instance even if the nightly job fails.
-2. **Nightly Cron Trigger:** runs at a fixed UTC time that corresponds to approximately 11 PM Manila time (`0 15 * * *` UTC), pre-generating Instances for the *following day*. This makes tomorrow's schedule visible the night before - useful for planning the next day during an evening review. The job is idempotent: it checks for an existing `(system_id, date)` pair before inserting, so running it twice for the same date is safe. See ADR §5.8 for implementation detail and free-tier feasibility.
+2. **Nightly Cron Trigger:** runs at a fixed UTC time that corresponds to approximately 11 PM Manila time (`0 15 * * *` UTC), pre-generating Instances for the *following day*. This makes tomorrow's schedule visible the night before - useful for planning the next day during an evening review. The job is idempotent: it checks for an existing `(system_id, date)` pair before inserting, so running it twice for the same date is safe. See ADR S5.8 for implementation detail and free-tier feasibility.
 
 Stored in **D1**.
 
 ### 5.4 Workspace
 
-The customizable surface attached to a system. Built from **Widgets** (§5.5) on a drag-and-drop canvas.
+The customizable surface attached to a system. Built from **Widgets** (S5.5) on a drag-and-drop canvas.
 
 | Field | Notes |
 |---|---|
@@ -125,7 +125,7 @@ The `layout` column stores a versioned JSON blob. Widget types and their configu
       "type": "timer",            // widget type from the catalog
       "x": 0, "y": 0,            // grid position
       "w": 2, "h": 1,            // grid span
-      "config": { ... }           // widget-type-specific configuration (see §5.5)
+      "config": { ... }           // widget-type-specific configuration (see S5.5)
     }
   ]
 }
@@ -137,12 +137,12 @@ The `layout` column stores a versioned JSON blob. Widget types and their configu
 - On **read**: if `layout.v < CURRENT_VERSION`, run the upgrade chain `upgradeLayout(layout, fromV, toV)` before returning to the client. The upgrade function is a pure transform - it never writes back automatically, so a read-only view never triggers a write.
 - On **write**: always write `layout.v = CURRENT_VERSION`. This means edits silently migrate stale layouts forward.
 - Upgrade functions are additive: they only add optional fields or rename with fallback - they never delete data from old layouts.
-- **Breaking changes** (e.g. removing a widget type entirely) require an explicit migration script run against D1, not just an upgrade function. Log these in a `LAYOUT_MIGRATIONS.md` file in the repo alongside the version bump.
+- **Breaking changes** (e.g. removing a widget type entirely) require an explicit migration script run against D1, not just an upgrade function. Log these in a `LAYOUT_MIGRATIONS.md` file in the repo (not yet created -- to be written during scaffolding) alongside the version bump.
 - v1 ships at `v: 1`. Version bumps are expected to be infrequent for a personal project maintained by one developer.
 
 ### 5.5 Widget
 
-A single module placed on a workspace. v1 ships a fixed catalog of widget *types*; the user composes and configures them, but doesn't build new widget types from scratch (that's a v2 idea, not v1 - see §11).
+A single module placed on a workspace. v1 ships a fixed catalog of widget *types*; the user composes and configures them, but doesn't build new widget types from scratch (that's a v2 idea, not v1 - see S11).
 
 **v1 Widget Catalog:**
 
@@ -157,13 +157,13 @@ A single module placed on a workspace. v1 ships a fixed catalog of widget *types
 | Progress chart | Numeric trend (weight lifted, pages/week) | derived from Counter/Log widgets |
 | Notes block | Static freeform notes (not per-instance) | text |
 
-Widget *instances and their logged data* are the closest thing in this app to genuinely document-shaped, variable data - this is the natural candidate for the bounded **MongoDB** feature in the ADR (§5.5 of the ADR: "free-form journal/reflection entries, and nothing else"). Recommendation: keep Mongo scoped specifically to the **Log/Journal widget's entries**, not all widget data - counters, checklists, and timers are still simple enough to live as D1 rows without forcing a second database into the hot path.
+Widget *instances and their logged data* are the closest thing in this app to genuinely document-shaped, variable data - this is the natural candidate for the bounded **MongoDB** feature in the ADR (S5.5 of the ADR: "free-form journal/reflection entries, and nothing else"). Recommendation: keep Mongo scoped specifically to the **Log/Journal widget's entries**, not all widget data - counters, checklists, and timers are still simple enough to live as D1 rows without forcing a second database into the hot path.
 
 ### 5.6 Template / Blueprint
 
 A reusable System definition a user can instantiate. Two sources in v1:
 
-- **Built-in (v1):** three concrete starter blueprints ship in v1 - Reading System, Studying System, and Workout System. These are practical, high-frequency use cases that reflect real user intent from the start, rather than the more abstract life-domain categories from the Systems Framework document. The Framework's five Life Systems (Goal-Setting, Time Management, Health OS, Relationship, Personal Finance) and the PERO learning framework remain in-app as reference reading (the Guides/Tutorials tab, §6.0) - they inform *how* to fill in a system blueprint, not as templates to clone.
+- **Built-in (v1):** three concrete starter blueprints ship in v1 - Reading System, Studying System, and Workout System. These are practical, high-frequency use cases that reflect real user intent from the start, rather than the more abstract life-domain categories from the Systems Framework document. The Framework's five Life Systems (Goal-Setting, Time Management, Health OS, Relationship, Personal Finance) and the PERO learning framework remain in-app as reference reading (the Guides/Tutorials tab, S6.0) - they inform *how* to fill in a system blueprint, not as templates to clone.
 - **User-saved:** any System the user has built can be saved back as a personal template (e.g., they design one good studying system and want to reuse the shape for a different subject or course).
 
 | Field | Notes |
@@ -223,11 +223,11 @@ Three entry points, same end state:
 2. **From a template** - pick a built-in (Systems Framework) or personal template, fields pre-filled, user edits before saving.
 3. **AI-assisted** - user describes a goal in plain language; AI proposes a draft System (protocol, floor action, trigger suggestion, barrier list) following the five-step framework's structure. Nothing saves until the user reviews and edits - AI output lands in the same editable form as manual creation, it doesn't bypass it.
 
-All three converge on the same System Creator form before save - this matters for the auto-save principle (§4.3): the draft autosaves from the moment the form opens, regardless of entry point.
+All three converge on the same System Creator form before save - this matters for the auto-save principle (S4.3): the draft autosaves from the moment the form opens, regardless of entry point.
 
 ### 6.2 Build a Workspace
 
-After (or during) System creation, the user opens the Workspace Builder: a drag-and-drop canvas, widgets pulled from the v1 catalog (§5.5), positioned and configured (e.g., a Counter widget configured with a unit label of "pages"). Templates suggest a starting widget set; the user can deviate freely.
+After (or during) System creation, the user opens the Workspace Builder: a drag-and-drop canvas, widgets pulled from the v1 catalog (S5.5), positioned and configured (e.g., a Counter widget configured with a unit label of "pages"). Templates suggest a starting widget set; the user can deviate freely.
 
 ### 6.3 Daily Execution (Dashboard)
 
@@ -235,11 +235,11 @@ The dashboard is the daily entry point. On load: any active System with a schedu
 
 ### 6.4 Weekly Review
 
-On the user's chosen Review Day (or anytime, per-system): the app surfaces each due System with its week's Instance history (full/floor/missed counts) pre-populated. User answers the four review fields (§5.7), and critically, is prompted to translate `what_broke` into a `change_applied` that's written back into the System record. The loop is incomplete without this last step - a review that doesn't produce an edit is just a journal entry.
+On the user's chosen Review Day (or anytime, per-system): the app surfaces each due System with its week's Instance history (full/floor/missed counts) pre-populated. User answers the four review fields (S5.7), and critically, is prompted to translate `what_broke` into a `change_applied` that's written back into the System record. The loop is incomplete without this last step - a review that doesn't produce an edit is just a journal entry.
 
 ### 6.5 Iterate
 
-Edited Systems take effect on their next scheduled Instance. Past Instances are never retroactively altered - history reflects what the system *was* at the time it ran, not what it later became. This preserves the integrity of the review-trend data (§5.5 streak/chart widgets).
+Edited Systems take effect on their next scheduled Instance. Past Instances are never retroactively altered - history reflects what the system *was* at the time it ran, not what it later became. This preserves the integrity of the review-trend data (S5.5 streak/chart widgets).
 
 ## 7. Feature Priority
 
@@ -326,11 +326,11 @@ Previously open questions, now closed:
 
 | # | Question | Decision |
 |---|---|---|
-| 1 | Instance pre-generation timing | Dual-path: lazy on dashboard load (safety net) + nightly Cron Trigger at ~11 PM Manila time (convenience). See §5.3 and ADR §5.8. |
-| 2 | File storage in workspaces | R2 is a v1 dependency. Attachments are supported from day one on the Log and Link List widgets. See ADR §5.7. |
-| 3 | Barrier List & Environment Cue fields in System Creator | Included from day one - both are directly research-backed (§4 principles) and belong in the creation flow, not deferred. |
+| 1 | Instance pre-generation timing | Dual-path: lazy on dashboard load (safety net) + nightly Cron Trigger at ~11 PM Manila time (convenience). See S5.3 and ADR S5.8. |
+| 2 | File storage in workspaces | R2 is a v1 dependency. Attachments are supported from day one on the Log and Link List widgets. See ADR S5.7. |
+| 3 | Barrier List & Environment Cue fields in System Creator | Included from day one - both are directly research-backed (S4 principles) and belong in the creation flow, not deferred. |
 | 4 | Template-to-System divergence | Templates are clone-on-instantiation. The user's System is always independent of the template it came from; the built-in templates are never mutated by user edits. Personal templates work the same way. |
 
 ---
 
-*This PRD treats `Philosophy.md`, `Systems Framework.md`, and `insights.md` as living source documents. Any feature change that can't be traced to a principle in those three files should be treated as a deviation worth questioning, not a default to build.*
+*This PRD treats `docs/core/sources.md`, `docs/core/systems-framework.md`, and `docs/core/insights.md` as living source documents. Any feature change that can't be traced to a principle in those three files should be treated as a deviation worth questioning, not a default to build.*

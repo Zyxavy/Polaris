@@ -18,7 +18,7 @@ Goals provide direction; systems provide motion. Every video converges on this. 
 
 Roy Baumeister's research (the cookie study, parole board data) shows willpower depletes throughout the day. The implication: **friction removal is design work, not a nice-to-have.** Every tap saved, every pre-answered question, every optimistic UI default is preserving cognitive fuel.
 
-Polaris's dashboard - one screen, three buttons per instance - is doing this correctly. The keyboard shortcuts (f/g/m) take it further.
+Polaris's dashboard -- one screen, three buttons per instance -- is doing this correctly. Suggested future addition: keyboard shortcuts (f/g/m) for full/floor/missed to reduce taps further; not in v1 scope.
 
 ### On the Floor Action
 

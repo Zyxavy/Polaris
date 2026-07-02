@@ -333,7 +333,7 @@ Per ADR 001 S5.10, migrations live in `packages/api/migrations/`, managed via `w
 0012_seed_builtin_templates.sql
 ```
 
-Split by table rather than one monolithic migration so future schema changes (e.g. a `system_version` column per PRD S5.7's contingency note) are isolated, reviewable diffs against a specific table's history -- consistent with the "log migrations in `LAYOUT_MIGRATIONS.md`" precedent already set for the `layout` JSON versioning in ADR 001 S5.10.
+Split by table rather than one monolithic migration so future schema changes (e.g. a `system_version` column per PRD S5.7's contingency note) are isolated, reviewable diffs against a specific table's history -- consistent with the "log migrations in `LAYOUT_MIGRATIONS.md`" convention described in ADR 001 S5.10 (not yet created -- to be written during scaffolding).
 
 ### 6.3 Seed data -- the three built-in templates
 

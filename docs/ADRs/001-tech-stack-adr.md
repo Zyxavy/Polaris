@@ -19,7 +19,7 @@ Three constraints shaped every decision below, in this order of priority:
 2. **Ship it.** A working MVP matters more than a maximally ambitious one. The riskiest, least-proven pieces of the stack are not allowed to block the rest from shipping.
 3. **Learn something new.** Within constraint #2, every layer was deliberately chosen to push into unfamiliar territory rather than default to the existing React/Next.js + FastAPI background.
 
-These three pulled in different directions more than once -- see §6 and §7 for where that tension showed up and how it was resolved.
+These three pulled in different directions more than once -- see S6 (Rejected Alternatives) and S8 (Open Risks) for where that tension showed up and how it was resolved.
 
 ## 3. Stack at a Glance
 
@@ -31,8 +31,8 @@ These three pulled in different directions more than once -- see §6 and §7 for
 | Backend API | **Hono** (TypeScript)  | CRUD API between frontend and databases |
 | Primary database | **Cloudflare D1** (SQLite) | Core structured data: Systems, Instances, Review entries |
 | File storage | **Cloudflare R2** | Workspace attachments (e.g. source files, form-check photos) |
-| Scheduled compute | **Cloudflare Cron Triggers** | Nightly Instance pre-generation -- see §5.8 |
-| Message queue | **Cloudflare Queues** | MongoDB write retry for failed journal entries -- see §5.5 |
+| Scheduled compute | **Cloudflare Cron Triggers** | Nightly Instance pre-generation -- see S5.8 |
+| Message queue | **Cloudflare Queues** | MongoDB write retry for failed journal entries -- see S5.5 |
 | AI inference | **Cloudflare Workers AI** | AI-assisted System creation (`@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`) |
 | Secondary database | **MongoDB Atlas** | One bounded, document-shaped feature only |
 | Auth | **Better Auth** | Self-hosted email/password auth on D1 |
@@ -66,7 +66,7 @@ Everything except MongoDB Atlas lives inside Cloudflare's network. Auth is also 
 ### 5.1 Hosting -- Cloudflare
 
 **Why:** generous, genuinely free tiers across compute (Workers), database (D1), storage (R2), and scheduling (Cron Triggers) -- no other platform covers all four under one free account.
-**Used for:** static asset hosting, API compute, the primary database, workspace file storage, and the nightly Instance pre-generation job. All four are in active v1 use -- see §5.7 and §5.8.
+**Used for:** static asset hosting, API compute, the primary database, workspace file storage, and the nightly Instance pre-generation job. All four are in active v1 use -- see S5.7 and S5.8.
 
 ### 5.2 Frontend -- SvelteKit (CSR-only) + Tailwind CSS
 
@@ -78,13 +78,13 @@ Everything except MongoDB Atlas lives inside Cloudflare's network. Auth is also 
 
 **Used for:** all UI -- dashboards, forms, and lists for Systems, Instances, and Review entries.
 
-**Drag-and-drop dependency -- `svelte-dnd-action`:** the Workspace Builder (PRD §6.2) needs a drag-and-drop canvas for arranging widgets. `svelte-dnd-action` is the standard choice for Svelte -- it's framework-native (no React-shim libraries like `react-dnd` ported over), has no runtime dependencies beyond Svelte itself, and works with Svelte 5's reactivity model. It only governs widget *position and ordering* on the canvas (stored as the `layout` JSON blob on Workspace, PRD §5.4) -- it has no opinion on what a widget renders, which stays app-specific.
+**Drag-and-drop dependency -- `svelte-dnd-action`:** the Workspace Builder (PRD S6.2) needs a drag-and-drop canvas for arranging widgets. `svelte-dnd-action` is the standard choice for Svelte -- it's framework-native (no React-shim libraries like `react-dnd` ported over), has no runtime dependencies beyond Svelte itself, and works with Svelte 5's reactivity model. It only governs widget *position and ordering* on the canvas (stored as the `layout` JSON blob on Workspace, PRD S5.4) -- it has no opinion on what a widget renders, which stays app-specific.
 
 ### 5.3 Backend API -- Hono (TypeScript)
 
 **Why Hono:** purpose-built for the Workers runtime, no adapter layer, minimal overhead -- a natural fit for a thin CRUD API. TypeScript throughout keeps the stack uniform and allows type sharing with the SvelteKit frontend.
 
-**Used for:** all authenticated CRUD endpoints, talking to D1, R2 (proxied uploads), Cloudflare Workers AI (AI-assist route), and MongoDB (journal feature only). Auth (Better Auth) runs in-process -- see §5.6. Also exports the `scheduled` handler for the nightly Cron Trigger (§5.8) -- one deployment covers both `fetch` and `scheduled` exports.
+**Used for:** all authenticated CRUD endpoints, talking to D1, R2 (proxied uploads), Cloudflare Workers AI (AI-assist route), and MongoDB (journal feature only). Auth (Better Auth) runs in-process -- see S5.6. Also exports the `scheduled` handler for the nightly Cron Trigger (S5.8) -- one deployment covers both `fetch` and `scheduled` exports.
 
 **Note:** `workers-rs` (Rust backend) was explored as a learning stretch in an earlier phase of planning. It is **not in scope for v1** and has been removed from the architecture. All backend code is TypeScript via Hono.
 
@@ -112,11 +112,11 @@ Everything except MongoDB Atlas lives inside Cloudflare's network. Auth is also 
 
 **Free-tier viability of Queues:** Cloudflare Queues free tier includes 10,000 operations/day. A journal entry enqueue + dequeue is 2 operations. Even if every single journal write failed and went through Queues (worst case), the personal-app volume of journal entries is nowhere near 5,000/day. This is well within the free tier.
 
-Queues are added to the stack table in §3 as a new entry.
+Queues are added to the stack table in S3 as a new entry.
 
 ### 5.6 Auth -- Better Auth (self-hosted on D1)
 
-**Why Better Auth instead of an external provider:** The decision evolved over time. ADR-001 originally selected Clerk, but the deployment reality changed the calculus -- Clerk production mode requires a custom domain, and Aion runs on `*.workers.dev`. Development mode's 5-user limit and session wipes weren't acceptable. See [ADR-003: Switch from Clerk to Better Auth](003-switch-clerk-to-better-auth.md) for the full story.
+**Why Better Auth instead of an external provider:** The decision evolved over time. ADR 001 originally selected Clerk, but the deployment reality changed the calculus -- Clerk production mode requires a custom domain, and Polaris runs on `*.workers.dev`. Development mode's 5-user limit and session wipes weren't acceptable. See [ADR 006 (Auth Integration)](006-auth-integration.md) for the full wiring detail.
 
 Better Auth is an open-source, self-hosted auth library with native D1 support (no adapter packages needed). Key properties:
 
@@ -154,7 +154,7 @@ Better Auth is an open-source, self-hosted auth library with native D1 support (
 
 ### 5.8 Scheduled compute -- Cron Triggers (nightly Instance pre-generation)
 
-**What it does:** PRD §5.3 specifies that Instances (a day's occurrence of a System) auto-generate lazily when the dashboard loads. The PRD's open question (§13.1) asked whether to *also* run a nightly job so tomorrow's Instance is visible the night before, rather than only appearing once the user opens the app the next day.
+**What it does:** PRD S5.3 specifies that Instances (a day's occurrence of a System) auto-generate lazily when the dashboard loads. The PRD's open question (S13.1) asked whether to *also* run a nightly job so tomorrow's Instance is visible the night before, rather than only appearing once the user opens the app the next day.
 
 **Decision: yes, add a nightly Cron Trigger.** It's a small, well-bounded addition and meaningfully improves the "Review Day at night, see tomorrow already queued" experience without adding real risk.
 
@@ -167,8 +167,8 @@ Better Auth is an open-source, self-hosted auth library with native D1 support (
 
 **Known limitations to design around:**
 
-- **UTC only, no per-user timezone.** Cron Triggers fire on UTC time. For this app, the user timezone is fixed as `Asia/Manila` (UTC+8, no DST -- see PRD §5.2). 11 PM Manila = 15:00 UTC, so the cron expression is `0 15 * * *`. Because the Philippines does not observe DST, this offset is permanent -- the cron expression never needs seasonal adjustment. This is one of the practical benefits of the Manila timezone decision.
-- **No automatic retry on failure.** If the scheduled handler throws or exceeds its CPU budget, Cloudflare does not retry -- the next attempt is the next scheduled tick (24 hours later). Mitigation: the lazy dashboard-load generation (PRD §5.3) remains the source of truth and safety net regardless -- if the nightly job silently fails one night, the user still gets a correct Instance the moment they open the dashboard. The nightly job is a convenience layer on top of the lazy path, never a replacement for it.
+- **UTC only, no per-user timezone.** Cron Triggers fire on UTC time. For this app, the user timezone is fixed as `Asia/Manila` (UTC+8, no DST -- see PRD S5.2). 11 PM Manila = 15:00 UTC, so the cron expression is `0 15 * * *`. Because the Philippines does not observe DST, this offset is permanent -- the cron expression never needs seasonal adjustment. This is one of the practical benefits of the Manila timezone decision.
+- **No automatic retry on failure.** If the scheduled handler throws or exceeds its CPU budget, Cloudflare does not retry -- the next attempt is the next scheduled tick (24 hours later). Mitigation: the lazy dashboard-load generation (PRD S5.3) remains the source of truth and safety net regardless -- if the nightly job silently fails one night, the user still gets a correct Instance the moment they open the dashboard. The nightly job is a convenience layer on top of the lazy path, never a replacement for it.
 - **Idempotency is required, not optional.** Because there's no guaranteed single-fire semantics across retries/redeploys, the nightly job must be safe to run twice for the same date (check-before-insert on `(system_id, date)`, which is already a natural unique constraint on the Instance table).
 
 **Used for:** one nightly scheduled job. No other Cron Trigger uses are planned for v1.
@@ -179,9 +179,9 @@ Better Auth is an open-source, self-hosted auth library with native D1 support (
 
 **Reasoning token handling:** DeepSeek R1 distill models prefix their response with `<think>...</think>` reasoning blocks before the actual output. The Hono route that calls Workers AI must strip this block before attempting JSON.parse on the response text. A simple regex split on `</think>` is sufficient -- take everything after it. If no `</think>` is present, treat the full response as the content. See the AI Workers doc for the full parsing implementation.
 
-**Free-tier budget:** Workers AI provides 10,000 Neurons/day free. A single AI-assist call (system blueprint draft) costs approximately 60--120 Neurons based on 32B parameter neuron rates and expected prompt sizes. This supports dozens of AI-assist calls per day -- more than sufficient for a personal app where a user creates a new system perhaps weekly, not hourly. Error code `4006` (daily neuron quota exceeded) is handled gracefully -- see PRD §8.
+**Free-tier budget:** Workers AI provides 10,000 Neurons/day free. A single AI-assist call (system blueprint draft) costs approximately 60--120 Neurons based on 32B parameter neuron rates and expected prompt sizes. This supports dozens of AI-assist calls per day -- more than sufficient for a personal app where a user creates a new system perhaps weekly, not hourly. Error code `4006` (daily neuron quota exceeded) is handled gracefully -- see PRD S8.
 
-**Used for:** the AI-assisted System Creator path only (PRD §6.1, §8). Workers AI is not used for any background jobs, review analysis, or Instance generation -- only the explicit "Draft with AI" user action.
+**Used for:** the AI-assisted System Creator path only (PRD S6.1, S8). Workers AI is not used for any background jobs, review analysis, or Instance generation -- only the explicit "Draft with AI" user action.
 
 ### 5.10 Project Structure -- Monorepo
 
@@ -208,7 +208,7 @@ The project is a **pnpm monorepo** with two packages:
 
 **Two separate `wrangler.toml` files:** `packages/api/wrangler.toml` declares all bindings (D1, R2, AI, Queues, Cron Triggers). `packages/web/wrangler.toml` deploys only Workers Static Assets -- no bindings, no CPU budget concerns. They are deployed independently (`wrangler deploy` from each package directory) or via root scripts (`pnpm -r deploy`).
 
-**Database migration tooling:** D1 schema migrations use `wrangler d1 migrations` commands (the native Cloudflare approach -- no ORM required for a simple schema). Migration SQL files live in `packages/api/migrations/`. A `LAYOUT_MIGRATIONS.md` tracks workspace JSON schema version bumps separately from D1 schema changes, per PRD §5.4. ORM evaluation (Drizzle, Kysely) is deferred until the schema has stabilised -- adding a query builder before the schema is stable creates churn, and raw SQL is readable enough for a small schema.
+**Database migration tooling:** D1 schema migrations use `wrangler d1 migrations` commands (the native Cloudflare approach -- no ORM required for a simple schema). Migration SQL files live in `packages/api/migrations/`. A `LAYOUT_MIGRATIONS.md` (not yet created -- to be written during scaffolding) tracks workspace JSON schema version bumps separately from D1 schema changes, per PRD S5.4. ORM evaluation (Drizzle, Kysely) is deferred until the schema has stabilised -- adding a query builder before the schema is stable creates churn, and raw SQL is readable enough for a small schema.
 
 ## 6. Rejected Alternatives
 
@@ -230,11 +230,11 @@ The project is a **pnpm monorepo** with two packages:
 
 | Risk | Mitigation |
 |---|---|
-| Mongo Atlas cold-start / TCP handshake failure drops journal entries | Cloudflare Queues retry with backoff; dead-letter queue for persistent failures. See §5.5. |
+| Mongo Atlas cold-start / TCP handshake failure drops journal entries | Cloudflare Queues retry with backoff; dead-letter queue for persistent failures. See S5.5. |
 | Better Auth CSRF blocks Vite proxy in dev | Configured `trustedOrigins` for `localhost:5173` |
-| Free-tier limits change over time (D1, R2, Queues, Workers AI) | Re-check the numbers in §3 before relying on them as usage grows |
+| Free-tier limits change over time (D1, R2, Queues, Workers AI) | Re-check the numbers in S3 before relying on them as usage grows |
 | Better Auth receives fewer security audits than Clerk | Self-hosted; dependency is minimal and well-understood; updates are manual but visible |
-| Nightly Cron Trigger fails silently (no built-in retry) | Lazy dashboard-load Instance generation is the safety net -- Cron is convenience only. See §5.8. |
+| Nightly Cron Trigger fails silently (no built-in retry) | Lazy dashboard-load Instance generation is the safety net -- Cron is convenience only. See S5.8. |
 | R2 proxied upload: large files transit the Worker | Acceptable at personal-app scale; revisit S3-compatible presigned URLs if file sizes grow |
 | R2 orphaned objects if D1 pointer write fails post-upload | Write D1 after R2 confirms; log orphaned key; no automated cleanup needed at personal-app scale |
 | DeepSeek R1 `<think>` tokens in output must be stripped before JSON parse | Handled in the Hono AI route; see AI Workers doc. Single point of change if model output format evolves. |

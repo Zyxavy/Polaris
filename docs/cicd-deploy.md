@@ -173,7 +173,7 @@ pnpm -r deploy                   # migrations, api, web
 
 ## 4. CI Pipeline
 
-Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml` (or equivalent Git hosting CI config).
+Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml` (not yet created -- to be written during scaffolding, or equivalent Git hosting CI config).
 
 ```yaml
 name: CI
