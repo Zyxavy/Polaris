@@ -65,7 +65,7 @@ The top-level entity. A designed protocol, not a task.
 | `trigger` | "After I [existing habit], I will [system]." Stored as structured text, optionally with a chosen anchor habit from a short list |
 | `barrier_list` | *(new, research-backed addition - see §9)* What has prevented this system before |
 | `schedule` | Day(s)/time window(s) this system runs against - see §5.2 |
-| `workspace_id` | FK to the attached Workspace, nullable (a system can exist with no workspace) |
+| (workspace) | One-to-one relationship resolved via `Workspace.system_id` — not a FK on System (see ADR 004 S1.3) |
 | `template_origin` | Nullable FK - which template/blueprint this was created from, if any |
 | `status` | active / paused / archived |
 | `created_at`, `updated_at` | |
