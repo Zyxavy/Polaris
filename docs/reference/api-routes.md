@@ -2,7 +2,7 @@
 
 **Project:** *Polaris*
 
-**Document type:** API contract -- the request/response shape for every endpoint the SvelteKit frontend calls. Companion to the [D1 Schema](004-d1-schema.md) (owns table shapes) and the [Tech Stack ADR](001-tech-stack-adr.md) (owns the decision to use Hono). This document owns paths, methods, payloads, status codes, and auth requirements -- not implementation code beyond the middleware pattern needed to make ownership checks unambiguous.
+**Document type:** API contract -- the request/response shape for every endpoint the SvelteKit frontend calls. Companion to the [D1 Schema](../ADRs/002-d1-schema.md) (owns table shapes) and the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) (owns the decision to use Hono). This document owns paths, methods, payloads, status codes, and auth requirements -- not implementation code beyond the middleware pattern needed to make ownership checks unambiguous.
 
 **Status:** Draft -- v1 scope
 

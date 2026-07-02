@@ -2,7 +2,7 @@
 
 **Project:** *Polaris*
 
-**Document type:** Deployment reference -- defines the CI pipeline, deploy order, environment configuration, and rollback strategy. Companion to the [Tech Stack ADR](ADRs/001-tech-stack-adr.md) (owns the monorepo structure and deployment targets this document operationalizes), the [Testing Strategy](ADRs/002-testing-strategy.md) (owns the CI pipeline's test stages), and the [API Route Design](ADRs/005-api-routes.md) / [SvelteKit Route Architecture](sveltekit-route-architecture.md) (which define the two deployable artifacts).
+**Document type:** Deployment reference -- defines the CI pipeline, deploy order, environment configuration, and rollback strategy. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) (owns the monorepo structure and deployment targets this document operationalizes), the [Testing Strategy](testing-strategy.md) (owns the CI pipeline's test stages), and the [API Route Design](api-routes.md) / [SvelteKit Route Architecture](sveltekit-route-architecture.md) (which define the two deployable artifacts).
 
 **Status:** Draft -- v1 scope
 
@@ -279,7 +279,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
 
-**Note on migrations in CI:** The `deploy` job applies D1 migrations as its first step, before deploying either Worker. This is a change from the original doc (which kept migrations manual-only). The reason: gating. With migrations inside CI, a bad migration blocks `wrangler deploy` from running at all -- same job, same failure surface -- rather than being a separate manual step a developer could forget to run before pushing. The append-only migration convention (ADR 004 S6.2) already protects against destructive schema changes, so the only failure mode CI catches immediately that a manual process would miss is "migration fails to apply," which is exactly what you want to catch.
+**Note on migrations in CI:** The `deploy` job applies D1 migrations as its first step, before deploying either Worker. This is a change from the original doc (which kept migrations manual-only). The reason: gating. With migrations inside CI, a bad migration blocks `wrangler deploy` from running at all -- same job, same failure surface -- rather than being a separate manual step a developer could forget to run before pushing. The append-only migration convention (ADR 002 S6.2) already protects against destructive schema changes, so the only failure mode CI catches immediately that a manual process would miss is "migration fails to apply," which is exactly what you want to catch.
 
 ### 4.3 What the CI pipeline does NOT do
 
@@ -377,9 +377,9 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 - [ ] Queue created (`wrangler queues create polaris-journal-retry`)
 - [ ] Secrets set locally (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)
 - [ ] Database UUIDs from step 2 written into both `wrangler.toml` files
-- [ ] Migration files scaffolded via `wrangler d1 migrations create DB <name>` (one per table, per ADR 004 S6.2's numbered plan: `0001_enable_foreign_keys` through `0013_recovery_codes`) -- this only creates the empty, correctly-named file; the SQL inside each is hand-written, never auto-generated, and each file is frozen once created (append-only, no edits after the fact)
+- [ ] Migration files scaffolded via `wrangler d1 migrations create DB <name>` (one per table, per ADR 002 S6.2's numbered plan: `0001_enable_foreign_keys` through `0013_recovery_codes`) -- this only creates the empty, correctly-named file; the SQL inside each is hand-written, never auto-generated, and each file is frozen once created (append-only, no edits after the fact)
 - [ ] Migrations applied manually (`wrangler d1 migrations apply DB --remote`) -- CI isn't wired up yet at this point
-- [ ] Better Auth tables generated via the Better Auth CLI (`npx @better-auth/cli generate --config path/to/auth.ts --output packages/api/migrations/`) -- this is the only correct path for the Better Auth-managed tables (`user`, `session`, `account`, `verification`) per ADR 004 S2 and ADR 006 S1.1; do not hand-write these alongside the app's own migration files
+- [ ] Better Auth tables generated via the Better Auth CLI (`npx @better-auth/cli generate --config path/to/auth.ts --output packages/api/migrations/`) -- this is the only correct path for the Better Auth-managed tables (`user`, `session`, `account`, `verification`) per ADR 002 S2 and ADR 006 S1.1; do not hand-write these alongside the app's own migration files
 - [ ] Better Auth tables applied to D1 via the CLI's `migrate` command (or by applying the CLI-generated SQL through `wrangler d1 migrations apply`, consistent with the app's own migration application step above)
 - [ ] `CLOUDFLARE_API_TOKEN` added to GitHub Actions repo secrets -- required for the `deploy` job (S4.2) to authenticate; note this is separate from the `wrangler secret put` values above, which live in Cloudflare's secrets store, not GitHub's
 - [ ] `pnpm -r build` succeeds locally

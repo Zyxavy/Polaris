@@ -21,8 +21,8 @@ A personal systems design web app. The unit of the product is the *system*: a de
 
 - [Product Requirements Document](docs/PRD/PRD-systems-app.md): feature scope, data model, user flows
 - [Tech Stack ADR](docs/ADRs/001-tech-stack-adr.md): architecture decisions, component roles, rationale
-- [Testing Strategy](docs/ADRs/002-testing-strategy.md): testing layers, tooling, CI pipeline
-- [AI Workers Reference](docs/ADRs/003-cloudflare-ai-workers.md): AI feature design, prompt management, free-tier analysis
+- [Testing Strategy](docs/reference/testing-strategy.md): testing layers, tooling, CI pipeline
+- [AI Workers Reference](docs/reference/ai-workers.md): AI feature design, prompt management, free-tier analysis
 - [Systems Framework](docs/core/systems-framework.md): the five-step system-build process that informs the product
 - [Research Insights](docs/core/insights.md): product-specific synthesis of systems-thinking literature
 - [Sources](docs/core/sources.md): transcripts and summaries of source material

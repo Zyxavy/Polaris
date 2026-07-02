@@ -1,7 +1,7 @@
 # Auth Integration
 
 **Project:** *Polaris*
-**Document type:** Integration reference; the actual wiring between Better Auth, the Hono API Worker, and the SvelteKit frontend. Companion to the [Tech Stack ADR](001-tech-stack-adr.md) S5.6 (owns the decision to use Better Auth over Clerk) and the [API Route Design](005-api-routes.md) (owns everything under `/api/*` except `/api/auth/*`, which this document owns). This document owns the actual server config, middleware, and hand-built UI structure.
+**Document type:** Integration reference; the actual wiring between Better Auth, the Hono API Worker, and the SvelteKit frontend. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) S5.6 (owns the decision to use Better Auth over Clerk) and the [API Route Design](api-routes.md) (owns everything under `/api/*` except `/api/auth/*`, which this document owns). This document owns the actual server config, middleware, and hand-built UI structure.
 **Status:** Draft, v1 scope
 **Last updated:** July 1, 2026
 
@@ -126,7 +126,7 @@ export const authClient = createAuthClient({
 export const { useSession, signIn, signOut, signUp } = authClient;
 ```
 
-`useSession()` returns a Svelte 5 runes-compatible store (ADR 001 S5.6), usable directly in `$derived`/`$effect` in any component or in a root layout to gate rendering. This is the primitive the [SvelteKit Route Architecture doc](../sveltekit-route-architecture.md) builds the auth-guarded layout around; this document stops at "the store exists and is reactive," not "here is the route tree that consumes it."
+`useSession()` returns a Svelte 5 runes-compatible store (ADR 001 S5.6), usable directly in `$derived`/`$effect` in any component or in a root layout to gate rendering. This is the primitive the [SvelteKit Route Architecture doc](sveltekit-route-architecture.md) builds the auth-guarded layout around; this document stops at "the store exists and is reactive," not "here is the route tree that consumes it."
 
 ### 4.2 Hand-built forms, what's actually custom
 
@@ -184,7 +184,7 @@ Two tempting shortcuts both turn out to be wrong:
 
 **Approach:** 3 recovery codes, generated at sign-up, stored plaintext in D1, displayed to the user with a "Save these somewhere safe" notice. Settings page shows them with a hide/show toggle.
 
-**`recovery_codes` table (defined in ADR 004 S2):**
+**`recovery_codes` table (defined in ADR 002 S2):**
 
 ```sql
 CREATE TABLE recovery_codes (
@@ -281,5 +281,5 @@ Note: the guard middleware (`app.use('/api/*', ...)`) already passes `/api/auth/
 
 ## 6. What This Document Does Not Cover
 
-- **The SvelteKit route tree and auth-guarded layout** (which pages redirect to sign-in, where `useSession()` is consulted), that's covered in the [SvelteKit Route Architecture doc](../sveltekit-route-architecture.md).
+- **The SvelteKit route tree and auth-guarded layout** (which pages redirect to sign-in, where `useSession()` is consulted), that's covered in the [SvelteKit Route Architecture doc](sveltekit-route-architecture.md).
 - **Account deletion**, not mentioned anywhere in the PRD's scope (S3 Non-Goals doesn't list it either way); if it's needed, it's a Better Auth-provided flow (`authClient.deleteUser`) plus the `ON DELETE CASCADE` behavior already specified from `user` down through every table in the D1 Schema doc S2/S3; the cascade is already correct for this, nothing here would need to change, only a route and a confirmation UI would need to be added.
