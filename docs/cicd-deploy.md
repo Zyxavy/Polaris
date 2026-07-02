@@ -6,7 +6,7 @@
 
 **Status:** Draft -- v1 scope
 
-**Last updated:** July 1, 2026
+**Last updated:** July 2, 2026
 
 ---
 
@@ -20,6 +20,8 @@ Two independent deployments:
 | Web static assets | `packages/web/` | Workers Static Assets (SPA build output) | `wrangler deploy` |
 
 They are deployed independently but always in a specific order (see 3.1). They have no circular dependency -- the Web assets are pure static files that make API calls to whatever origin `VITE_API_BASE_URL` is configured for. A new version of the API Worker can be deployed without touching the frontend, and vice versa, as long as the API contract is backward-compatible (which it always is in v1, since both artifacts are deployed in lockstep from the same commit).
+
+Both artifacts are built and tested in parallel via CI's package matrix (S4) before either is deployed -- see S4.1 for the full pipeline graph.
 
 ---
 
@@ -107,6 +109,11 @@ Workers Static Assets (the modern pattern replacing `workers-site/` and `@cloudf
 
 Migrations run **before** the API Worker deploy so the new code sees the latest schema on its first request. The Web deploy runs last because it has no dependency on the API deployment order beyond `VITE_API_BASE_URL` being correct (which is baked at build time, not deploy time).
 
+**Two ways this order is enforced, depending on path:**
+
+- **Via CI (the normal path, on merge to `main`):** the `deploy` job in S4 runs all three steps in this exact sequence, automatically, only after every test/build stage across both packages has passed. This is the default -- see S4.2 for the workflow definition.
+- **Via manual deploy (local machine, day-to-day or first-time setup):** the scripts below run the same three steps by hand. Still useful for local verification before pushing, or for the very first deploy before CI/secrets exist (S3.2).
+
 **Script in root `package.json`:**
 
 ```jsonc
@@ -132,38 +139,7 @@ Each package has its own `deploy` script in its `package.json`:
 
 Running `pnpm -r deploy` from the root runs both in workspace order (api first, web second) because pnpm respects the dependency graph: `web` depends on `api` (for types), so pnpm runs `api`'s deploy first.
 
-### 3.2 First-time setup (scaffolding)
-
-For a brand-new Cloudflare account and project:
-
-```bash
-# 1. Create D1 databases
-wrangler d1 create polaris-db-dev
-wrangler d1 create polaris-db
-
-# 2. Create R2 bucket
-wrangler r2 bucket create polaris-attachments
-
-# 3. Create Queue
-wrangler queues create polaris-journal-retry
-
-# 4. Generate first migration
-cd packages/api
-wrangler d1 migrations create DB 0001_enable_foreign_keys
-
-# 5. Apply migrations (local dev)
-wrangler d1 migrations apply DB --local
-
-# 6. Set secrets
-wrangler secret put BETTER_AUTH_SECRET
-wrangler secret put MONGODB_URI
-
-# 7. Deploy
-cd ../..
-pnpm deploy
-```
-
-### 3.3 Day-to-day deploy
+### 3.2 Day-to-day manual deploy (fallback, pre-CI or local verification)
 
 ```bash
 git pull
@@ -176,7 +152,41 @@ pnpm -r deploy                   # migrations, api, web
 
 ## 4. CI Pipeline
 
-Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml` (not yet created -- to be written during scaffolding, or equivalent Git hosting CI config).
+Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml`.
+
+### 4.0 Why a matrix, and what it does/doesn't parallelize
+
+`lint`, `test:unit`, and `build` are independent per package -- `web`'s lint failing has no bearing on `api`'s unit tests passing, and today's `pnpm -r` runs them serially anyway. Matrixing over `package: [api, web]` runs these three stages concurrently instead, which is the actual bottleneck.
+
+**What stays outside the matrix:**
+- `test:int` -- `api`-only (Miniflare/D1); `web` has no integration layer (Testing Strategy S3.2). Matrixing a stage that only exists for one leg buys nothing.
+- `test:e2e` -- needs *both* packages built and running together (Testing Strategy S3.3); it depends on the whole matrix finishing, not a single leg.
+- `deploy` -- stays a single sequential job (migrations -> API -> web). This ordering is load-bearing (S3.1) and is never matrixed, regardless of how the test stages are parallelized.
+
+### 4.1 Pipeline graph
+
+```mermaid
+flowchart TD
+    Checkout[Checkout + pnpm install<br/>shared cache: pnpm-lock.yaml hash]
+
+    subgraph Matrix["matrix: package = [api, web]"]
+        LintA[lint] --> UnitA[test:unit] --> BuildA[build]
+    end
+
+    Checkout --> Matrix
+    Matrix --> IntTest["test:int (api only)"]
+    Matrix --> E2E["test:e2e (needs both packages built)"]
+    IntTest --> E2E
+    E2E --> Deploy
+
+    subgraph Deploy["deploy (main branch only, sequential)"]
+        Mig[D1 migrations] --> ApiDeploy[Deploy API Worker] --> WebDeploy[Deploy Web static assets]
+    end
+```
+
+Every matrix leg, `test:int`, and `test:e2e` must succeed before `deploy` runs at all -- `fail-fast: true` on the matrix means one failing leg cancels its siblings immediately, and `deploy`'s `needs:` list means a single red job anywhere upstream skips deploy entirely, never a partial deploy.
+
+### 4.2 Workflow definition
 
 ```yaml
 name: CI
@@ -184,6 +194,32 @@ on: [push, pull_request]
 
 jobs:
   test:
+    strategy:
+      fail-fast: true
+      matrix:
+        package: [api, web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm       # keyed on the single root pnpm-lock.yaml -- shared across both matrix legs
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint (${{ matrix.package }})
+        run: pnpm --filter ${{ matrix.package }} lint
+
+      - name: Unit tests (${{ matrix.package }})
+        run: pnpm --filter ${{ matrix.package }} test:unit
+
+      - name: Build (${{ matrix.package }})
+        run: pnpm --filter ${{ matrix.package }} build
+
+  integration:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -192,23 +228,28 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api test:int   # @cloudflare/vitest-pool-workers -- api only, see Testing Strategy S3.2
 
-      - run: pnpm install
-
-      - run: pnpm -r lint
-
-      - run: pnpm -r test:unit
-      - run: pnpm -r test:int
-
+  e2e:
+    needs: [test, integration]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm -r build
-
       - run: pnpm test:e2e
         env:
           VITE_API_BASE_URL: "http://localhost:8787"
 
   deploy:
     if: github.ref == 'refs/heads/main'
-    needs: [test]
+    needs: [test, integration, e2e]     # any failure anywhere above skips this job entirely
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -217,29 +258,37 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - run: pnpm install --frozen-lockfile
 
-      - run: pnpm install
+      - name: Apply D1 migrations
+        working-directory: packages/api
+        run: npx wrangler d1 migrations apply DB --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Deploy API
+      - name: Deploy API Worker
         working-directory: packages/api
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Deploy Web
+      - name: Deploy Web static assets
         working-directory: packages/web
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
 
-### 4.1 What the CI pipeline does NOT do
+**Note on migrations in CI:** The `deploy` job applies D1 migrations as its first step, before deploying either Worker. This is a change from the original doc (which kept migrations manual-only). The reason: gating. With migrations inside CI, a bad migration blocks `wrangler deploy` from running at all -- same job, same failure surface -- rather than being a separate manual step a developer could forget to run before pushing. The append-only migration convention (ADR 004 S6.2) already protects against destructive schema changes, so the only failure mode CI catches immediately that a manual process would miss is "migration fails to apply," which is exactly what you want to catch.
+
+### 4.3 What the CI pipeline does NOT do
 
 | Activity | Reason |
 |---|---|
-| **D1 migrations in CI** | Migrations are applied manually (or via the deploy script from a developer's machine), not from CI. Automated schema changes in CI add risk without proportional value for a single-developer project -- the developer runs migrations before pushing, and CI confirms the code works against the already-migrated schema. |
-| **`wrangler secret` management** | Secrets (`BETTER_AUTH_SECRET`, `MONGODB_URI`) are set manually via `wrangler secret put` and are not available in CI. If CI needed to deploy to an ephemeral environment, this would need solving; for a single-deployment personal app with no staging environment, manual secret management is correct. |
-| **Deploy to staging/preview** | There is no staging environment. Deploy is directly to production (`wrangler deploy` without `--env`). The CI pipeline's test steps are the quality gate before production deploy. |
+| **Matrix the deploy job** | Deploy order (migrations -> API -> web) is load-bearing; matrixing would remove that guarantee. See S4.0. |
+| **Per-package cache keys** | Single pnpm workspace, single lockfile -- one shared cache key covers both matrix legs; per-package keys would duplicate the same cache for no benefit. |
+| **Deploy to staging/preview** | No staging environment exists. Deploy is directly to production on `main` only, gated by the full matrix + integration + e2e passing. |
+| **`wrangler secret` management in CI** | Secrets (`BETTER_AUTH_SECRET`, `MONGODB_URI`) are set manually via `wrangler secret put` and are not available in CI. If CI needed to deploy to an ephemeral environment, this would need solving; for a single-deployment personal app with no staging environment, manual secret management is correct. |
 
 ---
 
@@ -318,18 +367,31 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 
 ---
 
-## 9. Deploy Checklist (first-ever deploy)
+## 9. Deploy Checklist
+
+### 9.1 First-time setup (manual, once)
 
 - [ ] Cloudflare account created
 - [ ] D1 databases created (`wrangler d1 create polaris-db-dev`, `polaris-db`)
 - [ ] R2 bucket created (`wrangler r2 bucket create polaris-attachments`)
 - [ ] Queue created (`wrangler queues create polaris-journal-retry`)
-- [ ] Secrets set (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)
+- [ ] Secrets set locally (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)
 - [ ] Database UUIDs from step 2 written into both `wrangler.toml` files
-- [ ] Initial migrations created (`wrangler d1 migrations create`)
-- [ ] Migrations applied (`wrangler d1 migrations apply DB --remote`)
-- [ ] Better Auth tables generated (`npx @better-auth/cli generate --config path/to/auth.ts --output packages/api/migrations/`)
-- [ ] Better Auth tables applied to D1 (manual SQL from generated migration, or via wrangler)
-- [ ] `pnpm -r build` succeeds
-- [ ] `pnpm -r deploy` succeeds
+- [ ] Migration files scaffolded via `wrangler d1 migrations create DB <name>` (one per table, per ADR 004 S6.2's numbered plan: `0001_enable_foreign_keys` through `0013_recovery_codes`) -- this only creates the empty, correctly-named file; the SQL inside each is hand-written, never auto-generated, and each file is frozen once created (append-only, no edits after the fact)
+- [ ] Migrations applied manually (`wrangler d1 migrations apply DB --remote`) -- CI isn't wired up yet at this point
+- [ ] Better Auth tables generated via the Better Auth CLI (`npx @better-auth/cli generate --config path/to/auth.ts --output packages/api/migrations/`) -- this is the only correct path for the Better Auth-managed tables (`user`, `session`, `account`, `verification`) per ADR 004 S2 and ADR 006 S1.1; do not hand-write these alongside the app's own migration files
+- [ ] Better Auth tables applied to D1 via the CLI's `migrate` command (or by applying the CLI-generated SQL through `wrangler d1 migrations apply`, consistent with the app's own migration application step above)
+- [ ] `CLOUDFLARE_API_TOKEN` added to GitHub Actions repo secrets -- required for the `deploy` job (S4.2) to authenticate; note this is separate from the `wrangler secret put` values above, which live in Cloudflare's secrets store, not GitHub's
+- [ ] `pnpm -r build` succeeds locally
+- [ ] `pnpm -r deploy` succeeds locally (manual first deploy, before trusting CI with it)
 - [ ] Verify: sign up at `https://polaris.kelpselp.workers.dev`, create a system, see it on the dashboard
+- [ ] Push to `main` once and confirm the CI `deploy` job runs migrations + both deploys successfully end-to-end
+
+### 9.2 Ongoing deploys (after first-time setup, CI-driven)
+
+- [ ] Push/merge to `main`
+- [ ] Confirm `test` (matrix), `integration`, and `e2e` jobs all pass in the Actions tab
+- [ ] Confirm `deploy` job ran migrations, then API, then web, in that order (S4.1's graph)
+- [ ] Spot-check the deployed URL if the change touched a P0 flow (Testing Strategy S3.3)
+
+Manual deploy (`pnpm -r deploy` from a local machine) remains available as a fallback -- e.g. if GitHub Actions itself is down, or for testing a migration against `--local` before pushing -- but is no longer the primary path once CI is wired up.
