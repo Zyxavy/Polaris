@@ -29,7 +29,7 @@ export function createAuth(env: CloudflareBindings) {
     },
     trustedOrigins: [
       'http://localhost:5173',                          // Vite dev server
-      'https://polaris-web.<account>.workers.dev',       // production frontend origin
+      'https://polaris.kelpselp.workers.dev',       // production frontend origin
     ],
   });
 }
@@ -120,7 +120,7 @@ ADR 001 S8's open risk table flags "Better Auth CSRF blocks Vite proxy in dev" w
 import { createAuthClient } from 'better-auth/svelte';
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_API_BASE_URL,   // e.g. https://polaris-api.<account>.workers.dev in prod, proxied path in dev
+  baseURL: import.meta.env.VITE_API_BASE_URL,   // e.g. https://polaris-api.kelpselp.workers.dev in prod, proxied path in dev
 });
 
 export const { useSession, signIn, signOut, signUp } = authClient;

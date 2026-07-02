@@ -3,7 +3,13 @@
 **Project:** *Polaris*
 **Document type:** AI feature implementation reference - covers model selection, prompt design, response parsing, system prompt versioning, free-tier budget, and the Hono route implementation.
 **Status:** Draft - v1 scope
-**Last updated:** July 1, 2026
+**Last updated:** July 2, 2026
+
+---
+
+## 0. Foundational Constraint
+
+All server-side computation must fit within Cloudflare Workers' free-tier 10ms CPU time per request (I/O wait excluded). This is the single non-negotiable constraint on every design decision in this document. See ADR 001 S2 (Constraint #1).
 
 ---
 

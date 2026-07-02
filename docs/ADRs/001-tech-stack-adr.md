@@ -13,11 +13,12 @@ This document records what the stack is, why each piece was chosen over the alte
 
 ## 2. Guiding Constraints
 
-Three constraints shaped every decision below, in this order of priority:
+Four constraints shaped every decision below, in this order of priority:
 
-1. **Free.** This is a passion project -- the stack needs to run on free tiers indefinitely, not "free while small."
-2. **Ship it.** A working MVP matters more than a maximally ambitious one. The riskiest, least-proven pieces of the stack are not allowed to block the rest from shipping.
-3. **Learn something new.** Within constraint #2, every layer was deliberately chosen to push into unfamiliar territory rather than default to the existing React/Next.js + FastAPI background.
+1. **10ms CPU per request.** Cloudflare Workers free tier caps CPU time at 10ms per invocation (I/O wait excluded). Every server-side computation -- route handler, Cron trigger, middleware -- must fit within this budget. This is the single most restrictive constraint on the architecture and overrides all other concerns when there's a conflict.
+2. **Free.** This is a passion project -- the stack needs to run on free tiers indefinitely, not "free while small."
+3. **Ship it.** A working MVP matters more than a maximally ambitious one. The riskiest, least-proven pieces of the stack are not allowed to block the rest from shipping.
+4. **Learn something new.** Within constraint #3, every layer was deliberately chosen to push into unfamiliar territory rather than default to the existing React/Next.js + FastAPI background.
 
 These three pulled in different directions more than once -- see S6 (Rejected Alternatives) and S8 (Open Risks) for where that tension showed up and how it was resolved.
 
@@ -72,7 +73,7 @@ Everything except MongoDB Atlas lives inside Cloudflare's network. Auth is also 
 
 **Why SvelteKit over Next.js:** Next.js/React is already known -- the goal here was new ground. SvelteKit's compiler-driven reactivity (no virtual DOM, far less boilerplate per route) is a genuine departure, and it has first-class, production-ready support on Cloudflare Workers.
 
-**Why CSR instead of SSR:** Cloudflare's free Workers plan caps CPU time at 10ms per request -- but that only counts actual computation, not time spent waiting on I/O. Full-page SSR is one of the most common ways to burn that budget, which lines up with hitting "CPU limit exceeded" on past projects. Serving SvelteKit as pure static files means **zero Worker invocation for the frontend at all** -- it can't hit a CPU limit by definition.
+**Why CSR instead of SSR:** Cloudflare's free Workers plan caps CPU time at 10ms per request (Constraint #1) -- but that only counts actual computation, not time spent waiting on I/O. Full-page SSR is one of the most common ways to burn that budget, which lines up with hitting "CPU limit exceeded" on past projects. Serving SvelteKit as pure static files means **zero Worker invocation for the frontend at all** -- it can't hit a CPU limit by definition.
 
 **Why Tailwind CSS:** utility-first CSS framework that compiles to a small, scoped stylesheet (no runtime, no unused styles purged at build). Tailwind is the standard pairing with SvelteKit in 2026 -- it avoids the mental overhead of separate CSS files for each component while keeping styles co-located with markup. No CSS-in-JS runtime, no CSS modules convention to learn -- just inline utility classes that map directly to design tokens. The `tailwind.config.js` will define the custom color palette and spacing scale; all component styling stays in the Svelte files.
 

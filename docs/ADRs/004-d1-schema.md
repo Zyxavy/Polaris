@@ -17,6 +17,7 @@ It does **not** own MongoDB's schema (Log/Journal entries only -- separate doc, 
 
 ### 1.2 Conventions used throughout
 
+- **10ms CPU budget.** All server-side query patterns must fit within Cloudflare Workers' free-tier 10ms CPU per request (Constraint #1 in ADR 001 S2). This means: push computation into D1 SQL where possible (bitmask matching, filtering, aggregation), batch DML statements with D1's `batch()` API rather than per-row loops, and never fetch more rows from D1 than needed for the current operation. A fast D1 query that shifts CPU cost from the Worker to SQLite is always preferred over a CPU-bound JS loop over D1 results, even if the SQL reads more total data -- I/O wait is excluded from the 10ms budget, JS CPU time is not.
 - **Primary keys:** `TEXT` UUIDs (v4) everywhere, generated application-side before insert (`crypto.randomUUID()`, available natively in the Workers runtime). Chosen for uniformity across all tables -- including high-volume ones like `instances` -- so no table needs special-cased ID handling, and so IDs are safe to generate optimistically on the client before a round-trip confirms the insert (relevant for the auto-save flow in PRD S4.3).
 - **Timestamps:** `TEXT`, ISO 8601 UTC strings (`2026-07-01T09:15:00.000Z`), consistent with ADR 001 S5.2 -- D1 stores UTC, the API converts to/from `Asia/Manila` at the boundary. Every table has `created_at`; tables the user can edit after creation also have `updated_at`.
 - **Booleans:** SQLite/D1 has no native boolean type -- stored as `INTEGER` constrained to `0`/`1` via `CHECK`.

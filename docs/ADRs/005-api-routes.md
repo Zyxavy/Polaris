@@ -12,6 +12,15 @@
 
 ## 1. Conventions
 
+### 1.0 The 10ms CPU constraint
+
+All server-side computation in the API Worker must fit within Cloudflare Workers' free-tier 10ms CPU time per request (I/O wait excluded). This is the single most restrictive constraint on every route design below -- see ADR 001 S2 (Constraint #1). Concretely, this means:
+
+- **Push filtering into SQL.** Any loop over D1 results that could be a `WHERE` clause instead is a CPU budget violation. Bitmask matching, date range filtering, and status checks belong in the SQL query, not in JS after the results arrive.
+- **Batch DML.** Multiple INSERTs/UPDATEs for the same request use D1's `batch()` API -- one I/O call for the entire batch, not per-row `prepare().run()`.
+- **No in-memory aggregation.** Transform a D1 result set client-side (JS `reduce`, `map`, `filter`) only if SQL aggregation (`SUM`, `COUNT`, `GROUP BY`) genuinely can't do the job. The HTTP handler is a thin translation layer between HTTP and SQL, not a data processing engine.
+- **Paginate everything (S1.6).** List endpoints return paginated results to bound the per-response data volume even if the underlying query is fast.
+
 ### 1.1 Base path and route ownership
 
 Two route trees exist in the same Hono Worker:

@@ -26,10 +26,10 @@ They are deployed independently but always in a specific order (see 3.1). They h
 
 | Variable | Package | Dev | Production | Secret? |
 |---|---|---|---|---|
-| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://polaris-api.<account>.workers.dev` | No |
+| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://polaris-api.kelpselp.workers.dev` | No |
 | `ENVIRONMENT` | `api` | `development` | `production` | No |
 | `BETTER_AUTH_SECRET` | `api` | Auto-generated dev secret | Generated secret, stored in `wrangler secret` | Yes |
-| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api.<account>.workers.dev` | No |
+| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api.kelpselp.workers.dev` | No |
 | `MONGODB_URI` | `api` | `mongodb://localhost:27017/polaris` (local Mongo) | Atlas connection string, stored in `wrangler secret` | Yes |
 
 ### 2.2 `wrangler.toml` -- `packages/api/`
@@ -245,9 +245,9 @@ jobs:
 | Environment | API URL | Web URL |
 |---|---|---|
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
-| Production | `https://polaris-api.<account>.workers.dev` | `https://polaris-web.<account>.workers.dev` |
+| Production | `https://polaris-api.kelpselp.workers.dev` | `https://polaris.kelpselp.workers.dev` |
 
-`<account>` is the Cloudflare account's subdomain (e.g. `polaris-project`). These URLs are determined by the `name` field in each `wrangler.toml` (`polaris-api` and `polaris-web`).
+These URLs are determined by the `name` field in each `wrangler.toml` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
 
 ---
 
@@ -329,4 +329,4 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 - [ ] Better Auth tables applied to D1 (manual SQL from generated migration, or via wrangler)
 - [ ] `pnpm -r build` succeeds
 - [ ] `pnpm -r deploy` succeeds
-- [ ] Verify: sign up at `https://polaris-web.<account>.workers.dev`, create a system, see it on the dashboard
+- [ ] Verify: sign up at `https://polaris.kelpselp.workers.dev`, create a system, see it on the dashboard
