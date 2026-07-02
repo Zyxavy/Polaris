@@ -1,1 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+build/
+dist/
+.svelte-kit/
+
+# Cloudflare Workers local state
+.wrangler/
+.dev.vars
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Test coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
 logs/
+*.log
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Temp
+tmp/
+temp/

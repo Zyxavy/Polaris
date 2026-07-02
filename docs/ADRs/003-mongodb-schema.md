@@ -1,8 +1,11 @@
 # MongoDB Schema
 
 **Project:** *Polaris*
+
 **Document type:** Database schema ADR for the one bounded, document-shaped feature in the stack -- companion to the [D1 Schema](002-d1-schema.md) (owns the `widget_entries` pointer row this document's collection is referenced from) and the [Tech Stack ADR](001-tech-stack-adr.md) S5.5 (owns the decision to use MongoDB at all, and the failure-mode/retry strategy via Cloudflare Queues). This document owns the collection shape, field-level meaning, indexes, versioning, and retention for `journal_entries` -- nothing else lives in MongoDB.
+
 **Status:** Draft -- v1 scope
+
 **Last updated:** July 2, 2026
 
 ---

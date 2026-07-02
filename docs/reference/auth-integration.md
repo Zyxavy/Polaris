@@ -1,8 +1,11 @@
 # Auth Integration
 
 **Project:** *Polaris*
+
 **Document type:** Integration reference; the actual wiring between Better Auth, the Hono API Worker, and the SvelteKit frontend. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) S5.6 (owns the decision to use Better Auth over Clerk) and the [API Route Design](api-routes.md) (owns everything under `/api/*` except `/api/auth/*`, which this document owns). This document owns the actual server config, middleware, and hand-built UI structure.
+
 **Status:** Draft, v1 scope
+
 **Last updated:** July 1, 2026
 
 ---

@@ -159,6 +159,7 @@ Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml`
 `lint`, `test:unit`, and `build` are independent per package -- `web`'s lint failing has no bearing on `api`'s unit tests passing, and today's `pnpm -r` runs them serially anyway. Matrixing over `package: [api, web]` runs these three stages concurrently instead, which is the actual bottleneck.
 
 **What stays outside the matrix:**
+
 - `test:int` -- `api`-only (Miniflare/D1); `web` has no integration layer (Testing Strategy S3.2). Matrixing a stage that only exists for one leg buys nothing.
 - `test:e2e` -- needs *both* packages built and running together (Testing Strategy S3.3); it depends on the whole matrix finishing, not a single leg.
 - `deploy` -- stays a single sequential job (migrations -> API -> web). This ordering is load-bearing (S3.1) and is never matrixed, regardless of how the test stages are parallelized.

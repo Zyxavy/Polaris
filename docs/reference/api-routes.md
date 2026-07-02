@@ -529,13 +529,21 @@ Response 200:
 
 Implements ADR 001 S5.7's proxied-upload flow exactly -- this document just pins down the HTTP contract around it.
 
+**Validation rules** (defined in the [Security Review](security-review.md) S2, listed here as the source-of-truth contract):
+
+| Check | Rule |
+|---|---|
+| MIME allowlist | Only `application/pdf`, `image/jpeg`, `image/png`, `image/webp`, `text/plain`, `text/csv`, `application/rtf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats-officedocument.presentationml.presentation` |
+| Max size | 25 MB |
+
 ```
 POST /api/attachments
 Content-Type: multipart/form-data
 Fields: file (binary), workspace_id, widget_id
 
 Response 201: { "id": "att_...", "workspace_id": "...", "widget_id": "...", "filename": "notes.pdf", "content_type": "application/pdf", "size_bytes": 48213, "created_at": "..." }
-Response 400: { "error": "file_too_large", "message": "..." }   // if a size limit is set -- Testing Strategy S3.1 flags this as conditional ("if a limit is set")
+Response 400: { "error": "unsupported_file_type" }
+Response 400: { "error": "file_too_large" }   // 10 MB limit, checked before R2 put()
 ```
 
 `GET /api/attachments/:id` streams the R2 object back directly (`Content-Type` set from the stored `content_type`, `Content-Disposition: inline` so PDFs/images render in-browser rather than force-downloading) rather than returning a JSON pointer -- the frontend links directly to this URL as an `<a href>` / `<img src>`.
@@ -544,7 +552,7 @@ Response 400: { "error": "file_too_large", "message": "..." }   // if a size lim
 
 ## 10. AI Assist
 
-Already fully specified in ADR 003 S5 (`POST /api/ai/draft-system`) -- not repeated here. Included in this document's route inventory (S11) for completeness only.
+Already fully specified in the [AI Workers reference](ai-workers.md) S5 (`POST /api/ai/draft-system`) -- not repeated here. Included in this document's route inventory (S11) for completeness only.
 
 ---
 
@@ -586,6 +594,6 @@ Already fully specified in ADR 003 S5 (`POST /api/ai/draft-system`) -- not repea
 | `GET` | `/api/systems/:system_id/reviews` | ownership-scoped | |
 | `POST` | `/api/systems/:system_id/reviews` | ownership-scoped | two-table write |
 | `GET` | `/api/review-day` | `user_id` | |
-| `POST` | `/api/attachments` | ownership-scoped (via workspace_id) | proxied R2 upload |
+| `POST` | `/api/attachments` | ownership-scoped (via workspace_id) | proxied R2 upload, MIME + size validation per Security Review S2 |
 | `GET` | `/api/attachments/:id` | ownership-scoped | streams R2 object |
 | `POST` | `/api/ai/draft-system` | session only | see ADR 003 |

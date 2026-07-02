@@ -1,8 +1,10 @@
 # AI Workers - Implementation Reference
 
 **Project:** *Polaris*
+
 **Document type:** AI feature implementation reference - covers model selection, prompt design, response parsing, system prompt versioning, free-tier budget, and the Hono route implementation.
 **Status:** Draft - v1 scope
+
 **Last updated:** July 2, 2026
 
 ---

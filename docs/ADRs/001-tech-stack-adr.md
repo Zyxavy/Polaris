@@ -1,8 +1,11 @@
 # Tech Stack & Architecture Decision Record (ARD)
 
 **Project:** *Polaris*
+
 **Document type:** Architecture Decision Record -- a companion to the product PRD, covering technology choices, rationale, and component roles (not feature scope or schema, which live in the PRD).
+
 **Status:** Draft -- MVP architecture
+
 **Last updated:** June 30, 2026
 
 ---

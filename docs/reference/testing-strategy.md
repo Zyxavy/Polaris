@@ -1,8 +1,11 @@
 # Testing Strategy
 
 **Project:** *Polaris*
+
 **Document type:** Testing Strategy - defines testing layers, tooling choices, scope per layer, and the approach for tricky cases (auto-save debounce, Workers AI mocking, D1 bindings in tests).
+
 **Status:** Draft - v1 scope
+
 **Last updated:** July 2, 2026
 
 ---

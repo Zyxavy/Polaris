@@ -1,8 +1,11 @@
 # D1 Schema
 
 **Project:** *Polaris*
+
 **Document type:** Database schema ADR -- companion to the [PRD](../PRD/PRD-systems-app.md) (owns field-level meaning) and the [Tech Stack ADR](001-tech-stack-adr.md) (owns the decision to use D1 at all). This document owns table shapes, types, constraints, indexes, and migration structure.
+
 **Status:** Draft -- v1 scope
+
 **Last updated:** July 2, 2026
 
 ---

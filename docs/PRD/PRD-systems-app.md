@@ -1,8 +1,11 @@
 # Product Requirements Document
 
 **Project:** *Polaris*
+
 **Document type:** Product Requirements Document - companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md), which owns infrastructure decisions. This document owns feature scope, data model, and user flows.
+
 **Status:** Draft - v1 scope
+
 **Last updated:** July 1, 2026
 
 ---
