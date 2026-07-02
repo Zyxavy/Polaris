@@ -3,7 +3,7 @@
 **Project:** *Polaris*
 **Document type:** Database schema ADR -- companion to the [PRD](../PRD/PRD-systems-app.md) (owns field-level meaning) and the [Tech Stack ADR](001-tech-stack-adr.md) (owns the decision to use D1 at all). This document owns table shapes, types, constraints, indexes, and migration structure.
 **Status:** Draft -- v1 scope
-**Last updated:** July 1, 2026
+**Last updated:** July 2, 2026
 
 ---
 
@@ -78,7 +78,7 @@ CREATE INDEX idx_systems_status        ON systems(status);
 - `floor_action` is `NOT NULL DEFAULT ''` -- the empty string is allowed during the autosave drafting phase but rejected by the API on the user's explicit save. See S5 for the full resolution of the autosave/required tension.
 - `idx_systems_user_status` supports the single most frequent query in the app: "give me this user's active systems" (Dashboard load, PRD S6.3).
 - `idx_systems_status` supports the nightly Cron job's global scan, `WHERE status = 'active'` across all users -- see S3.2's note on the Cron job's actual bottleneck.
-- No `DELETE` path exists in v1 (PRD has no hard-delete flow) -- `ON DELETE CASCADE` on `user_id` exists for account-deletion cleanup, not for system deletion.
+- Hard-delete: archived systems are auto-deleted after 30 days via a Cron job (S4). User-initiated hard-delete is not exposed in the UI -- the archive+auto-delete lifecycle covers it.
 
 ### 3.2 `schedules`
 
@@ -87,7 +87,7 @@ CREATE TABLE schedules (
   id                 TEXT PRIMARY KEY,
   system_id          TEXT NOT NULL REFERENCES systems(id) ON DELETE CASCADE,
   days_of_week       INTEGER NOT NULL,             -- bitmask, bit 0 = Monday .. bit 6 = Sunday
-  time_window_start  TEXT NOT NULL,                -- "HH:MM", 24h, Asia/Manila local time
+  time_window_start  TEXT NOT NULL,                -- "HH:MM", 24h, Asia/Manila local time; frontend displays in 12h AM/PM for user convenience
   time_window_end    TEXT NOT NULL,
   recurrence         TEXT NOT NULL DEFAULT 'weekly'
                         CHECK (recurrence IN ('weekly')),
@@ -188,7 +188,7 @@ CREATE INDEX idx_widget_entries_workspace_id ON widget_entries(workspace_id);
 
 - `widget_id` is **not** a foreign key on any of them. Widgets are entries inside the `layout` JSON blob on `workspaces` (PRD S5.4), not their own DB rows -- there is nothing in D1 to reference. It's matched against `layout.widgets[].id` at the application layer. This is an accepted soft-reference: if a widget is deleted from the layout, its logged rows become orphaned data, not a referential-integrity violation. A cleanup job for orphaned rows is not in v1 scope (same reasoning as the R2 orphaned-object handling in ADR 001 S5.7 -- negligible at personal-app scale).
 - `entry_type = 'log_meta'` deliberately does **not** hold the actual journal text -- that lives in MongoDB per ADR 001 S5.5. This row exists only so the Instance's `workspace_snapshot` can resolve "which Mongo document(s) belong to this instance" via a `data` JSON like `{"mongo_id": "..."}`. This is the seam between D1 and Mongo that ADR 001 gestures at but doesn't schema out.
-- `instances.workspace_snapshot` itself is a small JSON summary written at read time (not stored denormalized) -- e.g. `{"counter_log_ids": [...], "timer_session_ids": [...], "widget_entry_ids": [...]}` -- computed by querying the three tables `WHERE instance_id = ?` and cached into the column on write for fast Dashboard reads without a triple join. This is a read-optimization, not a separate source of truth; the three logging tables are authoritative.
+- `instances.workspace_snapshot` is a small JSON summary of what was logged during an Instance: e.g. `{"counter_log_ids": [...], "timer_session_ids": [...], "widget_entry_ids": [...]}`. It is computed at read time (not stored denormalized) by querying the three logging tables `WHERE instance_id = ?`. The column is written on first access to avoid re-querying on every Dashboard load, but it is never the authoritative source -- the three logging tables (`counter_logs`, `timer_sessions`, `widget_entries`) are always the source of truth. The snapshot exists because the Dashboard's Instance cards need to display "2 items logged" without a triple join per card at render time -- the `workspace_snapshot` column is a read cache, nothing more. If inconsistency between the snapshot and the log tables ever matters (it won't at personal-app scale), the snapshot can be recomputed at any time with no data loss.
 - Progress chart aggregation (PRD S5.5) becomes a plain query against `counter_logs` or `timer_sessions`, e.g. `SELECT date(created_at), SUM(value) FROM counter_logs WHERE widget_id = ? GROUP BY date(created_at) ORDER BY date(created_at)` -- no `json_extract`, no generated-column dependency.
 
 *(If a fourth typed table becomes worth it later -- e.g. if Checklist gains per-step trend analysis -- that's an additive migration, not a rethink of this split.)*
@@ -289,22 +289,19 @@ CREATE INDEX idx_attachments_workspace_id ON attachments(workspace_id);
 
 ---
 
-## 4. Archiving Behavior (Resolved)
+## 4. Archiving and Auto-Delete (Resolved)
 
-Archiving a System (`status = 'archived'`) does **not** cascade-hide its `instances` or `reviews` rows, and does not delete or move any data. It only removes the System from the Dashboard's active query (`WHERE user_id = ? AND status = 'active'`, S3.1). All historical Instances and Reviews for an archived System remain fully queryable from that System's own detail page -- this preserves the trend/streak data integrity point in PRD S6.5 ("this preserves the integrity of the review-trend data"), since archiving is a visibility decision, not a data lifecycle event.
+Archiving a System (`status = 'archived'`) removes it from the Dashboard's active query (`WHERE user_id = ? AND status = 'active'`, S3.1) but keeps all historical `instances`, `reviews`, and `workspaces` rows fully queryable from that System's detail page. This preserves the trend/streak data integrity point in PRD S6.5, since archiving is a visibility decision, not an immediate data purge.
+
+**Auto-delete after 30 days:** A nightly Cron job (same `scheduled` handler as Instance pre-generation, ADR 001 S5.8) deletes any System with `status = 'archived'` and `updated_at < now - 30 days`. The `ON DELETE CASCADE` on child tables removes all associated `instances`, `schedules`, `workspaces` (and their `counter_logs`, `timer_sessions`, `widget_entries`, `attachments`), and `reviews` rows automatically. This is the only hard-delete mechanism in v1 -- no user-facing permanent delete button, no instant-purge API. The 30-day window gives the user time to un-archive a system if they change their mind; after that, data is gone permanently.
+
+This also replaces the prior note about "no DELETE path in v1" -- the auto-delete Cron is the DELETE path, deliberately delayed to prevent accidental data loss.
 
 ---
 
-## 5. Open Item: Autosave and the `floor_action NOT NULL` Constraint
+## 5. Autosave and the `floor_action NOT NULL` Constraint (Resolved)
 
-PRD S4.3 / S6.1 says drafts autosave "from the moment the form opens," including incomplete blueprints -- but S3.1 above has `floor_action NOT NULL` because PRD S5.1 marks it required "at creation time." These two requirements are in tension: an autosaved draft five seconds after opening the System Creator has no floor action yet.
-
-Two ways to resolve this, not yet decided:
-
-1. **Draft rows are allowed a placeholder.** Relax the constraint to `NOT NULL DEFAULT ''`, and enforce "floor_action is required" only at the API layer, on the transition from draft to a user-confirmed save (not on every autosave `PATCH`). This matches how `purpose`/`philosophy`/`protocol` already work above.
-2. **Two-phase creation.** The System row isn't created in `systems` at all until the user provides a floor_action; before that, the draft lives client-side only (or in a separate `system_drafts` table with no required fields), and autosave writes there instead.
-
-**Recommendation:** Option 1. It's a smaller schema surface (no `system_drafts` table to keep in sync with `systems`), and it matches the pattern already used for every other optional-at-first field. S3.1 above already reflects this choice (`NOT NULL DEFAULT ''` rather than strict `NOT NULL`). The API-layer validation rule will be documented in the API Route Design doc next.
+PRD S4.3 / S6.1 says drafts autosave "from the moment the form opens," including incomplete blueprints -- but PRD S5.1 marks `floor_action` required "at creation time." Resolved: **Option 1** -- `floor_action` is `NOT NULL DEFAULT ''` in the schema (placeholder allowed during autosave), with non-emptiness enforced only at the API layer on the explicit `POST /api/systems/:id/confirm` route. This matches how `purpose`/`philosophy`/`protocol` already work. No `system_drafts` table needed. The API-layer enforcement is documented in API Route Design S2.4.
 
 ---
 
@@ -314,7 +311,9 @@ Two ways to resolve this, not yet decided:
 
 D1 (like SQLite generally) does not enforce `FOREIGN KEY` constraints unless `PRAGMA foreign_keys = ON` is run on the connection. This must be set at the top of every migration file and is worth asserting in the integration test suite (Testing Strategy S3.2) -- a missing `PRAGMA` would let orphaned rows slip through silently, and the existing integration tests for cascade behavior (System soft-delete, R2 pointer rows) would pass for the wrong reason if the constraint were never actually active.
 
-### 6.2 Migration file plan
+### 6.2 Migration file plan (append-only)
+
+Migrations are **append-only**: existing migration files are never modified after creation. Every schema change adds a new numbered file. This ensures the migration sequence is deterministic, replayable, and auditable -- the `0001` through `0012` files below are frozen once created; any later addition (e.g. adding a `system_version` column to `systems`) becomes `0013_add_system_version.sql`, never an edit to `0002_systems.sql`.
 
 Per ADR 001 S5.10, migrations live in `packages/api/migrations/`, managed via `wrangler d1 migrations`. Proposed initial split:
 
