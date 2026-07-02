@@ -1,9 +1,12 @@
 # API Route Design
 
 **Project:** *Polaris*
+
 **Document type:** API contract -- the request/response shape for every endpoint the SvelteKit frontend calls. Companion to the [D1 Schema](004-d1-schema.md) (owns table shapes) and the [Tech Stack ADR](001-tech-stack-adr.md) (owns the decision to use Hono). This document owns paths, methods, payloads, status codes, and auth requirements -- not implementation code beyond the middleware pattern needed to make ownership checks unambiguous.
+
 **Status:** Draft -- v1 scope
-**Last updated:** July 1, 2026
+
+**Last updated:** July 2, 2026
 
 ---
 
@@ -69,7 +72,24 @@ A row that exists but belongs to another account returns the same `404` as a row
 
 ### 1.6 Pagination
 
-Not implemented in v1. Every list endpoint returns its full result set. PRD S10 puts the ceiling at a few thousand rows/year across all tables at heavy personal use -- well within a single unpaginated response. If this stops being true, pagination is an additive query-param change (`?cursor=`), not a breaking one, since the envelope is already a named array key rather than a bare array.
+Cursor-based pagination on every list endpoint. The envelope already uses named array keys, so pagination is additive -- each list response gets a `next_cursor` field alongside the data key.
+
+```
+?limit=50         (optional, default 50, max 100)
+?cursor=<opaque>  (optional, null/omit for first page)
+
+Response:
+{
+  "systems": [ ... ],
+  "next_cursor": "abc123..."   // null when this page is the last one
+}
+```
+
+**Cursor format:** opaque string, base64-encoded JSON payload. The payload contains the last item's sort key so the server can generate `WHERE sort_col > ?` without exposing sort-field details to the client. For date-sorted lists (Instances, Reviews), the cursor is `{"d":"2026-07-01T12:00:00.000Z","i":"<last_uuid>"}` (date + tiebreaker ID). For name-sorted lists (Systems, Templates), the cursor is `{"n":"Reading System","i":"<last_uuid>"}`.
+
+**Which list endpoints are paginated:** Systems (`GET /api/systems`), Instances (`GET /api/systems/:system_id/instances`), Reviews (`GET /api/systems/:system_id/reviews`), Templates (`GET /api/templates`), and Review Day (`GET /api/review-day`). Counter Logs (`GET /api/widgets/:widget_id/counter-logs`) and Timer Sessions (`GET /api/widgets/:widget_id/timer-sessions`) are **excluded** -- they are aggregation queries for chart rendering and need the full filtered result set; the `from`/`to` date range already bounds them. The Dashboard endpoint (`GET /api/dashboard`) is also excluded -- it returns only today's Instances for one user, bounded by active system count (PRD S10: a few dozen at most).
+
+**Why implement in v1 despite low volume:** The pagination interface (cursor format, response envelope, query params) is a contract between frontend and API. Adding it later means updating every `apiFetch` call site that currently reads a bare list response -- the frontend service modules (SvelteKit Route Architecture S6) all need `next_cursor` awareness, the `<InfiniteScroll>` or "Load More" components need building, and the sort-order contract needs to be consistent from day one. Building the pagination contract in v1 avoids rework on every list endpoint when the first user hits a few thousand rows.
 
 ---
 
@@ -236,17 +256,46 @@ Response 200:
 
 The `system` object embedded per instance is intentionally a narrow projection (not the full System record from S2.1) -- the Dashboard card only ever needs name, domain, and floor_action for its collapsed state; the full record is fetched separately if the user drills into a specific System. Keeping this response small matters more here than anywhere else in the API, since PRD S10 calls this out as the one screen with a hard non-blocking-render requirement.
 
-**Generation logic (server-side, not a separate endpoint):**
+**Generation logic (server-side, not a separate endpoint) -- designed to stay under 10ms CPU budget:**
+
+The Workers free tier caps CPU time at 10ms per request (I/O wait excluded). The generation logic avoids JS loops over D1 results by pushing the day-of-week matching into SQL and using D1's batch API for inserts:
 
 ```
-For each active System belonging to this user:
-  For each of its Schedules where days_of_week matches today (Asia/Manila):
-    INSERT INTO instances (system_id, date, state) VALUES (?, today, 'pending')
-    -- on UNIQUE conflict: do nothing, this instance already exists
-Then: SELECT all instances for this user where date = today
-  Filter instances to only those whose time_window has opened
-  (WHERE time_window_start <= current_time Asia/Manila or window hasn't ended yet)
+Step 1 (SQL -- one query, no JS loop):
+  SELECT s.id, sch.time_window_start
+  FROM systems s
+  JOIN schedules sch ON sch.system_id = s.id
+  WHERE s.user_id = ?
+    AND s.status = 'active'
+    AND (sch.days_of_week & ?) != 0       -- bitmask match in SQL, not JS
+  -- ? = (1 << today's day-of-week), computed in JS as a single integer
+
+Step 2 (D1 batch -- one round trip, no per-row overhead):
+  const stmt = db.prepare(
+    'INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, ?, ?)'
+  );
+  const batch = rows.map(r => stmt.bind(r.id, today, 'pending'));
+  await db.batch(...batch);               -- D1 batch: all inserts in one I/O call
+
+Step 3 (SQL -- final filtered SELECT, single query):
+  SELECT instances.*, systems.name, systems.domain, systems.floor_action
+  FROM instances
+  JOIN systems ON systems.id = instances.system_id
+  JOIN schedules ON schedules.system_id = instances.system_id
+  WHERE instances.date = ?
+    AND systems.user_id = ?
+    AND schedules.days_of_week ...         -- same bitmask match
+    AND time_window_start <= current_time  -- window-gated filter
+  ORDER BY instances.created_at DESC      -- no pagination; Dashboard returns today's only, bounded by active system count
 ```
+
+Key CPU-saving decisions:
+- Bitmask matching is a SQL `WHERE (days_of_week & ?) != 0`, not a JS `dayMatchesBitmask()` call per row
+- `INSERT OR IGNORE` is a single D1 `batch()` call, not individual `db.prepare().run()` per schedule
+- The final filtered SELECT is one query, not a SELECT-then-filter-in-JS
+- The Cron job uses the same SQL pattern but substitutes `tomorrow` for `today`
+
+The total JS CPU time for generation is: compute `1 << today`, construct bind params, call `batch()`. At a few dozen active systems with 1-3 schedules each, this is well under 1ms CPU -- no part of this path touches the 10ms ceiling.
 
 **Window-gated matching (confirmed):** Instance generation is date-only (the row is created regardless of window), but the Dashboard response filters out Instances whose scheduled time window hasn't opened yet. A "Morning Workout" with a 6 AM window won't appear on the Dashboard at 3 AM, but it will appear as soon as 6 AM hits -- no page reload required if the frontend re-fetches periodically or on focus. The nightly Cron job pre-generates the row (date-only, same as the lazy path); the window gate is applied at query time, so pre-generation never accidentally reveals tomorrow's early-morning Instances tonight.
 
@@ -281,7 +330,8 @@ Instance history for one System -- backs the System detail page's streak/calenda
 
 ```
 Query params: ?from=2026-06-24&to=2026-06-30   (both optional; omitting both returns full history)
-Response 200: { "instances": [ ...same shape as S4.3's response, one per matching date... ] }
+               &cursor=&limit=50                 (standard pagination params, S1.6)
+Response 200: { "instances": [ ...same shape as S4.3's response, one per matching date... ], "next_cursor": "..." }
 ```
 
 ---
