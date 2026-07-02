@@ -1,0 +1,23 @@
+{
+  "name": "Polaris",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "pnpm -r deploy",
+    "deploy:migrations": "cd packages/api && wrangler d1 migrations apply DB",
+    "deploy:api": "cd packages/api && wrangler deploy",
+    "deploy:web": "cd packages/web && vite build && wrangler deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.9.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module"
+}

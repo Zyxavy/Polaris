@@ -1,0 +1,53 @@
+@import "tailwindcss";
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --color-surface: #e9e4d7;
+  --color-surface-container-low: #DDD5C3;
+  --color-surface-container-lowest: #F4F0E6;
+  --color-on-surface: #191c18;
+  --color-primary: #55624d;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #98a68e;
+  --color-secondary: #755754;
+  --color-blush: #fed7d2;
+  --color-muted: rgba(25, 28, 24, 0.04);
+  --color-muted-foreground: #6B6B6B;
+  --color-border: rgba(25, 28, 24, 0.12);
+  --color-outline-variant: #c5c8be;
+  --color-destructive: #C24545;
+  --color-ring: #55624d;
+
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+
+  --shadow-ambient-sm: 0 2px 8px rgba(85, 98, 77, 0.04);
+  --shadow-ambient-md: 0 8px 24px rgba(85, 98, 77, 0.05);
+  --shadow-ambient-lg: 0 16px 40px rgba(85, 98, 77, 0.06);
+  --shadow-ambient-xl: 0 24px 60px rgba(85, 98, 77, 0.07);
+}
+
+[data-theme="dark"] {
+  --color-surface: #101519;
+  --color-surface-container-low: #1A1F24;
+  --color-surface-container-lowest: #22282E;
+  --color-on-surface: #D1CFC0;
+  --color-primary: #8FA88A;
+  --color-on-primary: #101519;
+  --color-primary-container: #6B7D65;
+  --color-secondary: #A08684;
+  --color-blush: #D6A09B;
+  --color-muted: rgba(255, 255, 255, 0.04);
+  --color-muted-foreground: #9B9B8E;
+  --color-border: rgba(209, 207, 192, 0.10);
+  --color-outline-variant: #4A4D46;
+  --color-destructive: #E07070;
+  --color-ring: #8FA88A;
+  --shadow-ambient-sm: 0 2px 8px rgba(0,0,0,0);
+  --shadow-ambient-md: 0 8px 24px rgba(0,0,0,0);
+  --shadow-ambient-lg: 0 16px 40px rgba(0,0,0,0);
+  --shadow-ambient-xl: 0 24px 60px rgba(0,0,0,0);
+}

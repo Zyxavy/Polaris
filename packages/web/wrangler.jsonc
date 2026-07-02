@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "polaris-web",
+  "main": "build/index.html",
+  "compatibility_date": "2026-6-30",
+  "site": {
+    "bucket": "build"
+  }
+}

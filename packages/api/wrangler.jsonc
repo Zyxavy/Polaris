@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "polaris-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-30",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "polaris-db-dev",
+      "database_id": "bd7d9f42-2c4a-442c-9fd0-a53ded81cc6c"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "bucket_name": "polaris-attachments",
+      "binding": "ATTACHMENTS"
+    }
+  ],
+
+  "env": {
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "polaris-db",
+          "database_id": "6072aa3b-6fad-48a4-b2d6-72eaaaef6a3e"
+        }
+      ]
+    }
+  }
+}
