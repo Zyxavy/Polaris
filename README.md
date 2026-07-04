@@ -4,30 +4,51 @@ Build systems that survive your worst days. Define your floor. Log daily. Review
 
 A personal systems design web app. The unit of the product is the *system*: a defined protocol with a floor action, a schedule, a dedicated workspace, and a recurring review loop that feeds changes back into the design.
 
+**Implementation status:** Current
+
 ---
 
-## Tech Stack
+## Tech Stack (Current)
 
-- **Frontend:** SvelteKit (CSR/SPA) + Tailwind CSS
-- **Backend:** Hono (TypeScript) on Cloudflare Workers
-- **Database:** Cloudflare D1 (primary) + MongoDB Atlas (journal/reflections only)
-- **Storage:** Cloudflare R2
-- **Auth:** Better Auth (self-hosted on D1)
-- **AI:** Workers AI (`@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`)
-- **Scheduling:** Cloudflare Cron Triggers
-- **Monorepo:** pnpm workspaces
+| Layer | Choice | Status |
+|---|---|---|
+| Frontend | SvelteKit (CSR/SPA) + Tailwind CSS | Active |
+| Backend API | Hono (TypeScript) on Cloudflare Workers | Active (hello-world route) |
+| Primary database | Cloudflare D1 (SQLite) | Configured (binding exists) |
+| File storage | Cloudflare R2 | Configured (binding exists) |
+| Monorepo | pnpm workspaces | Active |
 
+## Tech Stack (Planned)
+
+| Layer | Choice | Status |
+|---|---|---|
+| Auth | Better Auth (self-hosted on D1) | Design complete, not yet implemented |
+| Secondary database | MongoDB Atlas (journal/reflections only) | Design complete, not yet implemented |
+| AI | Workers AI (`@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`) | Design complete, not yet implemented |
+| Scheduling | Cloudflare Cron Triggers | Design complete, not yet implemented |
+| Message queue | Cloudflare Queues | Design complete, not yet implemented |
 
 ## Documentation
 
-- [Product Requirements Document](docs/PRD/PRD-systems-app.md): feature scope, data model, user flows
-- [Tech Stack ADR](docs/ADRs/001-tech-stack-adr.md): architecture decisions, component roles, rationale
-- [Testing Strategy](docs/reference/testing-strategy.md): testing layers, tooling, CI pipeline
-- [AI Workers Reference](docs/reference/ai-workers.md): AI feature design, prompt management, free-tier analysis
-- [Security Review](docs/reference/security-review.md): threat assessment, MIME allowlist, XSS rules
-- [Disaster Recovery](docs/reference/disaster-recovery.md): backup procedures, recovery paths, rollback
-- [Observability](docs/reference/observability.md): debugging tools, structured logging, triage paths
-- [Definition of Done](docs/reference/definition-of-done.md): PR checklist, test gates, 10ms CPU verification
-- [Systems Framework](docs/core/systems-framework.md): the five-step system-build process that informs the product
-- [Research Insights](docs/core/insights.md): product-specific synthesis of systems-thinking literature
-- [Sources](docs/core/sources.md): transcripts and summaries of source material
+### Current
+- [AGENTS.md](AGENTS.md): coding conventions and tooling
+- [Implementation Plan](docs/plans/implementation-plan-p0.md): P0 feature build plan
+
+### Target Architecture (design docs for planned implementation)
+- [Product Requirements Document](docs/PRD/PRD-systems-app.md)
+- [Tech Stack ADR](docs/ADRs/001-tech-stack-adr.md)
+- [D1 Schema](docs/ADRs/002-d1-schema.md)
+- [MongoDB Schema](docs/ADRs/003-mongodb-schema.md)
+- [API Route Design](docs/reference/api-routes.md)
+- [Auth Integration](docs/reference/auth-integration.md)
+- [SvelteKit Route Architecture](docs/reference/sveltekit-route-architecture.md)
+- [AI Workers Reference](docs/reference/ai-workers.md)
+- [Security Review](docs/reference/security-review.md)
+- [CI/CD & Deployment](docs/reference/cicd-deploy.md)
+- [Testing Strategy](docs/reference/testing-strategy.md)
+- [Observability](docs/reference/observability.md)
+- [Disaster Recovery](docs/reference/disaster-recovery.md)
+- [Definition of Done](docs/reference/definition-of-done.md)
+- [Systems Framework](docs/core/systems-framework.md)
+- [Research Insights](docs/core/insights.md)
+- [Sources](docs/core/sources.md)

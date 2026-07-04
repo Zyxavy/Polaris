@@ -1,5 +1,7 @@
 # Systems Thinking for Polaris - Insights & Synthesis
 
+**Implementation status:** Planned / Target Architecture
+
 ## What the Research Confirms About Polaris's Core Design
 
 The most striking thing across all these videos is that **Polaris already embodies the research**. The floor/full model, health score over streaks, weekly review - these aren't arbitrary product decisions. They map directly to what the literature says actually works.

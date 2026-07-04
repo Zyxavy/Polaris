@@ -1,5 +1,7 @@
 # Sources of Truth
 
+**Implementation status:** Planned / Target Architecture
+
 How To Set Systems Instead Of Goals (a system that will change your life)(<https://www.youtube.com/watch?v=hyUr5E_xwjk&t=38s>)
 
 This video argues that **creating systems** is a more effective approach to personal success than traditional goal setting (0:00-1:30). The creator shares their personal experience of failing to achieve long-term goals despite following popular self-help advice, only to see significant, effortless progress after shifting their focus to building **reliable systems** (0:00-1:24).

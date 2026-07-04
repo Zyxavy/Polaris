@@ -1,42 +1,38 @@
-# sv
+# Polaris Web
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit SPA (CSR only, SSR disabled) deployed as Workers Static Assets on Cloudflare. Part of the Polaris pnpm monorepo.
 
-## Creating a project
+**Implementation status:** Current
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Quick Start
 
-```sh
-# create a new project
-npx sv create my-app
+From the repo root:
+
+```bash
+pnpm install
+cd packages/web && pnpm run dev    # starts Vite dev server
 ```
 
-To recreate this project with the same configuration:
+## Available Scripts
 
-```sh
-# recreate this project
-pnpm dlx sv@0.16.1 create --template minimal --types ts --add vitest="usages:unit,component" playwright tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" --install pnpm .
-```
+| Command | Does |
+|---|---|
+| `pnpm run dev` | Start Vite dev server (port 5173) |
+| `pnpm run build` | SvelteKit sync + Vite production build |
+| `pnpm run deploy` | Build + wrangler deploy |
+| `pnpm run check` | SvelteKit sync + svelte-check type-check |
+| `pnpm run test:unit` | Vitest unit tests |
+| `pnpm run test:e2e` | Playwright E2E tests |
 
-## Developing
+## Configuration
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Wrangler config: `wrangler.jsonc` — deploys `build/` directory as Workers Static Assets with SPA fallback.
 
-```sh
-npm run dev
+## Documentation
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+Full route architecture, auth integration, and frontend conventions live in the root `docs/` directory:
 
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- [SvelteKit Route Architecture](../../docs/reference/sveltekit-route-architecture.md)
+- [Auth Integration](../../docs/reference/auth-integration.md)
+- [CI/CD & Deployment](../../docs/reference/cicd-deploy.md)
+- [Testing Strategy](../../docs/reference/testing-strategy.md)
