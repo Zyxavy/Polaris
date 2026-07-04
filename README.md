@@ -31,10 +31,12 @@ A personal systems design web app. The unit of the product is the *system*: a de
 ## Documentation
 
 ### Current
+
 - [AGENTS.md](AGENTS.md): coding conventions and tooling
 - [Implementation Plan](docs/plans/implementation-plan-p0.md): P0 feature build plan
 
 ### Target Architecture (design docs for planned implementation)
+
 - [Product Requirements Document](docs/PRD/PRD-systems-app.md)
 - [Tech Stack ADR](docs/ADRs/001-tech-stack-adr.md)
 - [D1 Schema](docs/ADRs/002-d1-schema.md)
