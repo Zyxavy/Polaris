@@ -6,6 +6,8 @@
 
 **Status:** Draft - v1 scope
 
+**Implementation status:** Planned / Target Architecture
+
 **Last updated:** July 2, 2026
 
 ---
@@ -40,7 +42,7 @@ The goal is to make the unit layer fast enough to run constantly, the integratio
 - R2 `put`/`get` round-trips with actual stream handling.
 - Cron `scheduled` handler logic with a real `env` object.
 
-**Setup:** `packages/api/vitest.config.ts` uses the `@cloudflare/vitest-pool-workers` pool, pointed at the same `wrangler.toml` as the deployment. D1 in tests uses an in-memory SQLite database seeded from the migration files in `packages/api/migrations/`.
+**Setup:** `packages/api/vitest.config.ts` uses the `@cloudflare/vitest-pool-workers` pool, pointed at the same `wrangler.jsonc` as the deployment. D1 in tests uses an in-memory SQLite database seeded from the migration files in `packages/api/migrations/`.
 
 ```typescript
 // packages/api/vitest.config.ts
@@ -50,7 +52,7 @@ export default defineWorkersConfig({
   test: {
     poolOptions: {
       workers: {
-        wrangler: { configPath: './wrangler.toml' },
+        wrangler: { configPath: './wrangler.jsonc' },
         miniflare: {
           d1Databases: { DB: 'test-db' },
         },

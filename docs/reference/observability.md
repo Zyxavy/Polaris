@@ -6,6 +6,8 @@
 
 **Status:** Draft -- v1 scope
 
+**Implementation status:** Planned / Target Architecture
+
 **Last updated:** July 2, 2026
 
 ---
@@ -142,7 +144,7 @@ The Cron trigger runs once nightly (ADR 001 S5.8). To check whether it ran and w
 wrangler tail --format=json | Select-String "cron"
 ```
 
-Look for `[cron]` tagged lines. If nothing appears, either the Cron trigger isn't configured correctly in `wrangler.toml` (check `reference/cicd-deploy.md` S2.2), or the Worker failed to start (check `wrangler tail` for any startup-time errors first).
+Look for `[cron]` tagged lines. If nothing appears, either the Cron trigger isn't configured correctly in `wrangler.jsonc` (check `reference/cicd-deploy.md` S2.2), or the Worker failed to start (check `wrangler tail` for any startup-time errors first).
 
 ### 4.3 Queue consumer: journal entries not being written
 
