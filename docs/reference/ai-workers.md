@@ -55,12 +55,14 @@ const response = await env.AI.run(
 );
 ```
 
-The `env.AI` binding is declared in `packages/api/wrangler.toml`:
+The `env.AI` binding is declared in `packages/api/wrangler.jsonc`:
 
-```toml
-[ai]
-binding = "AI"
-```
+```jsonc
+{
+  "ai": {
+    "binding": "AI"
+  }
+}
 
 ---
 
@@ -347,7 +349,7 @@ The agentic assistant vision (edit systems, assign dates, act as a mentor, expos
 
 ## 9. Model Swap
 
-If `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b` is deprecated or a better structured-output model becomes available on Workers AI, the swap is one line change in `wrangler.toml` + a regression test of the parsing pipeline. The `stripThinkTokens` and `parseSystemDraft` functions are the single point of adaptation for model output format changes. The versioned system prompt means any change to model behaviour is auditable through git history.
+If `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b` is deprecated or a better structured-output model becomes available on Workers AI, the swap is one line change in `wrangler.jsonc` + a regression test of the parsing pipeline. The `stripThinkTokens` and `parseSystemDraft` functions are the single point of adaptation for model output format changes. The versioned system prompt means any change to model behaviour is auditable through git history.
 
 ---
 
