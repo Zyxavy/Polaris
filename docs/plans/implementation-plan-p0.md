@@ -117,7 +117,7 @@ No PR needed for this slice — it's infra, not code. Move straight to Slice 1.
 - [x] No test suite yet — this slice has no logic to test, just scaffolding. State this explicitly in the PR per Definition of Done's exception table.
 
 **PR:** `chore/monorepo-scaffold` → `main`. -->
-
+<!-- 
 ---
 
 ## Slice 2 — D1 Schema Foundation (P0 tables only)
@@ -168,7 +168,7 @@ Don't hand-write `user`/`session`/`account`/`verification` — those come from t
 - [x] `pnpm test:integration` passes.
 - [x] No route/API code yet, this slice is schema-only. State "no API contract change" in the PR.
 
-**PR:** `feat/d1-schema` → `main`.
+**PR:** `feat/d1-schema` → `main`. -->
 
 ---
 
