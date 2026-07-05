@@ -4,6 +4,8 @@
 
 **Document type:** Architecture Decision Record -- a companion to the product PRD, covering technology choices, rationale, and component roles (not feature scope or schema, which live in the PRD).
 
+**Implementation status:** Planned / Target Architecture
+
 **Status:** Draft -- MVP architecture
 
 **Last updated:** June 30, 2026
@@ -200,17 +202,17 @@ The project is a **pnpm monorepo** with two packages:
 │   │   ├── src/
 │   │   │   ├── index.ts    # fetch + scheduled + queue exports
 │   │   │   └── routes/
-│   │   ├── wrangler.toml   # D1, R2, AI, Queue, Cron bindings
+│   │   ├── wrangler.jsonc   # D1, R2, AI, Queue, Cron bindings
 │   │   └── package.json
 │   └── web/                # SvelteKit SPA
 │       ├── src/
-│       ├── wrangler.toml   # static assets deployment
+│       ├── wrangler.jsonc   # static assets deployment
 │       └── package.json
 ```
 
 **Why pnpm workspaces:** consistent with the TypeScript-throughout decision -- a single `node_modules` hoist, shared type packages (e.g. a `packages/shared` with the System/Instance/Widget type definitions used by both `api` and `web`), and a single `pnpm install` at the root. Cloudflare's first-party support for pnpm monorepos via Wrangler is stable.
 
-**Two separate `wrangler.toml` files:** `packages/api/wrangler.toml` declares all bindings (D1, R2, AI, Queues, Cron Triggers). `packages/web/wrangler.toml` deploys only Workers Static Assets -- no bindings, no CPU budget concerns. They are deployed independently (`wrangler deploy` from each package directory) or via root scripts (`pnpm -r deploy`).
+**Two separate `wrangler.jsonc` files:** `packages/api/wrangler.jsonc` declares all bindings (D1, R2, AI, Queues, Cron Triggers). `packages/web/wrangler.jsonc` deploys only Workers Static Assets -- no bindings, no CPU budget concerns. They are deployed independently (`wrangler deploy` from each package directory) or via root scripts (`pnpm -r deploy`).
 
 **Database migration tooling:** D1 schema migrations use `wrangler d1 migrations` commands (the native Cloudflare approach -- no ORM required for a simple schema). Migration SQL files live in `packages/api/migrations/`. A `LAYOUT_MIGRATIONS.md` (not yet created -- to be written during scaffolding) tracks workspace JSON schema version bumps separately from D1 schema changes, per PRD S5.4. ORM evaluation (Drizzle, Kysely) is deferred until the schema has stabilised -- adding a query builder before the schema is stable creates churn, and raw SQL is readable enough for a small schema.
 

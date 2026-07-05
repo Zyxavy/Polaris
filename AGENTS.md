@@ -1,5 +1,7 @@
 # AGENTS.md — Polaris Coding Conventions
 
+**Implementation status:** Current
+
 This file defines the conventions an AI coding assistant should follow when writing or editing code in this project. Read it at session start before any implementation work.
 
 ## Branch Strategy

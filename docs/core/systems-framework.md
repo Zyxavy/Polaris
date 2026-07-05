@@ -6,6 +6,8 @@ Goal-Setting · Time Management · Health · Finance · Learning
 
 *Includes: Step-by-step guide to building any system from scratch*
 
+**Implementation status:** Planned / Target Architecture
+
 ---
 
 ## Part 01: What Is a System - and Why It Beats Goals

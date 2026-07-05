@@ -1,5 +1,7 @@
 # Polaris — P0 Implementation Plan
 
+**Implementation status:** Current
+
 **Scope:** P0 only, per PRD §7 — Auth, System Creator (manual), Schedules, Instance auto-generation (lazy + nightly cron), Dashboard (full/floor/missed), Workspace with Timer/Counter/Log/Checklist widgets, per-System Review, Review Day.
 
 **Explicitly deferred to a later pass (P1/P2 — do not build yet):** AI-assisted creation, built-in/user templates, Link List / Streak / Progress Chart / Notes widgets, R2 attachments, `/account` recovery-code settings polish beyond what auth needs, CI matrix optimization.
@@ -38,7 +40,7 @@ You said pnpm is ready but wrangler isn't initialized and Atlas isn't set up. Do
    wrangler queues create polaris-journal-retry
    ```
 
-   Record the returned `database_id` values — you'll paste them into `wrangler.toml` in Slice 1.
+   Record the returned `database_id` values — you'll paste them into `wrangler.jsonc` in Slice 1.
 3. MongoDB Atlas: create a free M0 cluster, a database user, and get the connection string. Don't put it anywhere in git — you'll set it via `wrangler secret put` once the API worker exists (Slice 9, when the Log widget needs it). For local dev, you'll run Mongo in Docker instead (`docker run -d -p 27017:27017 --name polaris-mongo-dev mongo:7`) — do this now if Docker is available, or defer until Slice 9.
 4. GitHub repo: confirm branch protection on `main` (require PR, no direct push) since AGENTS.md mandates this — this is a GitHub setting, not code.
 5. Do **not** set `CLOUDFLARE_API_TOKEN` as a GitHub Actions secret yet — that's Slice 12 (CI/CD), once there's something to deploy.
@@ -81,7 +83,7 @@ No PR needed for this slice — it's infra, not code. Move straight to Slice 1.
    pnpm create hono@latest . --template cloudflare-workers
    ```
 
-   Confirm `wrangler.toml` matches the shape in `cicd-deploy.md` §2.2 — d1_databases, r2_buckets, queues, ai binding, cron trigger (`0 15 * * *`), and `[env.development]` / `[env.production]` blocks. Paste in the D1 database IDs from Slice 0. **Skip the `[ai]` binding and Queue binding wiring for now** — those come in Slice 9 with the Log widget; adding them now with nothing consuming them just invites drift. Do add the D1 and R2 bindings now since Slice 2 needs D1 immediately.
+   Confirm `wrangler.jsonc` matches the shape in `cicd-deploy.md` §2.2 — d1_databases, r2_buckets, queues, ai binding, cron trigger (`0 15 * * *`), and `[env.development]` / `[env.production]` blocks. Paste in the D1 database IDs from Slice 0. **Skip the `[ai]` binding and Queue binding wiring for now** — those come in Slice 9 with the Log widget; adding them now with nothing consuming them just invites drift. Do add the D1 and R2 bindings now since Slice 2 needs D1 immediately.
 3. Scaffold `packages/web` (SvelteKit, CSR-only):
 
    ```bash
@@ -115,7 +117,7 @@ No PR needed for this slice — it's infra, not code. Move straight to Slice 1.
 - [x] No test suite yet — this slice has no logic to test, just scaffolding. State this explicitly in the PR per Definition of Done's exception table.
 
 **PR:** `chore/monorepo-scaffold` → `main`. -->
-
+<!-- 
 ---
 
 ## Slice 2 — D1 Schema Foundation (P0 tables only)
@@ -155,18 +157,18 @@ Don't hand-write `user`/`session`/`account`/`verification` — those come from t
 1. `wrangler d1 migrations create DB <name>` for each file above (creates the empty, correctly-numbered file).
 2. Hand-write the SQL in each, from the ADR.
 3. Apply locally: `wrangler d1 migrations apply DB --local`.
-4. Set up `packages/api/vitest.config.ts` with `@cloudflare/vitest-pool-workers` per `testing-strategy.md` §2.2, pointed at the same `wrangler.toml`, D1 in-memory seeded from these migration files.
+4. Set up `packages/api/vitest.config.ts` with `@cloudflare/vitest-pool-workers` per `testing-strategy.md` §2.2, pointed at the same `wrangler.jsonc`, D1 in-memory seeded from these migration files.
 5. Write a smoke integration test: insert a `systems` row (with a fake `user_id` string — Better Auth's `user` table doesn't exist yet, so skip the FK check for now by disabling `PRAGMA foreign_keys` in this one test, or stub a `user` row manually with the same shape Better Auth will create later). Read it back. Confirm `UNIQUE(system_id, date)` on `instances` throws on duplicate insert (this is the idempotency guarantee Slice 6/7 depend on — verify it now while it's cheap).
 
 ### Definition of Done
 
-- [ ] All 11 migration files apply cleanly, in order, to a fresh local D1.
-- [ ] `PRAGMA foreign_keys` confirmed ON (assert in a test, per D1 Schema §6.1's explicit call-out).
-- [ ] Integration test for the `instances` UNIQUE constraint passes.
-- [ ] `pnpm test:integration` passes.
-- [ ] No route/API code yet — this slice is schema-only. State "no API contract change" in the PR.
+- [x] All 11 migration files apply cleanly, in order, to a fresh local D1.
+- [x] `PRAGMA foreign_keys` confirmed ON (assert in a test, per D1 Schema §6.1's explicit call-out).
+- [x] Integration test for the `instances` UNIQUE constraint passes.
+- [x] `pnpm test:integration` passes.
+- [x] No route/API code yet, this slice is schema-only. State "no API contract change" in the PR.
 
-**PR:** `feat/d1-schema` → `main`.
+**PR:** `feat/d1-schema` → `main`. -->
 
 ---
 
@@ -349,7 +351,7 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 
 1. `tomorrowManilaDate()` helper in `calendar.ts`, unit-tested.
 2. `scheduled` export in `packages/api/src/index.ts`, calling the same `generateTodayInstances`-shaped logic but bound to tomorrow's date across **all users** (not scoped to one session — this runs with no request context). Confirm the D1 query in `api-routes.md` §4.1 generalizes correctly when there's no `user_id` in scope — you'll query across all active systems, not just one user's, since this is a background job. (For a single-user personal app this is nearly the same thing, but write the SQL correctly regardless — `WHERE s.status = 'active'`, no `user_id` filter.)
-3. Add the `[triggers]` block to `wrangler.toml` (was deferred in Slice 1).
+3. Add the `[triggers]` block to `wrangler.jsonc` (was deferred in Slice 1).
 4. Local testing: Miniflare's `wrangler dev --test-scheduled` or invoking the `scheduled()` export directly in an integration test with a real D1 binding and a mocked `env` — per `testing-strategy.md` §3.2's "Nightly Cron handler" bullet.
 
 ### Tests

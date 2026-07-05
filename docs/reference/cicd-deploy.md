@@ -6,6 +6,8 @@
 
 **Status:** Draft -- v1 scope
 
+**Implementation status:** Planned / Target Architecture
+
 **Last updated:** July 2, 2026
 
 ---
@@ -37,7 +39,7 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
 | `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api.kelpselp.workers.dev` | No |
 | `MONGODB_URI` | `api` | `mongodb://localhost:27017/polaris` (local Mongo) | Atlas connection string, stored in `wrangler secret` | Yes |
 
-### 2.2 `wrangler.toml` -- `packages/api/`
+### 2.2 `wrangler.jsonc` -- `packages/api/`
 
 ```toml
 name = "polaris-api"
@@ -80,18 +82,22 @@ database_name = "polaris-db"
 database_id = "<prod-uuid>"
 ```
 
-**Note:** `BETTER_AUTH_SECRET` and `MONGODB_URI` are NOT in `wrangler.toml` -- they are set via `wrangler secret put` and accessed via `env.BETTER_AUTH_SECRET` / `env.MONGODB_URI` at runtime. This keeps them out of version control.
+**Note:** `BETTER_AUTH_SECRET` and `MONGODB_URI` are NOT in `wrangler.jsonc` -- they are set via `wrangler secret put` and accessed via `env.BETTER_AUTH_SECRET` / `env.MONGODB_URI` at runtime. This keeps them out of version control.
 
-### 2.3 `wrangler.toml` -- `packages/web/`
+### 2.3 `wrangler.jsonc` -- `packages/web/`
 
-```toml
-name = "polaris-web"
-main = "build/index.html"    # entry point for the static assets worker
-compatibility_date = "2026-07-01"
-
-[site]
-bucket = "build"
+```jsonc
+{
+  "name": "polaris-web",
+  "main": "build/index.html",
+  "compatibility_date": "2026-6-30",
+  "site": {
+    "bucket": "build"
+  }
+}
 ```
+
+**Note:** The `"site"` key above is the Workers Sites pattern (deprecated). The modern Workers Static Assets pattern uses `"assets": { "directory": "build", "binding": "ASSETS" }` instead. Both patterns are supported by `wrangler deploy` as of June 2026; the `"site"` pattern remains here because the SvelteKit Cloudflare adapter still emits it by default. When the adapter or wrangler deprecates `"site"`, migrate to the `"assets"` pattern.
 
 Workers Static Assets (the modern pattern replacing `workers-site/` and `@cloudflare/kv-asset-handler`) serves the `build/` directory directly without a custom Worker script. `main` is set to `build/index.html` as the SPA fallback entry point. No bindings are needed -- this deployment serves files only.
 
@@ -155,6 +161,8 @@ pnpm -r deploy                   # migrations, api, web
 Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml`.
 
 ### 4.0 Why a matrix, and what it does/doesn't parallelize
+
+**Note on script availability:** The CI pipeline references `lint`, `test:unit`, `test:int`, and `test:e2e` scripts. As of the current scaffold, only `build` and `deploy` exist in `root package.json`. The test/lint scripts are target-state -- they must be added to each package's `package.json` as part of the P0 Implementation Plan before CI can run.
 
 `lint`, `test:unit`, and `build` are independent per package -- `web`'s lint failing has no bearing on `api`'s unit tests passing, and today's `pnpm -r` runs them serially anyway. Matrixing over `package: [api, web]` runs these three stages concurrently instead, which is the actual bottleneck.
 
@@ -300,7 +308,7 @@ jobs:
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
 | Production | `https://polaris-api.kelpselp.workers.dev` | `https://polaris.kelpselp.workers.dev` |
 
-These URLs are determined by the `name` field in each `wrangler.toml` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
+These URLs are determined by the `name` field in each `wrangler.jsonc` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
 
 ---
 
@@ -364,7 +372,7 @@ Workers AI calls (`env.AI.run()`) are **not emulated by Miniflare**. In local de
 | `BETTER_AUTH_SECRET` | Random 32-char hex string (`openssl rand -hex 32`) | `wrangler secret put BETTER_AUTH_SECRET` |
 | `MONGODB_URI` | Atlas cluster connection string | `wrangler secret put MONGODB_URI` |
 
-These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler.toml`. They are accessed at runtime as `env.BETTER_AUTH_SECRET` and `env.MONGODB_URI` inside the Hono Worker.
+These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler.jsonc`. They are accessed at runtime as `env.BETTER_AUTH_SECRET` and `env.MONGODB_URI` inside the Hono Worker.
 
 ---
 
@@ -377,7 +385,7 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 - [ ] R2 bucket created (`wrangler r2 bucket create polaris-attachments`)
 - [ ] Queue created (`wrangler queues create polaris-journal-retry`)
 - [ ] Secrets set locally (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)
-- [ ] Database UUIDs from step 2 written into both `wrangler.toml` files
+- [ ] Database UUIDs from step 2 written into both `wrangler.jsonc` files
 - [ ] Migration files scaffolded via `wrangler d1 migrations create DB <name>` (one per table, per ADR 002 S6.2's numbered plan: `0001_enable_foreign_keys` through `0013_recovery_codes`) -- this only creates the empty, correctly-named file; the SQL inside each is hand-written, never auto-generated, and each file is frozen once created (append-only, no edits after the fact)
 - [ ] Migrations applied manually (`wrangler d1 migrations apply DB --remote`) -- CI isn't wired up yet at this point
 - [ ] Better Auth tables generated via the Better Auth CLI (`npx @better-auth/cli generate --config path/to/auth.ts --output packages/api/migrations/`) -- this is the only correct path for the Better Auth-managed tables (`user`, `session`, `account`, `verification`) per ADR 002 S2 and ADR 006 S1.1; do not hand-write these alongside the app's own migration files

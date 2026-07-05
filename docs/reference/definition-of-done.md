@@ -6,6 +6,8 @@
 
 **Status:** v1
 
+**Implementation status:** Planned / Target Architecture
+
 **Last updated:** July 2, 2026
 
 ---
@@ -17,7 +19,7 @@ Every task, branch, or PR must satisfy all of the following before it is conside
 ### 1. Unit tests pass
 
 ```bash
-pnpm test:unit
+pnpm test:unit      # ⚠ not yet in root package.json
 ```
 
 Runs Vitest in both packages (`api`, `web`). Covers pure functions, Svelte components in isolation, and Hono route handlers with mocked bindings (testing-strategy.md S2.1). If the task adds new logic that can be unit-tested, corresponding tests must be included.
@@ -25,7 +27,7 @@ Runs Vitest in both packages (`api`, `web`). Covers pure functions, Svelte compo
 ### 2. Integration tests pass
 
 ```bash
-pnpm test:integration
+pnpm test:integration     # ⚠ not yet in root package.json
 ```
 
 Runs route-level tests against a real D1/R2 Miniflare instance (testing-strategy.md S2.2). If the task touches a route, query, or binding that the integration suite covers, confirm the suite still passes. If the task adds a new route or data access path, add appropriate integration coverage.
@@ -33,7 +35,7 @@ Runs route-level tests against a real D1/R2 Miniflare instance (testing-strategy
 ### 3. Lint clean
 
 ```bash
-pnpm lint
+pnpm lint           # ⚠ not yet in root package.json
 ```
 
 Both packages must pass with zero warnings (not just zero errors). Warnings are treated as violations -- the lint config should be strict enough that a warning is actionable.
@@ -81,7 +83,7 @@ This is explicitly scoped to **references**, not full document rewrites -- if a 
 
 | Item | Typical exception |
 |---|---|
-| Integration tests | Infra-only change (wrangler.toml, workflow YAML) with no new or modified route |
+| Integration tests | Infra-only change (wrangler.jsonc, workflow YAML) with no new or modified route |
 | E2E tests | Non-P0 change (configuration, documentation, helper utility) |
 | 10ms CPU verification | Task touches only `packages/web` (frontend has no CPU budget) |
 | ADR update | Internal refactor with no contract change (rename a variable, extract a function) |
