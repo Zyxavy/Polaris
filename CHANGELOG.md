@@ -44,3 +44,5 @@
   - Tests `systems` insert/read round-trip
   - Tests `UNIQUE(system_id, date)` constraint on `instances` rejects duplicates
 - Updated `testing-strategy.md` §2.2 config example to match `@cloudflare/vitest-pool-workers` v0.17.0 API
+- Created `docs/troubleshooting/d1-vitest-pitfalls.md` documenting 7 resolved issues
+- **Status:** all 3 smoke tests passing, slice complete
