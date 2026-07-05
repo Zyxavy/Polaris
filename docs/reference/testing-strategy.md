@@ -46,19 +46,24 @@ The goal is to make the unit layer fast enough to run constantly, the integratio
 
 ```typescript
 // packages/api/vitest.config.ts
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
+import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers';
+import { defineConfig } from 'vitest/config';
 
-export default defineWorkersConfig({
-  test: {
-    poolOptions: {
-      workers: {
+export default defineConfig(async () => {
+  const migrations = await readD1Migrations('./migrations');
+  return {
+    plugins: [
+      cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
         miniflare: {
           d1Databases: { DB: 'test-db' },
         },
-      },
+      }),
+    ],
+    test: {
+      provide: { migrations },
     },
-  },
+  };
 });
 ```
 

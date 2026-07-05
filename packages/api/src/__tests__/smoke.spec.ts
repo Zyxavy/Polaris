@@ -1,12 +1,27 @@
 import { env, applyD1Migrations } from 'cloudflare:test';
 import { type D1Migration } from '@cloudflare/vitest-pool-workers';
-import { inject } from 'vitest';
+import { describe, it, expect, beforeEach, inject } from 'vitest';
 
 const migrations = inject<D1Migration[]>('migrations');
+
+/**
+ * Creates a stub `user` table matching Better Auth's expected shape so FK
+ * references in the application tables (systems.user_id, etc.) resolve during
+ * tests. Better Auth creates the real table in Slice 8; until then, this stub
+ * keeps the schema testable without disabling FK enforcement.
+ */
+async function seedUserStub(db: D1Database) {
+  // Single-line for db.exec() which splits on newlines
+  await db.exec("CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, email TEXT NOT NULL DEFAULT '', emailVerified INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL DEFAULT '', createdAt TEXT NOT NULL DEFAULT (datetime('now')), updatedAt TEXT NOT NULL DEFAULT (datetime('now')))");
+  await db.prepare("INSERT OR IGNORE INTO user (id, name) VALUES (?, ?)")
+    .bind('fake_user_abc', 'Test User')
+    .run();
+}
 
 describe('D1 schema smoke test', () => {
   beforeEach(async () => {
     await applyD1Migrations(env.DB, migrations);
+    await seedUserStub(env.DB);
   });
 
   it('0001: PRAGMA foreign_keys is ON', async () => {
@@ -15,8 +30,6 @@ describe('D1 schema smoke test', () => {
   });
 
   it('can insert and read a system', async () => {
-    await env.DB.exec("PRAGMA foreign_keys = OFF");
-
     await env.DB
       .prepare(
         `INSERT INTO systems (id, user_id, name, domain, purpose, created_at, updated_at)
@@ -37,8 +50,6 @@ describe('D1 schema smoke test', () => {
   });
 
   it('UNIQUE(system_id, date) on instances rejects duplicates', async () => {
-    await env.DB.exec("PRAGMA foreign_keys = OFF");
-
     await env.DB
       .prepare(
         `INSERT INTO systems (id, user_id, name, domain, created_at, updated_at)
