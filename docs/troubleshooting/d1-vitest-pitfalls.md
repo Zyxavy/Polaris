@@ -6,17 +6,20 @@ Troubleshooting notes from Slice 2 (D1 schema + smoke integration tests). Each e
 
 ---
 
-## 1. `defineWorkersConfig` — imported from a non-existent sub-path
+## 1. `defineWorkersConfig`, imported from a non-existent sub-path
 
 ### Error
+
 ```
 Cannot find module '@cloudflare/vitest-pool-workers/config'
 ```
 
 ### Why
-`testing-strategy.md` §2.2 referenced `defineWorkersConfig` from `@cloudflare/vitest-pool-workers/config`. This API existed in older versions of the pool (pre-0.16.x) but was removed in v0.17.0. The installed version (`^0.17.0`) does not export this sub-path.
+
+`testing-strategy.md` S2.2 referenced `defineWorkersConfig` from `@cloudflare/vitest-pool-workers/config`. This API existed in older versions of the pool (pre-0.16.x) but was removed in v0.17.0. The installed version (`^0.17.0`) does not export this sub-path.
 
 ### Fix
+
 Use the actual v0.17.0 API: `cloudflareTest` (a Vite plugin) + `readD1Migrations` (reads `.sql` files into `D1Migration[]`).
 
 ```typescript
@@ -46,15 +49,18 @@ export default defineConfig(async () => {
 ## 2. `test:integration` key outside `"scripts"` in `package.json`
 
 ### Error
+
 ```
 pnpm run test:integration
  ERR  Missing script: test:integration
 ```
 
 ### Why
-The `test:integration` field was placed at the top level of `package.json` alongside `"name"` and `"type"`, not inside the `"scripts"` object. npm/pnpm only reads executable scripts from `"scripts"` — top-level keys are ignored.
+
+The `test:integration` field was placed at the top level of `package.json` alongside `"name"` and `"type"`, not inside the `"scripts"` object. npm/pnpm only reads executable scripts from `"scripts"`, top-level keys are ignored.
 
 ### Fix
+
 ```json
 "scripts": {
   "dev": "wrangler dev",
@@ -69,6 +75,7 @@ The `test:integration` field was placed at the top level of `package.json` along
 ## 3. `PRAGMA foreign_keys = OFF` doesn't bypass FK checks in D1
 
 ### Error
+
 ```
 D1_ERROR: no such table: main.user: SQLITE_ERROR
 ```
@@ -76,9 +83,11 @@ D1_ERROR: no such table: main.user: SQLITE_ERROR
 Even after running `env.DB.exec("PRAGMA foreign_keys = OFF")`, inserts into `systems` (which has `user_id REFERENCES user(id)`) still failed.
 
 ### Why
-D1's API uses a connection pool internally. `exec()` and `prepare().run()` may not share the same connection/session. `PRAGMA foreign_keys` is a per-connection setting — setting it OFF with `exec()` doesn't guarantee it's OFF for the subsequent `prepare().run()` calls.
+
+D1's API uses a connection pool internally. `exec()` and `prepare().run()` may not share the same connection/session. `PRAGMA foreign_keys` is a per-connection setting, setting it OFF with `exec()` doesn't guarantee it's OFF for the subsequent `prepare().run()` calls.
 
 ### Fix
+
 Don't disable FK enforcement. Instead, create a stub `user` table that matches Better Auth's expected shape:
 
 ```typescript
@@ -97,11 +106,13 @@ This keeps FK enforcement ON (matching production), tests the FK cascade behavio
 ## 4. `db.exec()` splits on newlines, not semicolons
 
 ### Error
+
 ```
 D1_EXEC_ERROR: Error in line 1: CREATE TABLE IF NOT EXISTS user (: incomplete input: SQLITE_ERROR
 ```
 
 ### Why
+
 D1's `exec()` splits the input string on **newline characters** and executes each line as a separate statement. A multi-line CREATE TABLE like:
 
 ```sql
@@ -113,14 +124,17 @@ CREATE TABLE IF NOT EXISTS user (
 is split at the newline after `(`, so `exec()` tries to execute `CREATE TABLE IF NOT EXISTS user (` in isolation, which is syntactically incomplete.
 
 ### Fix
+
 Two options:
 
 **A. Collapse to one line** (for `exec()`):
+
 ```typescript
 await db.exec("CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, ...)");
 ```
 
 **B. Use `prepare().run()`** (which sends the full SQL string as-is):
+
 ```typescript
 await db.prepare("CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, email TEXT NOT NULL DEFAULT '', ...)").run();
 ```
@@ -132,12 +146,15 @@ Option B also avoids the `exec()` newline trap and stays consistent with how eve
 ## 5. `applyD1Migrations` takes `D1Migration[]`, not a path
 
 ### Error
+
 TypeScript error or runtime failure when calling:
+
 ```typescript
 await applyD1Migrations(env.DB, './migrations');
 ```
 
 ### Why
+
 The `applyD1Migrations` function from `cloudflare:test` has this signature:
 
 ```typescript
@@ -151,6 +168,7 @@ export function applyD1Migrations(
 The second parameter is a `D1Migration[]` with pre-parsed queries, not a directory path. The function runs inside the Worker runtime (Miniflare) where filesystem access is unavailable.
 
 ### Fix
+
 Read the migrations in the **config file** (Node.js context) and pass them to the test via Vitest's `provide`/`inject`:
 
 ```typescript
@@ -176,28 +194,32 @@ beforeEach(async () => {
 
 ---
 
-## 6. `describe`, `it`, `expect`, `beforeEach` — not defined
+## 6. `describe`, `it`, `expect`, `beforeEach`, not defined
 
 ### Error
+
 ```
 ReferenceError: describe is not defined
 ```
 
 ### Why
+
 Vitest v4 does not set test globals by default. To use `describe`, `it`, `expect`, `beforeEach` without imports, you need `globals: true` in the config. Without it, they must be imported explicitly.
 
 ### Fix
+
 ```typescript
 import { describe, it, expect, beforeEach, inject } from 'vitest';
 ```
 
-The `inject` import is also from `vitest` — it retrieves values provided by the config's `test.provide`.
+The `inject` import is also from `vitest`, it retrieves values provided by the config's `test.provide`.
 
 ---
 
 ## 7. Missing semicolon on `PRAGMA foreign_keys` in migration file
 
 ### Error
+
 ```
 [ERROR] near "INSERT": syntax error at offset 33: SQLITE_ERROR
 ```
@@ -205,15 +227,19 @@ The `inject` import is also from `vitest` — it retrieves values provided by th
 Seen when running `wrangler d1 migrations apply DB --local`.
 
 ### Why
+
 The `0001_enable_foreign_keys.sql` file contained:
+
 ```sql
 PRAGMA foreign_keys = ON
 ```
-without a trailing semicolon. Wrangler's migration runner concatenates statements sequentially. A missing semicolon leaves the SQL parser in an unterminated state — subsequent statements (including wrangler's own INSERT into the `d1_migrations` tracking table) inherit the broken parse context, causing the `"near INSERT"` error.
+
+without a trailing semicolon. Wrangler's migration runner concatenates statements sequentially. A missing semicolon leaves the SQL parser in an unterminated state, subsequent statements (including wrangler's own INSERT into the `d1_migrations` tracking table) inherit the broken parse context, causing the `"near INSERT"` error.
 
 ### Fix
+
 ```sql
 PRAGMA foreign_keys = ON;
 ```
 
-Every statement in every migration file must end with a semicolon. This is not optional — SQLite's parser requires explicit statement termination for correctness.
+Every statement in every migration file must end with a semicolon. This is not optional, SQLite's parser requires explicit statement termination for correctness.

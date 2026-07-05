@@ -162,11 +162,11 @@ Don't hand-write `user`/`session`/`account`/`verification` — those come from t
 
 ### Definition of Done
 
-- [ ] All 11 migration files apply cleanly, in order, to a fresh local D1.
-- [ ] `PRAGMA foreign_keys` confirmed ON (assert in a test, per D1 Schema §6.1's explicit call-out).
-- [ ] Integration test for the `instances` UNIQUE constraint passes.
-- [ ] `pnpm test:integration` passes.
-- [ ] No route/API code yet — this slice is schema-only. State "no API contract change" in the PR.
+- [x] All 11 migration files apply cleanly, in order, to a fresh local D1.
+- [x] `PRAGMA foreign_keys` confirmed ON (assert in a test, per D1 Schema §6.1's explicit call-out).
+- [x] Integration test for the `instances` UNIQUE constraint passes.
+- [x] `pnpm test:integration` passes.
+- [x] No route/API code yet, this slice is schema-only. State "no API contract change" in the PR.
 
 **PR:** `feat/d1-schema` → `main`.
 
