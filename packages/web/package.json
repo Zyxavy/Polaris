@@ -10,9 +10,11 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "preview": "vite preview",
     "test:unit": "vitest",
     "test": "pnpm test:unit -- --run && pnpm test:e2e",
-    "test:e2e": "playwright install && playwright test"
+    "test:e2e": "playwright install chromium && playwright test",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -31,5 +33,8 @@
     "vite": "^8.0.16",
     "vitest": "^4.1.8",
     "wrangler": "^4.97.0"
+  },
+  "dependencies": {
+    "better-auth": "^1.6.23"
   }
 }

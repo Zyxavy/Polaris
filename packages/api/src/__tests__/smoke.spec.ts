@@ -1,8 +1,8 @@
-import { env, applyD1Migrations } from 'cloudflare:test';
-import { type D1Migration } from '@cloudflare/vitest-pool-workers';
+import { env } from 'cloudflare:workers';
+import { applyD1Migrations } from 'cloudflare:test';
 import { describe, it, expect, beforeEach, inject } from 'vitest';
 
-const migrations = inject<D1Migration[]>('migrations');
+const migrations = inject('migrations');
 
 /**
  * Creates a stub `user` table matching Better Auth's expected shape so FK
@@ -11,11 +11,12 @@ const migrations = inject<D1Migration[]>('migrations');
  * keeps the schema testable without disabling FK enforcement.
  */
 async function seedUserStub(db: D1Database) {
-  // Single-line for db.exec() which splits on newlines
-  await db.exec("CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, email TEXT NOT NULL DEFAULT '', emailVerified INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL DEFAULT '', createdAt TEXT NOT NULL DEFAULT (datetime('now')), updatedAt TEXT NOT NULL DEFAULT (datetime('now')))");
-  await db.prepare("INSERT OR IGNORE INTO user (id, name) VALUES (?, ?)")
-    .bind('fake_user_abc', 'Test User')
-    .run();
+  // Insert a stub user row for FK references. The user table is created by
+  // the 0014_better_auth_core.sql migration with NOT NULL on email/createdAt/updatedAt.
+  const now = new Date().toISOString();
+  await db.prepare(
+    "INSERT OR IGNORE INTO user (id, name, email, emailVerified, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind('fake_user_abc', 'Test User', 'fake@test.com', 1, now, now).run();
 }
 
 describe('D1 schema smoke test', () => {

@@ -6,9 +6,17 @@
 
 **Status:** Draft, v1 scope
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Current
 
-**Last updated:** July 1, 2026
+**Last updated:** July 8, 2026
+
+> **Slice 3 implementation notes:** The docs below have been updated to match what was actually built.
+> Key deviations from the original plan:
+>
+> - `@better-auth/d1` does not exist. Better Auth v1.5+ supports native D1 — pass `database: env.DB` directly (no adapter). See `packages/api/src/auth.ts`.
+> - `auth.api.hashPassword()` is not a public API. Use `hashPassword` from `better-auth/crypto` instead. See S5.2 for the corrected recovery route.
+> - Better Auth's CLI cannot connect to D1 (no binding access outside a request handler). Core tables (`user`, `session`, `account`, `verification`) were created as a manual SQL migration (`0014_better_auth_core.sql`). See S1.1 note.
+> - `User` and `Session` types are imported from `better-auth/types`, not inferred from the SDK.
 
 ---
 
@@ -19,11 +27,16 @@
 ```typescript
 // packages/api/src/auth.ts
 import { betterAuth } from 'better-auth';
-import { d1 } from '@better-auth/d1';   // confirm exact adapter package name against Better Auth's current docs before scaffolding; package naming for D1 adapters has shifted across Better Auth versions
 
-export function createAuth(env: CloudflareBindings) {
+export function createAuth(env: {
+  DB: D1Database;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
+}) {
   return betterAuth({
-    database: d1({ db: env.DB }),
+    database: env.DB,                    // native D1 — no adapter package needed in v1.5+
+    secret: env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET || '',
+    baseURL: env.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL || 'http://localhost:8787',
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,   // no verification wall, per PRD S6.0
@@ -42,7 +55,9 @@ export function createAuth(env: CloudflareBindings) {
 
 `createAuth` is a function, not a module-level singleton, because `env.DB` is only available inside a request handler in the Workers runtime (bindings aren't accessible at module load time); it's called once per request from the Hono middleware in S1.2, not instantiated globally.
 
-**Confirm before scaffolding:** the exact Better Auth D1 adapter import path and config shape against Better Auth's current documentation. Better Auth's D1 support and package structure have moved between versions; this snippet is the shape as of this document's writing, not a copy-paste guarantee. Same caution applies to `session.updateAge`/`expiresIn` field names; verify against the installed version's types before relying on them.
+**Native D1 (v1.5+):** Better Auth v1.5+ supports Cloudflare D1 natively — you pass the D1 binding directly as `database: env.DB`. No separate adapter package (`@better-auth/d1`) is needed; it was never published. The import path `@better-auth/d1` shown in earlier versions of this doc was incorrect. See `packages/api/src/auth.ts` for the actual implementation.
+
+**Table generation:** Better Auth's CLI (`npx auth generate`/`npx @better-auth/cli generate`) cannot access Cloudflare D1 bindings outside a request handler. Core tables (`user`, `session`, `account`, `verification`) were defined as a manual SQL migration at `packages/api/migrations/0014_better_auth_core.sql`, matching Better Auth's documented core schema. Apply via `wrangler d1 migrations apply DB --local`.
 
 ### 1.2 Mounting into Hono
 
@@ -221,54 +236,35 @@ CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 
 **Recovery route (`POST /api/auth/recover`):**
 
+The recovery logic is extracted into a shared `handleRecovery` function in `packages/api/src/lib/recovery.ts` so it can be tested independently:
+
+```typescript
+// packages/api/src/lib/recovery.ts
+export async function handleRecovery(
+  db: D1Database,
+  email: string,
+  recoveryCode: string,
+  newPassword: string,
+): Promise<RecoveryResult> {
+  // validates inputs, finds user by email, matches recovery code,
+  // marks code as used, hashes new password via better-auth/crypto,
+  // updates account.password, returns { success, message, status }
+}
+```
+
+The route handler in `index.ts` is a thin wrapper that calls `handleRecovery` and formats the JSON response. This extraction makes both unit testing and integration testing possible (Option A in the testing plan).
+
 Registered in Hono BEFORE the Better Auth catch-all handler so it takes precedence:
 
 ```typescript
 // packages/api/src/index.ts
-import { createAuth } from './auth';
+import { handleRecovery } from './lib/recovery';
 
 app.post('/api/auth/recover', async (c) => {
   const { email, recovery_code, new_password } = await c.req.json();
-
-  // Validate inputs
-  if (!email || !recovery_code || !new_password) {
-    return c.json({ error: 'validation_error', message: 'Email, recovery code, and new password are required.' }, 400);
-  }
-  if (new_password.length < 8) {
-    return c.json({ error: 'validation_error', message: 'Password must be at least 8 characters.' }, 400);
-  }
-
-  const db = c.env.DB as D1Database;
-
-  // Find the user by email
-  const user = await db.prepare('SELECT id FROM user WHERE email = ?').bind(email).first<{ id: string }>();
-  if (!user) {
-    return c.json({ error: 'invalid_credentials', message: 'Invalid email or recovery code.' }, 401);
-  }
-
-  // Find a matching unused recovery code -- constant-time comparison not needed for personal app
-  const codes = await db.prepare(
-    "SELECT id, code FROM recovery_codes WHERE user_id = ? AND used_at IS NULL"
-  ).bind(user.id).all<{ id: string; code: string }>();
-
-  const match = codes.results?.find(row => row.code === recovery_code);
-  if (!match) {
-    return c.json({ error: 'invalid_credentials', message: 'Invalid email or recovery code.' }, 401);
-  }
-
-  // Mark code as used
-  await db.prepare("UPDATE recovery_codes SET used_at = ? WHERE id = ?")
-    .bind(new Date().toISOString(), match.id).run();
-
-  // Hash the new password using Better Auth's hashing function
-  const auth = createAuth(c.env);
-  const hashedPassword = await auth.api.hashPassword({ password: new_password });
-
-  // Update the account password
-  await db.prepare("UPDATE account SET password = ? WHERE userId = ?")
-    .bind(hashedPassword, user.id).run();
-
-  return c.json({ message: 'Password reset successfully. You can now sign in with your new password.' });
+  const result = await handleRecovery(c.env.DB, email, recovery_code, new_password);
+  const errorKey = result.status === 400 ? 'validation_error' : result.status === 401 ? 'invalid_credentials' : undefined;
+  return c.json(errorKey ? { error: errorKey, message: result.message } : { message: result.message }, result.status);
 });
 
 // Better Auth catch-all handler -- registered AFTER the recovery route
