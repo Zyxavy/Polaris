@@ -246,7 +246,51 @@ Every statement in every migration file must end with a semicolon. This is not o
 
 ---
 
-## 8. `@better-auth/d1` package does not exist (404 on npm)
+## 8. `useSession().data` does not exist — use `getSession()` for load/redirect guards
+
+### Error
+```
+Property 'data' does not exist on type 'Atom<{ data: ... }>'
+```
+
+### Why
+Better Auth's `useSession()` returns a Svelte 5 `Atom` (reactive rune), not a plain object with a `.data` property. The `sveltekit-route-architecture.md` §3.4 showed `authClient.useSession()` being used with `$session.data` in a layout guard — this API doesn't exist in Better Auth v1.6's Svelte client.
+
+`useSession()` is intended for reactive component usage (template bindings, `$effect` watchers). Its atom API is not compatible with `throw redirect()` inside a `$effect()` in SvelteKit (redirects need to happen in load functions or synchronously in layout components, not from async callbacks).
+
+### Fix
+Use `getSession()` instead — it returns a plain `Promise<{ data, error }>`:
+
+```typescript
+// ✅ For auth guards (load functions, layout redirects)
+const { data: session } = await authClient.getSession();
+if (!session) throw redirect(302, '/sign-in');
+
+// ❌ Not this — atom not compatible with redirect guards
+const session = authClient.useSession();  // returns Atom, not usable with throw redirect
+```
+
+For the `(auth)` layout (pre-auth, redirects signed-in users away), use `getSession()` in a `$effect` with a `ready` gate:
+
+```svelte
+<script lang="ts">
+  let ready = $state(false);
+  $effect(() => {
+    authClient.getSession().then(({ data: session }) => {
+      if (session) throw redirect(302, '/guides');
+      ready = true;
+    });
+  });
+</script>
+
+{#if ready}
+  {@render children()}
+{/if}
+```
+
+This avoids both the atom issue and the flash-of-form-before-redirect problem.
+
+## 9. `@better-auth/d1` package does not exist (404 on npm)
 
 ### Error
 ```

@@ -34,6 +34,7 @@
 
 ### Slice 3 — Auth (Better Auth + Recovery Codes)
 
+#### Backend
 - Installed `better-auth@^1.6.23` in `packages/api`
 - Generated `CloudflareBindings` type via `pnpm cf-typegen`
 - Installed `@types/node` dev dependency (required for `nodejs_compat`)
@@ -43,13 +44,26 @@
 - Created `requireAuth` middleware at `packages/api/src/middleware/require-auth.ts`
 - Applied auth guard to all `/api/*` routes except `/api/auth/*`
 - Created recovery codes routes (`POST /api/recovery-codes/generate`, `GET /api/recovery-codes`) at `packages/api/src/routes/recovery.ts`
-- Implemented `POST /api/auth/recover` custom route with:
-  - Email + recovery code validation
-  - Password hashing via `hashPassword` from `better-auth/crypto`
-  - Direct `account.password` update (no session needed)
+- Implemented `POST /api/auth/recover` custom route with email + recovery code validation, hashing via `better-auth/crypto`, direct `account.password` update
 - Registered recovery route **before** Better Auth catch-all (order matters in Hono)
 - Rate-limiting explicitly skipped per `security-review.md` §1
-- Updated `auth-integration.md` docs to match actual implementation (native D1, crypto import, manual migration)
+
+#### Frontend
+- Installed `better-auth` in `packages/web` (client SDK for Svelte)
+- Created `packages/web/src/lib/auth-client.ts` — `createAuthClient` wrapper with credentials, destructured `signIn`/`signUp`/`signOut`/`useSession`
+- Created `packages/web/src/lib/api/client.ts` — `apiFetch` wrapper with `credentials: 'include'`, JSON parsing, `ApiError` class for non-2xx responses
+- Created `(auth)` route group:
+  - `+layout.svelte` — redirects signed-in users to `/guides` using `getSession()` (promise-based, avoids reactivity issue with `useSession().data`)
+  - `sign-in/+page.svelte` — centered form per design spec, calls `signIn.email()`, redirects to `/dashboard`
+  - `sign-up/+page.svelte` — centered form with name/email/password, calls `POST /api/recovery-codes/generate` on sign-up success, shows recovery codes modal with copy/confirm before redirecting to `/guides`
+- Created `(app)` route group:
+  - `+layout.ts` — auth guard per §3.3, redirects to `/sign-in` if `getSession()` returns null
+  - `+layout.svelte` — minimal nav shell with Polaris branding (full NavBar deferred to Slice 11)
+- Created placeholder `guides/+page.svelte` as redirect target for post-auth and post-sign-up flows
+
+#### Docs
+- Updated `auth-integration.md` to match actual implementation (native D1, crypto import, manual migration)
+- Added 4 new entries to `docs/troubleshooting/d1-vitest-pitfalls.md` (Better Auth D1 adapter, hashPassword API, CLI limitations, CloudflareBindings type)
 
 ### Slice 2 — D1 Schema + Smoke Tests
 
