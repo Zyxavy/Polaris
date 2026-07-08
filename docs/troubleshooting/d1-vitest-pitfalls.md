@@ -1,8 +1,8 @@
-# D1 + Vitest Pitfalls
+# D1 + Vitest + Better Auth Pitfalls
 
 **Implementation status:** Current
 
-Troubleshooting notes from Slice 2 (D1 schema + smoke integration tests). Each entry covers a concrete error, why it happened, and what the fix was.
+Troubleshooting notes from Slices 2–3 (D1 schema, smoke tests, Better Auth integration). Each entry covers a concrete error, why it happened, and what the fix was.
 
 ---
 
@@ -243,3 +243,103 @@ PRAGMA foreign_keys = ON;
 ```
 
 Every statement in every migration file must end with a semicolon. This is not optional, SQLite's parser requires explicit statement termination for correctness.
+
+---
+
+## 8. `@better-auth/d1` package does not exist (404 on npm)
+
+### Error
+```
+pnpm add @better-auth/d1
+[ERR_PNPM_FETCH_404] GET https://registry.npmjs.org/@better-auth%2Fd1: Not Found - 404
+```
+
+### Why
+The `@better-auth/d1` package was never published to npm. The `auth-integration.md` doc referenced it as `import { d1 } from '@better-auth/d1'` based on an early draft of Better Auth's D1 support that never shipped as a separate adapter package.
+
+Better Auth v1.5+ has **native D1 support** — you pass the D1 binding directly as `database: env.DB`. No adapter package is needed.
+
+### Fix
+Remove the `@better-auth/d1` import. Use native D1:
+
+```typescript
+import { betterAuth } from 'better-auth';
+
+export function createAuth(env: CloudflareBindings) {
+  return betterAuth({
+    database: env.DB,  // native D1, no adapter
+    // ...
+  });
+}
+```
+
+---
+
+## 9. `auth.api.hashPassword` is not a public API
+
+### Error
+```
+Property 'hashPassword' does not exist on type 'InferAPI<...>'
+```
+
+### Why
+The `auth-integration.md` §5.2 recovery route snippet referenced `auth.api.hashPassword({ password: new_password })`. This method does not exist on the `auth.api` object in Better Auth v1.6. The password hashing function is an internal that is not exposed as an API endpoint.
+
+### Fix
+Import `hashPassword` directly from the `better-auth/crypto` sub-path:
+
+```typescript
+const { hashPassword } = await import('better-auth/crypto');
+const hashedPassword = await hashPassword(new_password);
+```
+
+`better-auth/crypto` exports `hashPassword` and `verifyPassword` as standalone functions that match Better Auth's internal hashing (scrypt). Use this in any server-side context that needs to hash or verify passwords without going through the auth API (e.g. the recovery route`.
+
+---
+
+## 10. Better Auth CLI can't generate migrations for D1
+
+### Error / Blockage
+```
+npx @better-auth/cli generate --config packages/api/src/auth.ts ...
+```
+
+### Why
+Better Auth's CLI (`npx auth generate`, `npx @better-auth/cli generate`) needs to connect to a database to introspect existing tables and generate migration SQL. However, Cloudflare D1 bindings (`env.DB`) are only available inside a Worker request handler — they cannot be accessed at the command line.
+
+Additionally, `createAuth` is a factory function that takes `env` as a parameter (called per-request), not a module-level `export const auth` — the CLI expects the latter to read `auth.options`.
+
+### Fix
+Two valid approaches, both used in this project:
+
+**A. Manual SQL migration** (chosen for Slice 3): Define the core Better Auth tables (`user`, `session`, `account`, `verification`) as a standard D1 migration file. Copy the SQL schema from Better Auth's [database documentation](https://www.better-auth.com/docs/concepts/database#core-schema), adjusting types for SQLite (e.g. `INTEGER` for booleans, `TEXT` for dates). Tracked in `packages/api/migrations/0014_better_auth_core.sql`.
+
+**B. Programmatic migration at runtime**: Use `getMigrations()` from `better-auth/db/migration` in a one-shot endpoint or test to auto-create missing tables. Better Auth's docs include a [Cloudflare D1 example](https://www.better-auth.com/docs/concepts/database#example-cloudflare-d1) for this approach.
+
+---
+
+## 11. `CloudflareBindings` type not found
+
+### Error
+```
+Cannot find name 'CloudflareBindings'.
+```
+
+### Why
+The `CloudflareBindings` interface is generated from `wrangler.jsonc` by `wrangler types --env-interface CloudflareBindings` (the `cf-typegen` script). The generated `worker-configuration.d.ts` file was never created.
+
+### Fix
+Run the type generation script from `packages/api`:
+
+```bash
+pnpm cf-typegen
+```
+
+This reads all bindings (D1, R2, etc.) from `wrangler.jsonc` and emits `worker-configuration.d.ts` with the correct `CloudflareBindings` interface.
+
+Also install `@types/node` — required when `nodejs_compat` is enabled:
+```bash
+pnpm add -D @types/node
+```
+
+The generated types are picked up automatically since `tsconfig.json` has `skipLibCheck: true` and TypeScript resolves `.d.ts` files in the project root without an explicit `include`.

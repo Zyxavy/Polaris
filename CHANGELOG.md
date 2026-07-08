@@ -32,6 +32,25 @@
 - Cleaned up scaffold artifacts: removed `wrangler types` from web build/check scripts, removed `worker-configuration.d.ts` type reference from web `tsconfig.json`
 - Updated package-level scripts (api deploy includes migrations, web has build + deploy)
 
+### Slice 3 — Auth (Better Auth + Recovery Codes)
+
+- Installed `better-auth@^1.6.23` in `packages/api`
+- Generated `CloudflareBindings` type via `pnpm cf-typegen`
+- Installed `@types/node` dev dependency (required for `nodejs_compat`)
+- Created `packages/api/src/auth.ts` with native D1 support (`database: env.DB` — no adapter package)
+- Created core Better Auth tables (`user`, `session`, `account`, `verification`) as migration `0014_better_auth_core.sql` — CLI can't reach D1 bindings outside a request handler
+- Mounted Better Auth handler at `/api/auth/*` in `index.ts`
+- Created `requireAuth` middleware at `packages/api/src/middleware/require-auth.ts`
+- Applied auth guard to all `/api/*` routes except `/api/auth/*`
+- Created recovery codes routes (`POST /api/recovery-codes/generate`, `GET /api/recovery-codes`) at `packages/api/src/routes/recovery.ts`
+- Implemented `POST /api/auth/recover` custom route with:
+  - Email + recovery code validation
+  - Password hashing via `hashPassword` from `better-auth/crypto`
+  - Direct `account.password` update (no session needed)
+- Registered recovery route **before** Better Auth catch-all (order matters in Hono)
+- Rate-limiting explicitly skipped per `security-review.md` §1
+- Updated `auth-integration.md` docs to match actual implementation (native D1, crypto import, manual migration)
+
 ### Slice 2 — D1 Schema + Smoke Tests
 
 - Created 11 migration files in `packages/api/migrations/` (0001–0010, 0013) matching D1 Schema ADR §3 table definitions
