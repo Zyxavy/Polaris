@@ -28,9 +28,15 @@
 // packages/api/src/auth.ts
 import { betterAuth } from 'better-auth';
 
-export function createAuth(env: CloudflareBindings) {
+export function createAuth(env: {
+  DB: D1Database;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
+}) {
   return betterAuth({
     database: env.DB,                    // native D1 — no adapter package needed in v1.5+
+    secret: env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET || '',
+    baseURL: env.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL || 'http://localhost:8787',
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,   // no verification wall, per PRD S6.0
@@ -230,54 +236,35 @@ CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 
 **Recovery route (`POST /api/auth/recover`):**
 
+The recovery logic is extracted into a shared `handleRecovery` function in `packages/api/src/lib/recovery.ts` so it can be tested independently:
+
+```typescript
+// packages/api/src/lib/recovery.ts
+export async function handleRecovery(
+  db: D1Database,
+  email: string,
+  recoveryCode: string,
+  newPassword: string,
+): Promise<RecoveryResult> {
+  // validates inputs, finds user by email, matches recovery code,
+  // marks code as used, hashes new password via better-auth/crypto,
+  // updates account.password, returns { success, message, status }
+}
+```
+
+The route handler in `index.ts` is a thin wrapper that calls `handleRecovery` and formats the JSON response. This extraction makes both unit testing and integration testing possible (Option A in the testing plan).
+
 Registered in Hono BEFORE the Better Auth catch-all handler so it takes precedence:
 
 ```typescript
 // packages/api/src/index.ts
-import { createAuth } from './auth';
+import { handleRecovery } from './lib/recovery';
 
 app.post('/api/auth/recover', async (c) => {
   const { email, recovery_code, new_password } = await c.req.json();
-
-  // Validate inputs
-  if (!email || !recovery_code || !new_password) {
-    return c.json({ error: 'validation_error', message: 'Email, recovery code, and new password are required.' }, 400);
-  }
-  if (new_password.length < 8) {
-    return c.json({ error: 'validation_error', message: 'Password must be at least 8 characters.' }, 400);
-  }
-
-  const db = c.env.DB as D1Database;
-
-  // Find the user by email
-  const user = await db.prepare('SELECT id FROM user WHERE email = ?').bind(email).first<{ id: string }>();
-  if (!user) {
-    return c.json({ error: 'invalid_credentials', message: 'Invalid email or recovery code.' }, 401);
-  }
-
-  // Find a matching unused recovery code -- constant-time comparison not needed for personal app
-  const codes = await db.prepare(
-    "SELECT id, code FROM recovery_codes WHERE user_id = ? AND used_at IS NULL"
-  ).bind(user.id).all<{ id: string; code: string }>();
-
-  const match = codes.results?.find(row => row.code === recovery_code);
-  if (!match) {
-    return c.json({ error: 'invalid_credentials', message: 'Invalid email or recovery code.' }, 401);
-  }
-
-  // Mark code as used
-  await db.prepare("UPDATE recovery_codes SET used_at = ? WHERE id = ?")
-    .bind(new Date().toISOString(), match.id).run();
-
-  // Hash the new password using Better Auth's hashing function
-  const { hashPassword } = await import('better-auth/crypto');
-  const hashedPassword = await hashPassword(new_password);
-
-  // Update the account password
-  await db.prepare("UPDATE account SET password = ? WHERE userId = ?")
-    .bind(hashedPassword, user.id).run();
-
-  return c.json({ message: 'Password reset successfully. You can now sign in with your new password.' });
+  const result = await handleRecovery(c.env.DB, email, recovery_code, new_password);
+  const errorKey = result.status === 400 ? 'validation_error' : result.status === 401 ? 'invalid_credentials' : undefined;
+  return c.json(errorKey ? { error: errorKey, message: result.message } : { message: result.message }, result.status);
 });
 
 // Better Auth catch-all handler -- registered AFTER the recovery route

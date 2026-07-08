@@ -9,6 +9,10 @@ export default defineConfig(async () => {
         wrangler: { configPath: './wrangler.jsonc' },
         miniflare: {
           d1Databases: { DB: 'test-db' },
+          bindings: {
+            BETTER_AUTH_SECRET: 'polaris-test-secret-32-characters-min!',
+            BETTER_AUTH_URL: 'http://localhost:8787',
+          },
         },
       }),
     ],

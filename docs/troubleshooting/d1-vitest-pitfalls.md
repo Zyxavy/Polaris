@@ -387,3 +387,191 @@ pnpm add -D @types/node
 ```
 
 The generated types are picked up automatically since `tsconfig.json` has `skipLibCheck: true` and TypeScript resolves `.d.ts` files in the project root without an explicit `include`.
+
+---
+
+## 12. `signUpEmail` returns flat `{user, token}`, not `{data, error}`
+
+### Error
+```
+expect(error).toBeNull(); // error is undefined
+expect(data).toBeDefined(); // data is undefined
+```
+
+### Why
+Better Auth's `auth.api.signUpEmail()` returns `{ user, token }` directly — there is no `data` or `error` wrapper. The `{ data, error }` pattern applies to the client SDK (`authClient.signUp.email()`), not the server API.
+
+### Fix
+Destructure directly from the response:
+```typescript
+const { user, token } = await auth.api.signUpEmail({ body: { email, password, name } });
+expect(user.email).toBe(email);
+expect(token).toBeDefined();
+```
+
+---
+
+## 13. Recovery handler extracted for testability (Option A)
+
+### Why inline testing was blocked
+The recovery logic was embedded in a Hono route handler in `index.ts`. This made it impossible to test in isolation — you'd need to make real HTTP requests through a Hono app instance, which is fragile and slow.
+
+### Fix
+Extract the core logic into a reusable function `handleRecovery(db, email, code, newPassword)` in `lib/recovery.ts`. The route handler becomes a thin wrapper. Both unit tests and integration tests call `handleRecovery` directly without an HTTP layer.
+
+---
+
+## 14. Guarded route test needs explicit `env` passthrough
+
+### Error
+```
+app.fetch(request) -> middleware reads c.env.DB, crashes because env is undefined
+```
+
+### Why
+Hono's `app.fetch(request)` is overloaded — the second parameter is `env`, not optional in Workers. If omitted, `c.env` inside the middleware is `undefined`.
+
+### Fix
+Pass the `cloudflare:test` `env` object as the second argument, and type the Hono app correctly:
+```typescript
+const testApp = new Hono<{ Bindings: CloudflareBindings }>();
+testApp.use('/api/*', requireAuth);
+testApp.get('/api/stub', (c) => c.json({ ok: true }));
+const res = await testApp.fetch(new Request('http://localhost/api/stub'), env);
+```
+
+The `cloudflare:test` `env` includes all bindings defined in `vitest.config.ts` (DB, BETTER_AUTH_SECRET, BETTER_AUTH_URL).
+
+---
+
+## 15. Playwright E2E needs both API and web servers running
+
+### Why the old config was insufficient
+The old `playwright.config.ts` started only the web preview server (`npm run build && npm run preview`). The API (needed for sign-up/sign-in/sign-out) was not running. The static preview server has no Vite proxy, so `/api/*` calls go to a server that isn't listening.
+
+### Fix
+Use Playwright's array `webServer` config (available v1.57+):
+```typescript
+webServer: [
+  { command: 'npx wrangler dev --port 8787', port: 8787, cwd: '../api' },
+  { command: 'npm run build && npm run preview', port: 4173, env: { VITE_API_BASE_URL: 'http://localhost:8787' } },
+]
+```
+
+Also added `dev:e2e` script to `packages/api/package.json` for manual runs:
+```bash
+pnpm dev:e2e  # applies migrations + starts wrangler dev on port 8787
+```
+
+---
+
+## 16. Invalid `...` spread in `auth.ts`
+
+### Error
+```typescript
+return betterAuth({
+  database: env.DB,
+  secret: '...',
+  baseURL: '...',
+  ...  // <-- SyntaxError: unexpected token
+});
+```
+
+### Why
+The `...` was a placeholder left by the original author indicating "more config options go here," but it's not valid JavaScript/TypeScript — a spread operator (`...`) must spread an object, not stand alone.
+
+### Fix
+Replace with the full config object:
+```typescript
+return betterAuth({
+  database: env.DB,
+  secret: env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET || '',
+  baseURL: env.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL || 'http://localhost:8787',
+  emailAndPassword: { enabled: true, requireEmailVerification: false },
+  session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
+  trustedOrigins: ['http://localhost:5173', 'https://polaris.kelpselp.workers.dev'],
+});
+```
+
+---
+
+## 18. `env` deprecated from `cloudflare:test`, `inject('migrations')` type error, `res.json()` returns `unknown`
+
+### Errors
+
+```
+'env' is deprecated ts(6385) — import { env } from "cloudflare:test"
+Argument of type '"migrations"' is not assignable to parameter of type 'never'
+'body' is of type 'unknown'
+```
+
+### Why
+
+**`env` deprecation:** `@cloudflare/vitest-pool-workers` v0.17+ deprecated importing `env` from `cloudflare:test` in favor of `cloudflare:workers`. The `cloudflare:workers` module provides the same bindings at runtime, but the `@cloudflare/workers-types` package doesn't declare the `env` export yet, causing a missing-type error when switching.
+
+**`inject('migrations')` type error:** Vitest 4's `inject()` is typed as `inject<T extends keyof ProvidedContext & string>(key: T): ProvidedContext[T]`. The `ProvidedContext` interface is empty by default, so `keyof ProvidedContext` resolves to `never` unless the interface is augmented. Passing `'migrations'` directly fails type-checking.
+
+**`body` is `unknown`:** `Response.json()` returns `Promise<unknown>`. Accessing `.error` on an `unknown` value is not allowed without a type assertion.
+
+### Fix
+
+**`env.d.ts`** — add two module augmentations:
+
+```typescript
+/// <reference path="../../node_modules/@cloudflare/vitest-pool-workers/types/cloudflare-test.d.ts" />
+
+import type { D1Migration } from "cloudflare:test";
+
+declare module "cloudflare:workers" {
+  const env: Cloudflare.Env;
+  export { env };
+}
+
+declare module "vitest" {
+  interface ProvidedContext {
+    migrations: D1Migration[];
+  }
+}
+```
+
+- The `cloudflare:workers` augmentation adds the `env` named export that the runtime provides but the workers-types package doesn't declare.
+- The `vitest` augmentation adds `migrations` to `ProvidedContext`, making `inject('migrations')` resolve to `D1Migration[]` instead of `never`.
+
+**Test files** — update imports and types:
+
+```typescript
+// Before
+import { env, applyD1Migrations } from 'cloudflare:test';
+const migrations = inject('migrations') as D1Migration[];
+const body = await res.json();
+
+// After
+import { env } from 'cloudflare:workers';
+import { applyD1Migrations } from 'cloudflare:test';
+const migrations = inject('migrations');       // no cast needed
+const body = await res.json() as { error: string };  // explicit type
+```
+
+`applyD1Migrations` and `D1Migration` remain imported from `cloudflare:test` — only `env` moves to `cloudflare:workers`.
+
+---
+
+## 17. `seedUserStub` INSERT fails after `0014_better_auth_core.sql` migration
+
+### Error
+```
+INSERT OR IGNORE INTO user (id, name) VALUES ('fake_user_abc', 'Test User')
+```
+appears to succeed (no crash) but `fake_user_abc` is never actually inserted because `email` is `TEXT NOT NULL` without a default.
+
+### Why
+The `0014_better_auth_core.sql` migration creates the `user` table with `email TEXT NOT NULL` (no default). The stub used `INSERT OR IGNORE INTO user (id, name)` — which inserts `NULL` for `email`, violating NOT NULL. With `OR IGNORE`, the row is silently skipped. Subsequent FK-dependent tests (system insert) fail because `fake_user_abc` doesn't exist in `user`.
+
+### Fix
+Include all NOT NULL columns in the INSERT:
+```typescript
+const now = new Date().toISOString();
+await db.prepare(
+  "INSERT OR IGNORE INTO user (id, name, email, emailVerified, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)"
+).bind('fake_user_abc', 'Test User', 'fake@test.com', 1, now, now).run();
+```

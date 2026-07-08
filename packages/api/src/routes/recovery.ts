@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { requireAuth } from '../middleware/require-auth';
+import { generateRecoveryCode } from '../lib/recovery';
 import type { User, Session } from 'better-auth/types';
 
 const app = new Hono<{
@@ -8,11 +9,6 @@ const app = new Hono<{
 }>();
 
 app.use('/*', requireAuth);
-
-function generateCode(): string {
-  const raw = crypto.randomUUID().replace(/-/g, '').toUpperCase();
-  return `POLARIS-${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
-}
 
 app.post('/generate', async (c) => {
   const userId = c.get('user').id;
@@ -28,7 +24,7 @@ app.post('/generate', async (c) => {
 
   const codes: string[] = [];
   const batch: D1PreparedStatement[] = Array.from({ length: 3 }, () => {
-    const code = generateCode();
+    const code = generateRecoveryCode();
     codes.push(code);
     return stmt.bind(crypto.randomUUID(), userId, code, new Date().toISOString());
   });

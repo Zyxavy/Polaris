@@ -35,6 +35,7 @@
 ### Slice 3 — Auth (Better Auth + Recovery Codes)
 
 #### Backend
+
 - Installed `better-auth@^1.6.23` in `packages/api`
 - Generated `CloudflareBindings` type via `pnpm cf-typegen`
 - Installed `@types/node` dev dependency (required for `nodejs_compat`)
@@ -49,6 +50,7 @@
 - Rate-limiting explicitly skipped per `security-review.md` §1
 
 #### Frontend
+
 - Installed `better-auth` in `packages/web` (client SDK for Svelte)
 - Created `packages/web/src/lib/auth-client.ts` — `createAuthClient` wrapper with credentials, destructured `signIn`/`signUp`/`signOut`/`useSession`
 - Created `packages/web/src/lib/api/client.ts` — `apiFetch` wrapper with `credentials: 'include'`, JSON parsing, `ApiError` class for non-2xx responses
@@ -62,8 +64,28 @@
 - Created placeholder `guides/+page.svelte` as redirect target for post-auth and post-sign-up flows
 
 #### Docs
+
 - Updated `auth-integration.md` to match actual implementation (native D1, crypto import, manual migration)
+- Updated `auth-integration.md` §5.2 recovery route to reference extracted `handleRecovery` from `lib/recovery.ts`
+- Added 6 new entries to `docs/troubleshooting/d1-vitest-pitfalls.md` (#13–18: signUpEmail result shape, recovery handler extraction, guarded route test setup, Playwright E2E multi-server, invalid ... spread in auth.ts, seedUserStub migration conflict)
 - Added 4 new entries to `docs/troubleshooting/d1-vitest-pitfalls.md` (Better Auth D1 adapter, hashPassword API, CLI limitations, CloudflareBindings type)
+
+#### Tests
+
+- Extracted `generateRecoveryCode` + `handleRecovery` to `lib/recovery.ts` for unit-testability (Option A per plan)
+- **Unit test** (`recovery.spec.ts`): recovery code format `POLARIS-XXXX-XXXX` + uniqueness (2 tests)
+- **Integration tests** (`auth.spec.ts`):
+  - sign-up creates user and returns session token
+  - guarded route (`requireAuth`) returns 401 without session
+  - recovery flow: code resets password, used code cannot be reused
+- **E2E test** (`auth.e2e.ts`): sign-up -> dismiss codes -> sign out via API -> sign in -> dashboard
+- Updated Playwright config with dual `webServer` entries (API on port 8787 + preview on 4173)
+- Created `packages/api/package.json` `dev:e2e` script for running API in E2E mode
+- Created `packages/web/src/routes/(app)/dashboard/+page.svelte` placeholder
+- Fixed `smoke.spec.ts` `seedUserStub` INSERT to match migration's NOT NULL constraints on user table
+- Fixed `auth.ts` — replaced invalid `...` spread with full `emailAndPassword`/`session`/`trustedOrigins` config
+- Fixed `recovery.spec.ts` import path (`../recovery` -> `../lib/recovery`)
+- Fixed `auth.spec.ts` — added missing `D1Migration` type import, replaced fragile `{ ...env }` spread with explicit auth config
 
 ### Slice 2 — D1 Schema + Smoke Tests
 
