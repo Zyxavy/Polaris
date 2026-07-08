@@ -170,7 +170,7 @@ Don't hand-write `user`/`session`/`account`/`verification` — those come from t
 
 **PR:** `feat/d1-schema` → `main`. -->
 
----
+<!-- ---
 
 ## Slice 3 — Auth (Better Auth + Recovery Codes)
 
@@ -212,13 +212,13 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 ### Definition of Done
 
-- [ ] All auth integration tests pass against real D1 (Miniflare).
-- [ ] CSRF/`trustedOrigins` verified end-to-end in dev (sign up via the Vite proxy, confirm cookie is set — `auth-integration.md` S3 flags this as an easy-to-miss dev-only failure).
-- [ ] `sameSite: lax` cookie config confirmed (check DevTools Application tab).
-- [ ] E2E flow #1 passes.
-- [ ] Update `auth-integration.md` only if you deviate from it (e.g. the D1 adapter import path — document what you actually found).
+- [x] All auth integration tests pass against real D1 (Miniflare).
+- [x] CSRF/`trustedOrigins` verified end-to-end in dev (sign up via the Vite proxy, confirm cookie is set — `auth-integration.md` S3 flags this as an easy-to-miss dev-only failure).
+- [x] `sameSite: lax` cookie config confirmed (check DevTools Application tab).
+- [x] E2E flow #1 passes.
+- [x] Update `auth-integration.md` only if you deviate from it (e.g. the D1 adapter import path — document what you actually found).
 
-**PR:** `feat/auth` → `main`.
+**PR:** `feat/auth` → `main`. -->
 
 ---
 

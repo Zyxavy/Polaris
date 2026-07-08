@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { redirect } from "@sveltejs/kit";
+    import { goto } from '$app/navigation';
     import { authClient } from "$lib/auth-client";
     import { apiFetch } from '$lib/api/client';
 
@@ -21,12 +21,13 @@
             const { codes: generated } = await apiFetch<{ codes: string[] }>('/api/recovery-codes/generate', { method: 'POST' });
             codes = generated;
         } catch {
-            throw redirect(302, '/guides');
+            goto('/guides');
+            return;
         }
     }
 
     function handleDone() {
-        throw redirect(302, '/guides');
+        goto('/guides');
     }
 
     async function copyCodes() {

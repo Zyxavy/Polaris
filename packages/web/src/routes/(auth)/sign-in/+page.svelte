@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { redirect } from "@sveltejs/kit";
+    import { goto } from '$app/navigation';
     import { authClient } from "$lib/auth-client";
     
     let email = $state('');
@@ -14,7 +14,7 @@
             error = err.message || 'Invalid email or password.';
             return;
         }
-        throw redirect(302, '/dashboard');
+        goto('/dashboard');
     }
 </script>
 

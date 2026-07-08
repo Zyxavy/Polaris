@@ -222,13 +222,13 @@ pnpm install
 v
 pnpm -r lint          # ESLint + Svelte check
 v
-pnpm -r test:unit     # Vitest unit (fast, no Workers runtime)
+pnpm --filter web test:unit   # Vitest unit (browser, Svelte components)
 v
-pnpm -r test:int      # Vitest integration (@cloudflare/vitest-pool-workers)
+pnpm --filter api test:integration  # Vitest integration (@cloudflare/vitest-pool-workers, real D1)
 v
 pnpm -r build         # SvelteKit static build + Hono Worker build
 v
-pnpm test:e2e         # Playwright against locally-started dev stack
+pnpm --filter web test:e2e    # Playwright against locally-started dev stack
 ```
 
 E2E runs last because it requires a built + running app. The unit and integration steps fail fast before spending time on E2E if there are logic errors.

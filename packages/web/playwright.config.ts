@@ -9,11 +9,12 @@ export default defineConfig({
 			reuseExistingServer: true,
 		},
 		{
-			command: 'npm run build && npm run preview',
+			command: 'pnpm build && pnpm preview',
 			port: 4173,
 			env: { VITE_API_BASE_URL: 'http://localhost:8787' },
 			reuseExistingServer: true,
 		},
 	],
+	use: { baseURL: 'http://localhost:4173' },
 	testMatch: '**/*.e2e.{ts,js}'
 });

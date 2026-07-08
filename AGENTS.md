@@ -30,11 +30,13 @@ docs: update ADR 002 with hybrid service layer
 
 ## Tooling
 
-| Tool | Purpose | Key commands |
-|---|---|---| |
-| **pnpm** | Package manager (not npm, not yarn) | `pnpm install`, `pnpm -r build`, `pnpm -r deploy` |
-| **Vitest** | Unit + integration test runner | `pnpm test:unit`, `pnpm test:integration` |
-| **Playwright** | E2E tests | `pnpm test:e2e` |
+| Tool | Purpose | Key commands | Notes |
+|---|---|---|---|---|
+| **pnpm** | Package manager (not npm, not yarn) | `pnpm install`, `pnpm -r build`, `pnpm -r deploy` | |
+| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 8 tests: recovery unit, D1 smoke, auth integration |
+| **Vitest** | Web unit tests (browser) | `pnpm --filter web test:unit` | Vitest with Playwright browser |
+| **Playwright** | E2E flows | `pnpm --filter web test:e2e` | Starts API (migrations applied) + preview; runs `*.e2e.ts` |
+| **dev:e2e** | Start API server for E2E | `pnpm --filter api dev:e2e` | Applies D1 migrations then starts `wrangler dev --port 8787` |
 | **Svelte 5** | Frontend framework (runes mode) | Use `$state`, `$derived`, `$effect` — not Svelte 4 stores or `onMount` |
 | **Tailwind CSS** | Styling — no CSS modules or styled-components |
 | **Hono** | API framework (TypeScript) | `c.req.param()`, `c.req.json()`, `c.json()` |
@@ -46,6 +48,7 @@ docs: update ADR 002 with hybrid service layer
 - Use `$effect(() => {...})` for side effects, not `onMount` / `afterUpdate`.
 - Use `{#each}` blocks over array `.map()` in templates.
 - Use `{#if}` blocks over ternary `&&` in templates for conditional rendering.
+- Use `goto()` from `$app/navigation` for client-side navigation in event handlers, effects, and callbacks — not `throw redirect()`. Reason: `throw redirect()` is only guaranteed to work in load functions and form actions (SvelteKit catches it there). In event handlers or `$effect`, `throw redirect()` is undocumented behavior that can break across versions. Since this is a CSR-only app (SSR disabled), both produce the same result, and `goto()` is the documented API for browser-side navigation.
 
 ## Architecture Patterns
 

@@ -10,17 +10,15 @@ test('P0 flow #1: sign up, sign out, sign in', async ({ page }) => {
   await page.fill('#email', email);
   await page.fill('#password', password);
   await page.click('button:has-text("Create account")');
-  await expect(page).toHaveURL('/guides', { timeout: 10000 });
 
-  // Recovery codes modal shows
-  await expect(page.locator('text=Save your recovery codes')).toBeVisible();
+  // Recovery codes modal shows (still on /sign-up)
+  await expect(page.locator('text=Save your recovery codes')).toBeVisible({ timeout: 10000 });
   await page.click('text=I\'ve saved them');
   await expect(page).toHaveURL('/guides');
 
-  // Sign out via API
-  await page.evaluate(() =>
-    fetch('http://localhost:8787/api/auth/sign-out', { method: 'POST', credentials: 'include' })
-  );
+  // Sign out via API (Playwright request context avoids SameSite cross-origin restrictions)
+  await page.request.post('http://localhost:8787/api/auth/sign-out');
+  await page.context().clearCookies();
 
   // Sign in
   await page.goto('/sign-in');

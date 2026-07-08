@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { redirect } from '@sveltejs/kit';
+  import { goto } from '$app/navigation';
   import { authClient } from '$lib/auth-client';
 
   let { children } = $props();
@@ -7,7 +7,7 @@
 
   $effect(() => {
     authClient.getSession().then(({ data: session }) => {
-      if (session) throw redirect(302, '/guides');
+      if (session) { goto('/guides'); return; }
       ready = true;
     });
   });
