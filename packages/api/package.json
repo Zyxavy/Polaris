@@ -8,10 +8,12 @@
     "test:integration": "vitest"
   },
   "dependencies": {
+    "better-auth": "^1.6.23",
     "hono": "^4.12.27"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.17.0",
+    "@types/node": "^26.1.0",
     "vitest": "^4.1.9",
     "wrangler": "^4.4.0"
   }
