@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { requireAuth } from "../middleware/require-auth";
 import { getOwnedSystem } from "../lib/ownership";
-import { User, Session } from "better-auth/types";
+import type { User, Session } from "better-auth/types";
 
 const app = new Hono<{
     Bindings: CloudflareBindings;
@@ -87,7 +87,7 @@ app.post('/', async (c) => {
     }
     
     const id = crypto.randomUUID();
-    const now  = new Date().toISOString();;
+    const now = new Date().toISOString();
 
     await db.prepare(`
         INSERT INTO systems (id, user_id, name, domain, purpose, philosophy, protocol, floor_action, trigger, barrier_list, environment_cue, template_origin, status, created_at, updated_at)
@@ -148,8 +148,8 @@ app.patch('/:id', async(c) => {
 
     for (const field of updatableFields) {
         if (body[field] !== undefined) {
-        sets.push(`${field} = ?`);
-        params.push(field === 'name' ? String(body[field]).trim() : body[field]);
+            sets.push(`${field} = ?`);
+            params.push(field === 'name' ? String(body[field]).trim() : body[field]);
         }
     }
 
