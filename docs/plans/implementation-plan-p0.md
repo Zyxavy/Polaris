@@ -229,7 +229,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 ### Backend tasks
 
-1. `packages/api/src/routes/systems.ts`:
+<!-- 1. `packages/api/src/routes/systems.ts`:
    - `GET /api/systems` (`?status=` filter) — S2.1
    - `POST /api/systems` — S2.2 (accept `template_origin` in the payload shape for forward-compatibility, but the frontend never sends it yet since there's no template picker)
    - `GET /api/systems/:id` — ownership-scoped
@@ -238,7 +238,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
    - `POST /api/systems/:id/archive` — S2.5
    - Skip `POST /api/systems/:id/save-as-template` (P1 — templates feature).
 2. `packages/api/src/lib/ownership.ts` — `getOwnedSystem` helper per `api-routes.md` S1.5 (Systems is the one resource that's directly `user_id`-scoped, but you'll reuse this ownership pattern in every later slice, so build it properly now).
-3. Response envelope and error shape exactly per S1.3/S1.4 (`{error, message}`, `barrier_list` returned as parsed JSON array not raw string).
+3. Response envelope and error shape exactly per S1.3/S1.4 (`{error, message}`, `barrier_list` returned as parsed JSON array not raw string). -->
 
 ### Frontend tasks
 
