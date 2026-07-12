@@ -91,7 +91,7 @@
     }
 </script>
 
-<form class="flex flex-col gap-6 max-w-2xl" onsubmit={(e) => { e.preventDefault(); handleConfirm(); }}>
+<form class="flex flex-col gap-6 max-w-2xl" onsubmit={async (e) => { e.preventDefault(); await handleConfirm(); }}>
   <!-- Name* -->
   <div class="field-group">
     <label for="name" class="font-body text-sm font-medium text-on-surface">Name *</label>
