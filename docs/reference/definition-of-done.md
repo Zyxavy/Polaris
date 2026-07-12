@@ -6,7 +6,7 @@
 
 **Status:** v1
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Current
 
 **Last updated:** July 2, 2026
 

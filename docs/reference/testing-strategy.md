@@ -6,9 +6,9 @@
 
 **Status:** Draft - v1 scope
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Partially Implemented (auth + systems CRUD tests live; rest planned)
 
-**Last updated:** July 2, 2026
+**Last updated:** July 12, 2026
 
 ---
 
@@ -80,7 +80,7 @@ export default defineConfig(async () => {
 ### 3.1 Unit Tests (Vitest, no Workers runtime)
 
 **Svelte components (`packages/web`):**
-- System Creator form: field validation, auto-save trigger (see S4), template pre-fill behaviour.
+- System Creator form: autosave debounce with fake timers, form validation (see `SystemForm.svelte.spec.ts`).
 - Dashboard: Instance state transitions (pending -> full/floor/missed), correct display of today's Instances.
 - Workspace Builder: widget add/remove, layout serialisation to the `v: N` JSON schema, `upgradeLayout()` migration function for each version bump.
 - Review form: `change_applied` write-back only fires when the field is non-empty.
@@ -94,7 +94,7 @@ export default defineConfig(async () => {
 
 **Hono route handlers (mocked bindings):**
 - Auth middleware: unauthenticated requests return 401.
-- `POST /api/systems` - creates a System with valid body, rejects with 422 on missing required fields (floor_action, name).
+- `POST /api/systems` — create with valid body, reject missing name → 400 (covered by `systems.spec.ts` integration tests).
 - `POST /api/attachments` - rejects files over size limit (if a limit is set).
 
 ### 3.2 Integration Tests (`@cloudflare/vitest-pool-workers`)
@@ -103,7 +103,7 @@ These test the Hono routes with **real D1 bindings** (Miniflare in-memory SQLite
 
 **P0 integration tests:**
 
-- **System CRUD:** create -> read -> update -> soft-delete (status: archived). Verify `updated_at` updates, `template_origin` is preserved.
+- **System CRUD:** create -> read -> update -> soft-delete (status: archived). Verify `updated_at` updates, `template_origin` is preserved. ✓ 16 integration tests in `systems.spec.ts`.
 - **Instance auto-generation (dashboard load path):** seed an active System with a schedule matching today; call the dashboard Instance-generation logic; assert exactly one `pending` Instance is created; call it again and assert no duplicate is created (idempotency).
 - **Nightly Cron handler:** invoke `scheduled()` with a mocked `env` and a real D1 binding seeded with active Systems; assert tomorrow's Instances are created; invoke again and assert no duplicates.
 - **Instance state transition:** create an Instance in `pending`, PATCH to `full`, assert state and `updated_at` are correct.

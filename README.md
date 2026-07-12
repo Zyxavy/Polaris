@@ -1,4 +1,4 @@
-# Polaris: Navigate by the Fixed Star
+# Polaris
 
 Build systems that survive your worst days. Define your floor. Log daily. Review weekly.
 
@@ -13,16 +13,16 @@ A personal systems design web app. The unit of the product is the *system*: a de
 | Layer | Choice | Status |
 |---|---|---|
 | Frontend | SvelteKit (CSR/SPA) + Tailwind CSS | Active |
-| Backend API | Hono (TypeScript) on Cloudflare Workers | Active (hello-world route) |
+| Backend API | Hono (TypeScript) on Cloudflare Workers | Active (auth + systems CRUD) |
 | Primary database | Cloudflare D1 (SQLite) | Configured (binding exists) |
 | File storage | Cloudflare R2 | Configured (binding exists) |
+| Auth | Better Auth (self-hosted on D1) | Active |
 | Monorepo | pnpm workspaces | Active |
 
 ## Tech Stack (Planned)
 
 | Layer | Choice | Status |
 |---|---|---|
-| Auth | Better Auth (self-hosted on D1) | Design complete, not yet implemented |
 | Secondary database | MongoDB Atlas (journal/reflections only) | Design complete, not yet implemented |
 | AI | Workers AI (`@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`) | Design complete, not yet implemented |
 | Scheduling | Cloudflare Cron Triggers | Design complete, not yet implemented |
@@ -35,7 +35,7 @@ A personal systems design web app. The unit of the product is the *system*: a de
 - [AGENTS.md](AGENTS.md): coding conventions and tooling
 - [Implementation Plan](docs/plans/implementation-plan-p0.md): P0 feature build plan
 
-### Target Architecture (design docs for planned implementation)
+### Reference Documentation
 
 - [Product Requirements Document](docs/PRD/PRD-systems-app.md)
 - [Tech Stack ADR](docs/ADRs/001-tech-stack-adr.md)

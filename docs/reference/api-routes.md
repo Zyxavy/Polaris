@@ -6,7 +6,7 @@
 
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Partially Implemented (S2 Systems CRUD live; S3–S10 planned)
 
 **Last updated:** July 2, 2026
 
