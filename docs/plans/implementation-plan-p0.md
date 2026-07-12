@@ -229,7 +229,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 ### Backend tasks
 
-<!-- 1. `packages/api/src/routes/systems.ts`:
+1. `packages/api/src/routes/systems.ts`:
    - `GET /api/systems` (`?status=` filter) — S2.1
    - `POST /api/systems` — S2.2 (accept `template_origin` in the payload shape for forward-compatibility, but the frontend never sends it yet since there's no template picker)
    - `GET /api/systems/:id` — ownership-scoped
@@ -248,7 +248,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 4. "Confirm system" button calls `POST /api/systems/:id/confirm`, surfaces `floor_action_required` (422) as an inline field error per `loading-states.md` S2.3.
 5. `/systems/+page.svelte` — Systems List per `design-system/polaris/pages/systems-list.md` (the streak-count footer can show `0`/hide until Slice 6 gives you real instance data).
 6. `/systems/[id]/+layout.ts` + `+layout.svelte` (tab shell) and `/systems/[id]/+page.svelte` (Overview tab) per `sveltekit-route-architecture.md` S2.2 and `design-system/polaris/pages/system-detail.md`. Workspace/Reviews tabs can 404/placeholder — those are Slices 8 and 10.
-7. `/systems/[id]/edit/+page.svelte` reusing `SystemForm` pre-filled, per `system-edit.md`.
+7. `/systems/[id]/edit/+page.svelte` reusing `SystemForm` pre-filled, per `system-edit.md`. -->
 
 ### Tests
 

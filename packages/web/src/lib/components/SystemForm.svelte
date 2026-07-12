@@ -2,8 +2,7 @@
     import { createSystem, patchSystem, confirmSystem } from '$lib/api/systems';
     import { ApiError } from '$lib/api/client';
     import type { System } from '$lib/api/systems';
-
-    export const AUTOSAVE_DEBOUNCE_MS = 2000;
+    import { AUTOSAVE_DEBOUNCE_MS } from './system-form.config';
 
     let { system }: { system?: System | null } = $props();
 
