@@ -4,6 +4,7 @@ import { createAuth } from './auth';
 import type { User, Session } from 'better-auth/types';
 import { requireAuth } from './middleware/require-auth';
 import { handleRecovery } from './lib/recovery';
+import systemsRoutes from './routes/systems';
 import recoveryRoutes from './routes/recovery';
 
 const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: User | null; session: Session | null } }>();
@@ -17,7 +18,7 @@ app.post('/api/auth/recover', async (c) => {
   const { email, recovery_code, new_password } = await c.req.json();
   const result = await handleRecovery(c.env.DB, email, recovery_code, new_password);
   const errorKey = result.status === 400 ? 'validation_error' : result.status === 401 ? 'invalid_credentials' : undefined;
-  return c.json(errorKey ? { error: errorKey, message: result.message } : { message: result.message }, result.status);
+  return c.json(errorKey ? { error: errorKey, message: result.message } : { message: result.message }, result.status as 200 | 400 | 401);
 });
 
 // Better Auth catch-all
@@ -34,6 +35,9 @@ app.use('/api/*', async (c, next) => {
   if (c.req.path.startsWith('/api/auth/')) return next();
   return requireAuth(c, next);
 });
+
+// Systems route
+app.route('/api/systems', systemsRoutes);
 
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
