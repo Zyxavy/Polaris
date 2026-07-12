@@ -4,19 +4,20 @@
     import type { System } from '$lib/api/systems';
     import { AUTOSAVE_DEBOUNCE_MS } from './system-form.config';
 
-    let { system }: { system?: System | null } = $props();
+    let { system: _system }: { system?: System | null } = $props();
 
-    let systemId = $state<string | null>(system?.id ?? null);
-    let name = $state(system?.name ?? '');
-    let domain = $state(system?.domain ?? '');
-    let purpose = $state(system?.purpose ?? '');
-    let philosophy = $state(system?.philosophy ?? '');
-    let protocol = $state(system?.protocol ?? '');
-    let floor_action = $state(system?.floor_action ?? '');
-    let trigger = $state(system?.trigger ?? '');
-    let barrier_list = $state<string[]>(system?.barrier_list ?? []);
+    const initial = _system;
+    let systemId = $state<string | null>(initial?.id ?? null);
+    let name = $state(initial?.name ?? '');
+    let domain = $state(initial?.domain ?? '');
+    let purpose = $state(initial?.purpose ?? '');
+    let philosophy = $state(initial?.philosophy ?? '');
+    let protocol = $state(initial?.protocol ?? '');
+    let floor_action = $state(initial?.floor_action ?? '');
+    let trigger = $state(initial?.trigger ?? '');
+    let barrier_list = $state<string[]>(initial?.barrier_list ?? []);
     let barrierInput = $state('');
-    let environment_cue = $state(system?.environment_cue ?? '');
+    let environment_cue = $state(initial?.environment_cue ?? '');
 
     let confirmError = $state<string | null>(null);
     let saving = $state(false);
@@ -32,22 +33,20 @@
         saving = true;
         try {
             const payload: any = { name: name.trim() };
-            if (domain !== (system?.domain ?? '')) payload.domain = domain || null;
-            if (purpose !== (system?.purpose ?? '')) payload.purpose = purpose;
-            if (philosophy !== (system?.philosophy ?? '')) payload.philosophy = philosophy;
-            if (protocol !== (system?.protocol ?? '')) payload.protocol = protocol;
-            if (floor_action !== (system?.floor_action ?? '')) payload.floor_action = floor_action;
-            if (trigger !== (system?.trigger ?? '')) payload.trigger = trigger;
-            if (JSON.stringify(barrier_list) !== JSON.stringify(system?.barrier_list ?? [])) payload.barrier_list = barrier_list;
-            if (environment_cue !== (system?.environment_cue ?? '')) payload.environment_cue = environment_cue;
+            if (domain !== (initial?.domain ?? '')) payload.domain = domain || null;
+            if (purpose !== (initial?.purpose ?? '')) payload.purpose = purpose;
+            if (philosophy !== (initial?.philosophy ?? '')) payload.philosophy = philosophy;
+            if (protocol !== (initial?.protocol ?? '')) payload.protocol = protocol;
+            if (floor_action !== (initial?.floor_action ?? '')) payload.floor_action = floor_action;
+            if (trigger !== (initial?.trigger ?? '')) payload.trigger = trigger;
+            if (JSON.stringify(barrier_list) !== JSON.stringify(initial?.barrier_list ?? [])) payload.barrier_list = barrier_list;
+            if (environment_cue !== (initial?.environment_cue ?? '')) payload.environment_cue = environment_cue;
 
             if (!systemId) {
                 const created = await createSystem(payload);
                 systemId = created.id;
-                system = created;
             } else {
-                const updated = await patchSystem(systemId, payload);
-                system = updated;
+                await patchSystem(systemId, payload);
             }
         } catch (e) {
             // autosave errors are silent

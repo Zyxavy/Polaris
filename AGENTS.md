@@ -33,7 +33,7 @@ docs: update ADR 002 with hybrid service layer
 | Tool | Purpose | Key commands | Notes |
 |---|---|---|---|---|
 | **pnpm** | Package manager (not npm, not yarn) | `pnpm install`, `pnpm -r build`, `pnpm -r deploy` | |
-| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 8 tests: recovery unit, D1 smoke, auth integration |
+| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 24 tests: smoke (3), recovery (2), auth (3), systems CRUD (16) |
 | **Vitest** | Web unit tests (browser) | `pnpm --filter web test:unit` | Vitest with Playwright browser |
 | **Playwright** | E2E flows | `pnpm --filter web test:e2e` | Starts API (migrations applied) + preview; runs `*.e2e.ts` |
 | **dev:e2e** | Start API server for E2E | `pnpm --filter api dev:e2e` | Applies D1 migrations then starts `wrangler dev --port 8787` |
@@ -106,6 +106,7 @@ Shared application state lives in `packages/web/src/lib/stores/` as Svelte 5 run
 - Session cookie: `sameSite: lax`, `httpOnly`, `secure`, no explicit domain scope (cross-origin between `polaris.kelpselp.workers.dev` and `polaris-api.kelpselp.workers.dev`).
 - Frontend auth guard: `authClient.getSession()` in the root layout load function — not `useSession()` with an effect.
 - Recovery codes flow: 3 codes generated at sign-up, stored in D1 `recovery_codes` table, displayed with hide/show in `/account` settings. Password reset via `POST /api/auth/recover` (custom route registered before Better Auth's catch-all handler).
+- `requireAuth` early-return pattern: the middleware checks `c.get('user')` first and skips session validation if a user is already set in context. This allows parent middleware (or test harnesses) to pre-authenticate without needing valid session cookies, and makes `requireAuth` safe to stack at both route-group and global level without redundant API calls.
 
 ### The 10ms CPU constraint
 

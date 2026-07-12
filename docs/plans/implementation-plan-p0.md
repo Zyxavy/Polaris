@@ -220,7 +220,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 **PR:** `feat/auth` → `main`. -->
 
----
+<!-- ---
 
 ## Slice 4 — Systems CRUD (System Creator, manual only)
 
@@ -240,7 +240,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 2. `packages/api/src/lib/ownership.ts` — `getOwnedSystem` helper per `api-routes.md` S1.5 (Systems is the one resource that's directly `user_id`-scoped, but you'll reuse this ownership pattern in every later slice, so build it properly now).
 3. Response envelope and error shape exactly per S1.3/S1.4 (`{error, message}`, `barrier_list` returned as parsed JSON array not raw string). -->
 
-### Frontend tasks
+<!-- ### Frontend tasks
 
 1. `SystemForm.svelte` per `component-inventory.md` — Purpose, Floor Action + Trigger, Barriers & Environment, Schedule field-groups. **Schedule field group can be a stub for now** (real `SchedulePicker` wiring happens in Slice 5) — just don't block the form on it.
 2. Debounced autosave: first tick calls `POST /api/systems` (no id yet), subsequent ticks call `PATCH /api/systems/:id`, per `api-routes.md` S2.2 and `system-creator.md`'s autosave section. Export `AUTOSAVE_DEBOUNCE_MS` as a named constant (testing-strategy.md S4.1 requires this for fake-timer tests).
@@ -250,7 +250,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 6. `/systems/[id]/+layout.ts` + `+layout.svelte` (tab shell) and `/systems/[id]/+page.svelte` (Overview tab) per `sveltekit-route-architecture.md` S2.2 and `design-system/polaris/pages/system-detail.md`. Workspace/Reviews tabs can 404/placeholder — those are Slices 8 and 10.
 7. `/systems/[id]/edit/+page.svelte` reusing `SystemForm` pre-filled, per `system-edit.md`. -->
 
-### Tests
+<!-- ### Tests
 
 - **Unit:** autosave debounce (fake timers, per `testing-strategy.md` S4.1 exactly). Form validation (name required).
 - **Integration:** System CRUD full cycle (create → read → update → archive) per `testing-strategy.md` S3.2's "System CRUD" bullet. `POST .../confirm` rejects empty `floor_action` with 422, accepts non-empty.
@@ -261,9 +261,9 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 - [ ] All CRUD routes ownership-scoped and tested.
 - [ ] `floor_action` empty-string-during-draft / required-on-confirm behavior verified by a test, not just manually.
 - [ ] 10ms CPU note in PR: single-row CRUD, no loops — "one indexed SELECT/INSERT per call, no loop, no batch needed."
-- [ ] E2E flow #2 passes.
+- [ ] E2E flow #2 passes. -->
 
-**PR:** `feat/system-creator` → `main`.
+<!-- **PR:** `feat/system-creator` → `main`. --> 
 
 ---
 
