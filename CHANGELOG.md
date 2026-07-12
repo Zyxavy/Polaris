@@ -32,6 +32,69 @@
 - Cleaned up scaffold artifacts: removed `wrangler types` from web build/check scripts, removed `worker-configuration.d.ts` type reference from web `tsconfig.json`
 - Updated package-level scripts (api deploy includes migrations, web has build + deploy)
 
+### Slice 4 — Systems CRUD (Backend + Frontend)
+
+#### Backend
+
+- Created `packages/api/src/lib/ownership.ts` — `getOwnedSystem` helper that SELECTs from systems scoped to `user_id` and parses `barrier_list` from stored JSON text. Why: every mutation endpoint needs ownership-scoped lookup; parsing barrier_list here keeps the API the JSON parse/serialize boundary so the frontend never sees raw D1 TEXT encoding.
+- Created `packages/api/src/routes/systems.ts` — 6 endpoints on a Hono sub-router behind `requireAuth`:
+  - `GET /api/systems` — paginated list (`?limit=`, `?cursor=`), optional `?status=` filter, ordered by `name ASC`, all scoped to `WHERE user_id = ?`
+  - `POST /api/systems` — creates with `user_id` from session, accepts all optional fields at defaults
+  - `GET /api/systems/:id` — ownership-scoped single-system lookup
+  - `PATCH /api/systems/:id` — partial update (accepts any subset of fields, including `floor_action: ""` to support autosave of drafts)
+  - `POST /api/systems/:id/confirm` — validates `floor_action` is non-empty, returns 422 `floor_action_required` if empty; the one place enforcement happens, distinct from the lenient autosave-safe PATCH
+  - `POST /api/systems/:id/archive` — sets `status = 'archived'`, returns 409 `already_archived` if already archived
+  - Why: PATCH must accept empty floor_action because autosave fires continuously on draft data; confirm is the explicit user checkpoint where "is this ready" is meaningful. Archive is a soft-delete state machine transition, not a hard DELETE — preserves history for the System detail page.
+- Mounted systems routes in `packages/api/src/index.ts` below the auth guard. Why: inherits session validation for all systems endpoints without per-route duplication.
+- Enhanced `requireAuth` middleware with early-return: checks `c.get('user')` first and skips Better Auth session validation if a user is already set in context. Why: allows route-scoped `requireAuth` (in systems.ts) to stack safely on top of the global guard without redundant API calls; enables integration tests to pre-authenticate by injecting a user in test middleware without needing valid session cookies (the previous approach required matching BETTER_AUTH_SECRET between Miniflare and test setup, which was fragile and caused persistent 401 failures).
+
+#### Frontend
+
+- Created `packages/web/src/lib/stores/toast.svelte.ts` — `$state`-based toast notification queue with `addToast` / `dismissToast`. Why: user-facing feedback for API errors and success states needs a shared reactive store that any component can push to.
+- Created `packages/web/src/lib/api/index.ts` — `apiFetchWithToast` wrapper that calls `apiFetch` and dispatches toast on non-2xx responses. Why: keeps error handling consistent across all API calls without duplicating toast logic per component.
+- Created `packages/web/src/lib/api/systems.ts` — typed `<T>` wrappers for all 6 systems endpoints. Why: frontend service modules convention — components never call `fetch()` directly.
+- Created `packages/web/src/lib/components/ToastContainer.svelte` — fixed-position toast stack that reads from the toast store, auto-dismisses after 5s, supports success/error/info variants. Why: renders notifications without layout shift.
+- Created `packages/web/src/lib/components/NavBar.svelte` — top navigation bar with branding, active state for Dashboard / Guides / Systems tabs. Why: app shell navigation required for the (app) layout.
+- Created `packages/web/src/lib/components/SystemForm.svelte` — reusable form component with:
+  - All System fields from the D1 schema (name, domain, purpose, philosophy, protocol, floor_action, trigger, barrier_list, environment_cue)
+  - Autosave via `$effect` + debounce (`AUTOSAVE_DEBOUNCE_MS = 2000`): first save fires `POST /api/systems`, subsequent saves fire `PATCH /api/systems/:id`
+  - Explicit confirm button that calls `POST /api/systems/:id/confirm` and shows inline `floor_action_required` error without navigation
+  - Loading and error states per save action
+  - Why: autosave eliminates the "lost work" problem during drafting; confirm is the deliberate checkpoint where floor_action is enforced; inline error on confirm avoids destructive navigation when validation fails.
+- Created `packages/web/src/lib/components/system-form.config.ts` — exports `AUTOSAVE_DEBOUNCE_MS` as a named constant. Why: extracted to a plain Type module so unit tests can import the constant without compiling a Svelte component (which requires a browser env).
+- Created route pages under `packages/web/src/routes/(app)/systems/`:
+  - `+page.ts` / `+page.svelte` — systems list page with status tabs (active/paused/archived/all), paginated cards
+  - `new/+page.svelte` — standalone System Creator form
+  - `[id]/+layout.ts` — load function fetches system by ID, redirects to 404 page if null
+  - `[id]/+layout.svelte` — tab shell with Overview / Workspace / Reviews / Edit tabs
+  - `[id]/+page.svelte` — Overview tab: display of all System fields with inline edit capability
+  - `[id]/edit/+page.svelte` — full edit form (same SystemForm component)
+  - Why: file-based routing with data loading in `+layout.ts` avoids repeated fetch calls per tab; tab shell keeps navigation context while switching views.
+- Updated `(app)/+layout.svelte` to include `<NavBar>` and `<ToastContainer>`. Why: integrate new navigation and toast infrastructure into the existing app shell.
+
+#### Tests
+
+- Created `packages/api/src/__tests__/systems.spec.ts` — 16 integration tests against real D1 (via `@cloudflare/vitest-pool-workers`):
+  - 2 create tests (success + missing name → 400)
+  - 2 list tests (owned list + status filter)
+  - 2 single-get tests (owned → 200 + non-owned → 404)
+  - 3 patch tests (partial update + empty floor_action accepted + non-owned → 404)
+  - 3 confirm tests (empty floor_action → 422 + non-empty → 200 + non-owned → 404)
+  - 3 archive tests (success → archived + already archived → 409 + non-owned → 404)
+  - 1 unauthenticated test (no session → 401)
+  - Why: full boundary coverage for every status code in the API contract; ownership-scoped non-owned tests return 404 per S1.5 to avoid leaking existence info.
+- Created `packages/web/src/lib/components/SystemForm.svelte.spec.ts` — unit test with Vitest fake timers (`vi.useFakeTimers()` / `advanceTimersByTimeAsync`) verifying autosave fires after `AUTOSAVE_DEBOUNCE_MS` and does not fire before. Why: debounce behavior is timing-sensitive and would be flaky in E2E; fake timers make it deterministic.
+- Created `packages/web/src/routes/(app)/systems/systems.e2e.ts` — Playwright E2E for P0 flow #2: create system from scratch (navigate to New, fill name + floor_action, confirm, verify success toast and redirect to the detail page). Why: validates the full stack from form submission through API to toast notification.
+- Rewrote systems API tests to inject `userId` directly via test middleware instead of creating a real Better Auth session. Why: `createAuth(c.env)` in `requireAuth` was creating a fresh auth instance with BETTER_AUTH_SECRET from Miniflare env that didn't match the test's auth secret — consistent 401 failures. Injecting a user in context skips the session validation entirely (using the new early-return pattern) and makes the tests about route logic, not auth setup.
+- Fixed Svelte 5 `state_referenced_locally` warnings by capturing prop to `const initial`. Why: passing a `$state` prop reference directly to a child triggers a warning in Svelte 5 runes mode; assigning to a local `const` breaks the reactive binding cleanly.
+- Fixed E2E test to wait for confirm success toast before asserting redirect. Why: without this wait, the test races ahead before the API response is processed, causing intermittent failures.
+
+#### Docs
+
+- Updated `docs/reference/auth-integration.md` §1.3 to match the `requireAuth` early-return implementation.
+- Updated `AGENTS.md` test count (8 → 24) and added `requireAuth` early-return pattern to the Auth conventions section.
+- Updated `AGENTS.md` snapshot with full Slice 4 progress status (done, blocked, key decisions, critical context).
+
 ### Slice 3 — Auth (Better Auth + Recovery Codes)
 
 #### Backend
