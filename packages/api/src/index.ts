@@ -6,6 +6,7 @@ import { requireAuth } from './middleware/require-auth';
 import { handleRecovery } from './lib/recovery';
 import systemsRoutes from './routes/systems';
 import recoveryRoutes from './routes/recovery';
+import schedulesRoutes from './routes/schedules';
 
 const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: User | null; session: Session | null } }>();
 
@@ -38,6 +39,10 @@ app.use('/api/*', async (c, next) => {
 
 // Systems route
 app.route('/api/systems', systemsRoutes);
+
+// Schedules
+app.route('/api/systems/:system_id/schedules', schedulesRoutes);
+app.route('/api/schedules', schedulesRoutes);
 
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
