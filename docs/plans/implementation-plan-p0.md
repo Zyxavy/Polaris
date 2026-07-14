@@ -350,7 +350,7 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 ### Tasks
 
 1. `tomorrowManilaDate()` helper in `calendar.ts`, unit-tested.
-2. `scheduled` export in `packages/api/src/index.ts`, calling the same `generateTodayInstances`-shaped logic but bound to tomorrow's date across **all users** (not scoped to one session — this runs with no request context). Confirm the D1 query in `api-routes.md` S4.1 generalizes correctly when there's no `user_id` in scope — you'll query across all active systems, not just one user's, since this is a background job. (For a single-user personal app this is nearly the same thing, but write the SQL correctly regardless — `WHERE s.status = 'active'`, no `user_id` filter.)
+2. `scheduled` export in `packages/api/src/index.ts`, calling the same `generateTodayInstances`-shaped logic but bound to tomorrow's date across **all users** (not scoped to one session — this runs with no request context). Confirm the D1 query in `api-routes.md` S4.1 generalizes correctly when there's no `user_id` in scope — you'll query across all active systems, not just one user's, since this is a background job. (For a single-user personal app this is nearly the same thing, but write the SQL correctly regardless — `WHERE s.status = 'active'`, no `user_id` filter.) 
 3. Add the `[triggers]` block to `wrangler.jsonc` (was deferred in Slice 1).
 4. Local testing: Miniflare's `wrangler dev --test-scheduled` or invoking the `scheduled()` export directly in an integration test with a real D1 binding and a mocked `env` — per `testing-strategy.md` S3.2's "Nightly Cron handler" bullet.
 
