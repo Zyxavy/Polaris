@@ -267,7 +267,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 ---
 
-<!-- ## Slice 5 — Schedules
+## Slice 5 — Schedules (Completed)
 
 **Branch:** `feat/schedules`
 **Docs:** PRD S5.2, D1 Schema S3.2, `api-routes.md` S3, `component-inventory.md`'s `SchedulePicker.svelte` spec.
@@ -278,25 +278,25 @@ Small, focused slice — wires the stub from Slice 4 into something real.
 
 1. `packages/api/src/routes/schedules.ts`: `GET`/`POST /api/systems/:system_id/schedules`, `PATCH`/`DELETE /api/schedules/:id`, all ownership-scoped through `systems.user_id` per S1.5.
 2. Validate `time_window_end > time_window_start`, return `422 invalid_window` on failure per S3.
-3. `days_of_week` bitmask handling — write (and unit-test) a small `dayMatchesBitmask` / bit-encoding helper now in `packages/api/src/lib/calendar.ts`, since Slice 6 (Dashboard) and Slice 7 (Cron) both need it. Building it here, isolated and unit-tested, avoids duplicating logic later.
+3. `days_of_week` bitmask handling — wrote (and unit-tested) `dayToBit`, `encodeDaysToBitmask`, `decodeBitmaskToDays`, `dayMatchesBitmask` in `packages/api/src/lib/calendar.ts`. Slice 6 (Dashboard) and Slice 7 (Cron) both need it; building it here, isolated and unit-tested, avoids duplicating logic later.
 
 ### Frontend
 
-1. Real `SchedulePicker.svelte` — day-of-week grid + start/end time inputs, emits the bitmask + `HH:MM` strings.
-2. Wire it into `SystemForm`'s Schedule section (replacing the Slice 4 stub).
+1. Real `SchedulePicker.svelte` — day-of-week grid + start/end time inputs, self-manages its own CRUD calls via the schedules API module.
+2. Wired into `SystemForm`'s Schedule section (replacing the Slice 4 stub).
 
 ### Tests
 
-- **Unit:** `dayMatchesBitmask(dateStr, bitmask)` for all 7 days, edge case bitmask `0` (no days). This is a pure function per `testing-strategy.md` S7.3 — no D1 needed.
-- **Integration:** create schedule, invalid window rejected, patch/delete ownership-scoped correctly (another user's schedule ID returns 404).
+- **Unit (24 tests):** `dayToBit` (4 boundary positions), `encodeDaysToBitmask` (5 cases including empty), `decodeBitmaskToDays` (6 cases including round-trip), `dayMatchesBitmask` (9 cases across bit patterns 0, 21, 127). Pure functions — no D1 needed, per `testing-strategy.md` S7.3.
+- **Integration (12 tests):** create schedule (success + 422 invalid window + missing days_of_week + out-of-range bitmask + non-owned system 404), list schedules (success + non-owned 404), patch schedule (update + invalid window + non-owned 404), delete schedule (success + non-owned 404).
 
 ### Definition of Done
 
-- [x] `dayMatchesBitmask` unit-tested for every bit position.
-- [x] Integration tests for the 4 routes pass.
+- [x] Bitmask helpers unit-tested for every bit position, empty, full, and round-trip.
+- [x] Integration tests for all 4 routes pass (12 tests, plus 24 calendar unit tests = 36 new tests).
 - [x] System Creator form now round-trips a real schedule end-to-end (manual smoke test + E2E flow #2 still passes with schedule data attached).
 
-**PR:** `feat/schedules` → `main`. -->
+**PR:** `feat/schedules` → `main`.
 
 ---
 

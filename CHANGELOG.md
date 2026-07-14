@@ -95,6 +95,36 @@
 - Updated `AGENTS.md` test count (8 → 24) and added `requireAuth` early-return pattern to the Auth conventions section.
 - Updated `AGENTS.md` snapshot with full Slice 4 progress status (done, blocked, key decisions, critical context).
 
+### Slice 5 — Schedules (Backend + Frontend)
+
+#### Backend
+
+- Created `packages/api/src/lib/calendar.ts` — 4 pure bitmask functions: `dayToBit`, `encodeDaysToBitmask`, `decodeBitmaskToDays`, `dayMatchesBitmask(day: number, bitmask: number)`. Why: Slice 6 (Dashboard) and Slice 7 (Cron) both need bitmask matching; building it as isolated, unit-tested helpers avoids duplicating the bit-shift logic in SQL contexts where the match can't be pushed into a `WHERE` clause.
+- Added `getOwnedSchedule` to `packages/api/src/lib/ownership.ts` — SELECTs from `schedules` JOINed to `systems` on `system_id`, scoped to `systems.user_id`. Why: ownership-scoped lookup for non-systems resources pattern (S1.5).
+- Created `packages/api/src/routes/schedules.ts` — 4 handlers on a Hono sub-router:
+  - `GET /api/systems/:system_id/schedules` — list schedules for a system, ownership-scoped through the system
+  - `POST /api/systems/:system_id/schedules` — create schedule, validates `time_window_end > time_window_start` (422 `invalid_window`), `recurrence` always server-set to `'weekly'`
+  - `PATCH /api/schedules/:id` — update schedule fields, ownership-scoped via JOIN through `systems.user_id`
+  - `DELETE /api/schedules/:id` — ownership-scoped via JOIN
+- Mounted schedule routes in `packages/api/src/index.ts` at two prefixes: `/:system_id/schedules` (for GET/POST) and `/schedules/:id` (for PATCH/DELETE). Why: nested path for creation/listing, flat path for resource-by-ID, matching api-routes.md S3.
+- `recurrence` never accepted from request body — always server-set to `'weekly'` matching D1 Schema S3.2 `CHECK` constraint.
+
+#### Frontend
+
+- Created `packages/web/src/lib/api/schedules.ts` — 4 typed functions (`listSchedules`, `createSchedule`, `updateSchedule`, `deleteSchedule`) using the existing `apiFetch` wrapper. Why: frontend service modules convention.
+- Created `packages/web/src/lib/components/SchedulePicker.svelte` — self-contained day-of-week grid (7 toggleable day buttons) + time window inputs (start/end). Manages its own CRUD via the schedules API module, accepts `systemId` prop.
+- Updated `packages/web/src/lib/components/SystemForm.svelte` — replaced Slice 4's stub schedule section with `<SchedulePicker systemId={systemId} />`. Why: no schedule state managed in SystemForm; SchedulePicker is fully self-contained.
+
+#### Tests
+
+- Created `packages/api/src/__tests__/calendar.spec.ts` — 24 unit tests covering all 4 bitmask helpers: `dayToBit` (4 boundary cases), `encodeDaysToBitmask` (5 cases including empty), `decodeBitmaskToDays` (6 cases including round-trip), `dayMatchesBitmask` (9 cases across bit patterns 0, 21, 127). No D1 required — pure function tests.
+- Created `packages/api/src/__tests__/schedules.spec.ts` — 12 integration tests against real D1 (via `@cloudflare/vitest-pool-workers`):
+  - 3 create tests (success + invalid window 422 + missing days_of_week 400 + out-of-range bitmask 400 + non-owned system 404)
+  - 2 list tests (success + non-owned system 404)
+  - 3 patch tests (update fields + invalid window 422 + non-owned schedule 404)
+  - 2 delete tests (success + non-owned schedule 404)
+- Fixed TypeScript errors: `systemId` undefined guard in ownership helper, `createRes` variable name conflict in schedules test (redeclared in nested scopes).
+
 ### Slice 3 — Auth (Better Auth + Recovery Codes)
 
 #### Backend
