@@ -40,6 +40,7 @@ docs: update ADR 002 with hybrid service layer
 | **Svelte 5** | Frontend framework (runes mode) | Use `$state`, `$derived`, `$effect` — not Svelte 4 stores or `onMount` |
 | **Tailwind CSS** | Styling — no CSS modules or styled-components |
 | **Hono** | API framework (TypeScript) | `c.req.param()`, `c.req.json()`, `c.json()` |
+| **Graphify** | Knowledge graph of the codebase | `graphify query "<question>"`, `graphify path "A" "B"`, `graphify explain "X"` | Pre-built index at `graphify-out/graph.json` — query before grepping |
 
 ### Svelte 5 runes conventions
 
