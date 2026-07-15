@@ -1,6 +1,6 @@
 # Polaris
 
-Build systems that survive your worst days. Define your floor. Log daily. Review weekly.
+Build systems that survive your worst days. Log daily. Review weekly.
 
 A personal systems design web app. The unit of the product is the *system*: a defined protocol with a floor action, a schedule, a dedicated workspace, and a recurring review loop that feeds changes back into the design.
 

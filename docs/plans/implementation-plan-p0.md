@@ -267,7 +267,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 ---
 
-## Slice 5 — Schedules (Completed)
+<!-- ## Slice 5 — Schedules (Completed)
 
 **Branch:** `feat/schedules`
 **Docs:** PRD S5.2, D1 Schema S3.2, `api-routes.md` S3, `component-inventory.md`'s `SchedulePicker.svelte` spec.
@@ -296,7 +296,7 @@ Small, focused slice — wires the stub from Slice 4 into something real.
 - [x] Integration tests for all 4 routes pass (12 tests, plus 24 calendar unit tests = 36 new tests).
 - [x] System Creator form now round-trips a real schedule end-to-end (manual smoke test + E2E flow #2 still passes with schedule data attached).
 
-**PR:** `feat/schedules` → `main`.
+**PR:** `feat/schedules` → `main`. -->
 
 ---
 
