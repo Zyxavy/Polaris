@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { dayToBit, encodeDaysToBitmask, decodeBitmaskToDays, dayMatchesBitmask } from '../lib/calendar';
+import { describe, it, expect, vi } from 'vitest';
+import { dayToBit, encodeDaysToBitmask, decodeBitmaskToDays, dayMatchesBitmask, toManilaDate, tomorrowManilaDate } from '../lib/calendar';
 
 describe('dayToBit', () => {
     it('maps 0 (Monday) to 1', () => expect(dayToBit(0)).toBe(1));
@@ -52,5 +52,35 @@ describe('dayMatchesBitmask', () => {
                 expect(dayMatchesBitmask(d, 127)).toBe(true);
             }
         });
+    });
+});
+
+describe('toManilaDate', () => {
+    it('returns YYYY-MM-DD format for a known Manila date', () => {
+        // 2026-07-15 00:00:00 UTC = 2026-07-15 08:00:00 Manila
+        const date = new Date('2026-07-15T00:00:00.000Z');
+        expect(toManilaDate(date)).toBe('2026-07-15');
+    });
+
+    it('crosses UTC midnight boundary correctly', () => {
+        // 2026-07-14 23:00:00 UTC = 2026-07-15 07:00:00 Manila
+        const date = new Date('2026-07-14T23:00:00.000Z');
+        expect(toManilaDate(date)).toBe('2026-07-15');
+    });
+
+    it('defaults to now if no date provided', () => {
+        // Pin system time to known value (Manila afternoon, far from midnight)
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-07-15T12:00:00.000Z')); // 20:00 Manila
+        expect(toManilaDate()).toBe('2026-07-15');
+        vi.useRealTimers();
+    });
+
+    it('crosses Manila midnight boundary with pinned system time', () => {
+        vi.useFakeTimers();
+        // 2026-07-14 23:00 UTC = 2026-07-15 07:00 Manila
+        vi.setSystemTime(new Date('2026-07-14T23:00:00.000Z'));
+        expect(toManilaDate()).toBe('2026-07-15');
+        vi.useRealTimers();
     });
 });
