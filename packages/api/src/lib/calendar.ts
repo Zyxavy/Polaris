@@ -18,3 +18,17 @@ export function dayMatchesBitmask(day: number, bitmask: number): boolean {
     return (bitmask & dayToBit(day)) !== 0;
 }
 
+export function toManilaDate(utcDate: Date = new Date()): string {
+    return utcDate.toLocaleDateString('en-CA', {timeZone: 'Asia/Manila'});
+}
+
+export function tomorrowManilaDate(): string {
+    const now = new Date();
+    
+    const formatter = new Intl.DateTimeFormat('en-Ca', { timeZone: 'Asia/Manila'});
+    const todayParts = formatter.formatToParts(now);
+    const todayStr = formatter.format(now); // YYYY-MM-DD
+    const [y, m, d] = todayStr.split('-').map(Number);
+    const tomorrow = new Date(Date.UTC(y, m - 1, d + 1));
+    return formatter.format(tomorrow);
+}
