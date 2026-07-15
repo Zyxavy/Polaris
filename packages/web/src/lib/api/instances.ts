@@ -9,13 +9,16 @@ export interface Instance {
     workspace_snapshot: string | null;
     created_at: string;
     updated_at: string;
-    name?: string;
-    domain?: string | null;
-    floor_action?: string;
+}
+
+export interface DashboardInstance extends Instance {
+    name: string;
+    domain: string | null;
+    floor_action: string;
 }
 
 export interface DashboardResponse {
-    instances: (Instance & { system: { id: string; name: string; domain: string | null; floor_action: string } })[];
+    instances: DashboardInstance[];
 }
 
 export function getInstance(id: string): Promise<Instance> {

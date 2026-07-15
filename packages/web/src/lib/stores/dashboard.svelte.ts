@@ -1,17 +1,6 @@
 import { patchInstance } from '$lib/api/instances';
+import type { DashboardInstance } from '$lib/api/instances';
 import { toastStore } from './toast.svelte';
-
-export interface DashboardInstance {
-    id: string;
-    state: 'pending' | 'full' | 'floor' | 'missed';
-    notes: string | null;
-    system: {
-        id: string;
-        name: string;
-        domain: string | null;
-        floor_action: string;
-    };
-}
 
 class DashboardStore {
     instances = $state<DashboardInstance[]>([]);
@@ -25,18 +14,18 @@ class DashboardStore {
         if (idx === -1) return;
 
         const prev = this.instances[idx];
-        this.instances[idx] = { ...prev, state};
+        this.instances[idx] = { ...prev, state };
 
         try {
-            const updated = await patchInstance(instanceId, {state});
+            const updated = await patchInstance(instanceId, { state });
             this.instances[idx] = {
                 ...this.instances[idx],
                 state: updated.state as DashboardInstance['state'],
                 notes: updated.notes,
             };
-        } catch (e) {
+        } catch {
             this.instances[idx] = prev;
-            toastStore.push({ type: 'error', message: 'Could not save, try again.' });
+            toastStore.push({ type: 'error', message: 'Could not save — try again.' });
         }
     }
 }
