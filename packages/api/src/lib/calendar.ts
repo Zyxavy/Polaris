@@ -32,3 +32,14 @@ export function tomorrowManilaDate(): string {
     const tomorrow = new Date(Date.UTC(y, m - 1, d + 1));
     return formatter.format(tomorrow);
 }
+
+export function todayBit(): number {
+  return dateToBit(toManilaDate());
+}
+
+export function dateToBit(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const jsDay = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  const polarisDay = (jsDay + 6) % 7;
+  return 1 << polarisDay;
+}

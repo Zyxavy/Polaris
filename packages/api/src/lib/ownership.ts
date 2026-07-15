@@ -19,3 +19,12 @@ export async function getOwnedSchedule(db:D1Database, scheduleId: string, userId
         WHERE s.id = ? AND sys.user_id = ?
     `).bind(scheduleId, userId).first<any>();
 }
+
+export async function getOwnedInstances(db: D1Database, instanceId: string, userId: string, ) {
+    return await db.prepare(`
+        SELECT instances.*
+        FROM instances
+        JOIN systems ON systems.id = instances.system_id
+        WHERE instances.id = ? AND systems.user_id = ?
+    `).bind(instanceId, userId).first<any>();
+}
