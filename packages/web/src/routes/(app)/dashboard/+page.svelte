@@ -92,6 +92,6 @@
                 <span class="font-body font-semibold">{statusHeader.message}</span>
             </div>
         {/if}
-        <InstanceList instances={dashboardStore.instances} onMark={dashboardStore.markState} />
+        <InstanceList instances={dashboardStore.instances} onMark={(id, state) => dashboardStore.markState(id, state)} />
     </div>
 {/if}

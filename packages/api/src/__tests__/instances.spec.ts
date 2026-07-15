@@ -7,22 +7,22 @@ import dashboardRoutes from '../routes/dashboard';
 import { instanceRoutes } from '../routes/instances';
 
 const migrations = inject('migrations');
+let currentUserId: string;
 
-const USER_ID = 'fake_user_abc';
-
-async function seedUserStub(db: D1Database) {
+async function seedUser(db: D1Database, userId: string) {
     const now = new Date().toISOString();
     await db.prepare(
-        `INSERT OR IGNORE INTO user (id, name, email, emailVerified, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(USER_ID, 'Test User', 'test@test.com', 1, now, now).run();
+        `INSERT INTO user (id, name, email, emailVerified, createdAt, updatedAt)
+         VALUES (?, ?, ?, 1, ?, ?)`
+    ).bind(userId, 'Test User', `${userId}@test.com`, now, now).run();
 }
 
-function getAuthedApp(userId = USER_ID) {
+function getAuthedApp(userId?: string) {
+    const uid = userId ?? currentUserId;
     const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: any; session: any } }>();
     app.use('/api/*', async (c, next) => {
-        c.set('user', { id: userId, email: 'test@test.com' });
-        c.set('session', { id: crypto.randomUUID(), userId });
+        c.set('user', { id: uid, email: 'test@test.com' });
+        c.set('session', { id: crypto.randomUUID(), uid });
         await next();
     });
     app.route('/api/dashboard', dashboardRoutes);
@@ -30,7 +30,7 @@ function getAuthedApp(userId = USER_ID) {
     return app;
 }
 
-async function seedActiveSystem(db: D1Database, overrides?: {
+async function seedActiveSystem(db: D1Database, userId: string, overrides?: {
     days_of_week?: number;
     time_window_start?: string;
 }): Promise<string> {
@@ -43,7 +43,7 @@ async function seedActiveSystem(db: D1Database, overrides?: {
     await db.prepare(
         `INSERT INTO systems (id, user_id, name, domain, floor_action, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(systemId, USER_ID, 'Test System', 'health', 'Do the thing', 'active', now, now).run();
+    ).bind(systemId, userId, 'Test System', 'health', 'Do the thing', 'active', now, now).run();
 
     await db.prepare(
         `INSERT INTO schedules (id, system_id, days_of_week, time_window_start, time_window_end, recurrence, created_at, updated_at)
@@ -53,34 +53,39 @@ async function seedActiveSystem(db: D1Database, overrides?: {
     return systemId;
 }
 
-async function countInstances(db: D1Database): Promise<number> {
-    const row = await db.prepare('SELECT COUNT(*) as cnt FROM instances').first<{ cnt: number }>();
+async function countUserInstances(db: D1Database, userId: string): Promise<number> {
+    const row = await db.prepare(
+        `SELECT COUNT(*) as cnt FROM instances
+         JOIN systems ON systems.id = instances.system_id
+         WHERE systems.user_id = ?`
+    ).bind(userId).first<{ cnt: number }>();
     return row!.cnt;
 }
 
-// Suite 1: Idempotency
+// ---- Suite 1: Idempotency ----
 
 describe('generateTodayInstances idempotency', () => {
     beforeEach(async () => {
         await applyD1Migrations(env.DB, migrations);
-        await seedUserStub(env.DB);
+        currentUserId = crypto.randomUUID();
+        await seedUser(env.DB, currentUserId);
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-07-15T06:00:00.000Z'));
     });
     afterEach(() => { vi.useRealTimers(); });
 
     it('does not create duplicate Instances on second call (service function)', async () => {
-        await seedActiveSystem(env.DB);
+        await seedActiveSystem(env.DB, currentUserId);
 
-        await generateTodayInstances(env.DB, USER_ID);
-        expect(await countInstances(env.DB)).toBe(1);
+        await generateTodayInstances(env.DB, currentUserId);
+        expect(await countUserInstances(env.DB, currentUserId)).toBe(1);
 
-        await generateTodayInstances(env.DB, USER_ID);
-        expect(await countInstances(env.DB)).toBe(1);
+        await generateTodayInstances(env.DB, currentUserId);
+        expect(await countUserInstances(env.DB, currentUserId)).toBe(1);
     });
 
     it('does not create duplicates via the dashboard route', async () => {
-        await seedActiveSystem(env.DB);
+        await seedActiveSystem(env.DB, currentUserId);
         const app = getAuthedApp();
 
         const res1 = await app.fetch(new Request('http://localhost/api/dashboard'), env);
@@ -96,25 +101,29 @@ describe('generateTodayInstances idempotency', () => {
     });
 });
 
-// Suite 2: State transition
+// ---- Suite 2: State transition ----
 
 describe('PATCH /api/instances/:id', () => {
+    const FROZEN_TS = '2026-07-15T06:00:00.000Z';
+
     beforeEach(async () => {
         await applyD1Migrations(env.DB, migrations);
-        await seedUserStub(env.DB);
+        currentUserId = crypto.randomUUID();
+        await seedUser(env.DB, currentUserId);
         vi.useFakeTimers();
-        vi.setSystemTime(new Date('2026-07-15T06:00:00.000Z'));
+        vi.setSystemTime(new Date(FROZEN_TS));
     });
     afterEach(() => { vi.useRealTimers(); });
 
     it('transitions pending to full and updates updated_at', async () => {
-        const systemId = await seedActiveSystem(env.DB);
-        const now = new Date().toISOString();
+        const systemId = await seedActiveSystem(env.DB, currentUserId);
         const instanceId = crypto.randomUUID();
         await env.DB.prepare(
             `INSERT INTO instances (id, system_id, date, state, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?)`
-        ).bind(instanceId, systemId, '2026-07-15', 'pending', now, now).run();
+        ).bind(instanceId, systemId, '2026-07-15', 'pending', FROZEN_TS, FROZEN_TS).run();
+
+        vi.advanceTimersByTime(1000);
 
         const app = getAuthedApp();
         const res = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}`, {
@@ -126,17 +135,16 @@ describe('PATCH /api/instances/:id', () => {
         expect(res.status).toBe(200);
         const body = await res.json() as any;
         expect(body.state).toBe('full');
-        expect(body.updated_at).not.toBe(now);
+        expect(body.updated_at).not.toBe(FROZEN_TS);
     });
 
     it('rejects setting state to pending', async () => {
-        const systemId = await seedActiveSystem(env.DB);
+        const systemId = await seedActiveSystem(env.DB, currentUserId);
         const instanceId = crypto.randomUUID();
-        const now = new Date().toISOString();
         await env.DB.prepare(
             `INSERT INTO instances (id, system_id, date, state, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?)`
-        ).bind(instanceId, systemId, '2026-07-15', 'pending', now, now).run();
+        ).bind(instanceId, systemId, '2026-07-15', 'pending', FROZEN_TS, FROZEN_TS).run();
 
         const app = getAuthedApp();
         const res = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}`, {
@@ -151,13 +159,12 @@ describe('PATCH /api/instances/:id', () => {
     });
 
     it('returns 400 for empty body', async () => {
-        const systemId = await seedActiveSystem(env.DB);
+        const systemId = await seedActiveSystem(env.DB, currentUserId);
         const instanceId = crypto.randomUUID();
-        const now = new Date().toISOString();
         await env.DB.prepare(
             `INSERT INTO instances (id, system_id, date, state, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?)`
-        ).bind(instanceId, systemId, '2026-07-15', 'pending', now, now).run();
+        ).bind(instanceId, systemId, '2026-07-15', 'pending', FROZEN_TS, FROZEN_TS).run();
 
         const app = getAuthedApp();
         const res = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}`, {
@@ -170,19 +177,15 @@ describe('PATCH /api/instances/:id', () => {
     });
 
     it('returns 404 for non-owned instance', async () => {
-        const otherUserId = 'other_user_xyz';
-        await env.DB.prepare(
-            `INSERT OR IGNORE INTO user (id, name, email, emailVerified, createdAt, updatedAt)
-             VALUES (?, ?, ?, ?, ?, ?)`
-        ).bind(otherUserId, 'Other', 'other@test.com', 1, new Date().toISOString(), new Date().toISOString()).run();
+        const otherUserId = crypto.randomUUID();
+        await seedUser(env.DB, otherUserId);
 
-        const systemId = await seedActiveSystem(env.DB);
+        const systemId = await seedActiveSystem(env.DB, currentUserId);
         const instanceId = crypto.randomUUID();
-        const now = new Date().toISOString();
         await env.DB.prepare(
             `INSERT INTO instances (id, system_id, date, state, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?)`
-        ).bind(instanceId, systemId, '2026-07-15', 'pending', now, now).run();
+        ).bind(instanceId, systemId, '2026-07-15', 'pending', FROZEN_TS, FROZEN_TS).run();
 
         const app = getAuthedApp(otherUserId);
         const res = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}`, {
@@ -195,20 +198,21 @@ describe('PATCH /api/instances/:id', () => {
     });
 });
 
-// Suite 3: Window-gated filter
+// ---- Suite 3: Window-gated filter ----
 
 describe('GET /api/dashboard window gate', () => {
     beforeEach(async () => {
         await applyD1Migrations(env.DB, migrations);
-        await seedUserStub(env.DB);
+        currentUserId = crypto.randomUUID();
+        await seedUser(env.DB, currentUserId);
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-07-15T06:00:00.000Z'));
     });
     afterEach(() => { vi.useRealTimers(); });
 
     it('excludes systems whose time window has not opened yet', async () => {
-        await seedActiveSystem(env.DB, { time_window_start: '06:00' });
-        await seedActiveSystem(env.DB, { time_window_start: '23:59' });
+        await seedActiveSystem(env.DB, currentUserId, { time_window_start: '06:00' });
+        await seedActiveSystem(env.DB, currentUserId, { time_window_start: '23:59' });
 
         const app = getAuthedApp();
         const res = await app.fetch(new Request('http://localhost/api/dashboard'), env);
@@ -216,7 +220,7 @@ describe('GET /api/dashboard window gate', () => {
         const body = await res.json() as any;
         expect(body.instances).toHaveLength(1);
 
-        const total = await countInstances(env.DB);
+        const total = await countUserInstances(env.DB, currentUserId);
         expect(total).toBe(2);
     });
 });

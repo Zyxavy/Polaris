@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const email = `dashboard-e2e-${Date.now()}@test.com`;
 const password = 'password123';
 
-test('P0 flow #4: daily execution — mark instances on dashboard', async ({ page }) => {
+test('P0 flow #4: daily execution: mark instances on dashboard', async ({ page }) => {
     await page.goto('/sign-up');
     await page.fill('#name', 'E2E User');
     await page.fill('#email', email);
@@ -37,12 +37,12 @@ test('P0 flow #4: daily execution — mark instances on dashboard', async ({ pag
     await expect(page.locator('text=Morning Journal')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Reading System')).toBeVisible();
 
-    const journalCard = page.locator('text=Morning Journal').locator('..');
+    const journalCard = page.locator('.bg-surface-container-lowest').filter({ hasText: 'Morning Journal' });
     await journalCard.locator('button:has-text("Full")').click();
     await expect(journalCard.locator('button:has-text("Full")')).toBeDisabled();
     expect(page.url()).toContain('/dashboard');
 
-    const readingCard = page.locator('text=Reading System').locator('..');
+    const readingCard = page.locator('.bg-surface-container-lowest').filter({ hasText: 'Reading System' });
     await readingCard.locator('button:has-text("Floor")').click();
     await expect(readingCard.locator('button:has-text("Floor")')).toBeDisabled();
 });

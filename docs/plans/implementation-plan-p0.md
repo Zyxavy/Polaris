@@ -331,9 +331,9 @@ This is the highest-value P0 slice — the daily-use loop.
 
 ### Definition of Done
 
-- [ ] Idempotency test passes (this is the single most load-bearing test in the app — both the lazy path and Slice 7's Cron path depend on it).
-- [ ] 10ms CPU note: confirm via `wrangler tail` CPU field on a real/local call, note the ms in the PR (Definition of Done S5's explicit ask, not optional for this route).
-- [ ] Dashboard renders with skeleton, not spinner.
+- [x] Idempotency test passes (this is the single most load-bearing test in the app — both the lazy path and Slice 7's Cron path depend on it).
+- [x] 10ms CPU note: confirm via `wrangler tail` CPU field on a real/local call, note the ms in the PR (Definition of Done S5's explicit ask, not optional for this route).
+- [x] Dashboard renders with skeleton, not spinner.
 - [ ] E2E flow #4 passes.
 
 **PR:** `feat/dashboard` → `main`.
