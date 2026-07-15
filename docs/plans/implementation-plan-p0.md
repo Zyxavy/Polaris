@@ -300,7 +300,7 @@ Small, focused slice — wires the stub from Slice 4 into something real.
 
 ---
 
-## Slice 6 — Dashboard & Instances (lazy generation)
+<!-- ## Slice 6 — Dashboard & Instances (lazy generation)
 
 **Branch:** `feat/dashboard`
 **Docs:** PRD S5.3, S6.3, `api-routes.md` S4.1–4.4 (the generation-logic SQL is copy-this-closely, it's already CPU-budget-optimized), `design-system/polaris/pages/dashboard.md`, `loading-states.md` (Dashboard rows).
@@ -334,9 +334,9 @@ This is the highest-value P0 slice — the daily-use loop.
 - [x] Idempotency test passes (this is the single most load-bearing test in the app — both the lazy path and Slice 7's Cron path depend on it).
 - [x] 10ms CPU note: confirm via `wrangler tail` CPU field on a real/local call, note the ms in the PR (Definition of Done S5's explicit ask, not optional for this route).
 - [x] Dashboard renders with skeleton, not spinner.
-- [ ] E2E flow #4 passes.
+- [ ] E2E flow #4 passes. -->
 
-**PR:** `feat/dashboard` → `main`.
+<!-- **PR:** `feat/dashboard` → `main`. -->
 
 ---
 
