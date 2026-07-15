@@ -7,7 +7,7 @@
 
 **Implementation status:** Current
 
-**Last updated:** July 8, 2026
+**Last updated:** July 15, 2026
 
 ---
 
@@ -281,9 +281,9 @@ export const { useSession, signIn, signOut, signUp } = authClient;
 ```typescript
 // packages/web/src/lib/stores/dashboard.svelte.ts
 class DashboardStore {
-  instances = $state<Instance[]>([]);
+  instances = $state<DashboardInstance[]>([]);
 
-  load(instances: Instance[]) {
+  load(instances: DashboardInstance[]) {
     this.instances = instances;
   }
 
@@ -296,10 +296,14 @@ class DashboardStore {
 
     try {
       const updated = await patchInstance(instanceId, { state });
-      this.instances[idx] = updated;
-    } catch (e) {
+      this.instances[idx] = {
+        ...this.instances[idx],
+        state: updated.state as DashboardInstance['state'],
+        notes: updated.notes,
+      };
+    } catch {
       this.instances[idx] = prev;
-      toastStore.push({ type: 'error', message: 'Could not save -- try again.' });
+      toastStore.push({ type: 'error', message: 'Could not save — try again.' });
     }
   }
 }
