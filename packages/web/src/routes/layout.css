@@ -30,6 +30,17 @@
   --shadow-ambient-xl: 0 24px 60px rgba(85, 98, 77, 0.07);
 }
 
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton {
+  background: var(--color-muted);
+  border-radius: 1rem;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
 [data-theme="dark"] {
   --color-surface: #101519;
   --color-surface-container-low: #1A1F24;
