@@ -6,9 +6,9 @@
 
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Partially Implemented (S2–S6 live; S7–S10 planned)
 
-**Last updated:** July 2, 2026
+**Last updated:** July 15, 2026
 
 ---
 
@@ -254,20 +254,20 @@ Response 200:
   "instances": [
     {
       "id": "inst_...",
+      "system_id": "sys_...",
       "state": "pending",
       "notes": null,
       "workspace_snapshot": null,
       "created_at": "...", "updated_at": "...",
-      "system": {
-        "id": "sys_...", "name": "Reading System", "domain": "Study",
-        "floor_action": "Open the book and read one paragraph"
-      }
+      "name": "Reading System",          // from JOIN systems
+      "domain": "Study",                 // from JOIN systems
+      "floor_action": "Open the book and read one paragraph"  // from JOIN systems
     }
   ]
 }
 ```
 
-The `system` object embedded per instance is intentionally a narrow projection (not the full System record from S2.1) -- the Dashboard card only ever needs name, domain, and floor_action for its collapsed state; the full record is fetched separately if the user drills into a specific System. Keeping this response small matters more here than anywhere else in the API, since PRD S10 calls this out as the one screen with a hard non-blocking-render requirement.
+System fields are returned as **flat columns** on the instance row (via SQL JOIN), not nested under a `system` object -- the frontend reads them as `instance.name`, `instance.domain`, `instance.floor_action` directly. This is a narrow projection (not the full System record from S2.1) -- the Dashboard card only ever needs name, domain, and floor_action for its collapsed state; the full record is fetched separately if the user drills into a specific System. Keeping this response small matters more here than anywhere else in the API, since PRD S10 calls this out as the one screen with a hard non-blocking-render requirement.
 
 **Generation logic (server-side, not a separate endpoint) -- designed to stay under 10ms CPU budget:**
 
@@ -275,7 +275,7 @@ The Workers free tier caps CPU time at 10ms per request (I/O wait excluded). The
 
 ```
 Step 1 (SQL -- one query, no JS loop):
-  SELECT s.id, sch.time_window_start
+  SELECT s.id, sch.time_window_start, sch.days_of_week
   FROM systems s
   JOIN schedules sch ON sch.system_id = s.id
   WHERE s.user_id = ?
@@ -284,11 +284,13 @@ Step 1 (SQL -- one query, no JS loop):
   -- ? = (1 << today's day-of-week), computed in JS as a single integer
 
 Step 2 (D1 batch -- one round trip, no per-row overhead):
+  const now = toManilaISOString();
   const stmt = db.prepare(
-    'INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, ?, ?)'
+    `INSERT OR IGNORE INTO instances (id, system_id, date, state, created_at, updated_at)
+     VALUES (?, ?, ?, 'pending', ?, ?)`
   );
-  const batch = rows.map(r => stmt.bind(r.id, today, 'pending'));
-  await db.batch(...batch);               -- D1 batch: all inserts in one I/O call
+  const batch = rows.map(r => stmt.bind(crypto.randomUUID(), r.id, today, now, now));
+  await db.batch(batch);                  -- D1 batch: all inserts in one I/O call (pass array, not spread)
 
 Step 3 (SQL -- final filtered SELECT, single query):
   SELECT instances.*, systems.name, systems.domain, systems.floor_action
@@ -297,8 +299,8 @@ Step 3 (SQL -- final filtered SELECT, single query):
   JOIN schedules ON schedules.system_id = instances.system_id
   WHERE instances.date = ?
     AND systems.user_id = ?
-    AND schedules.days_of_week ...         -- same bitmask match
-    AND time_window_start <= current_time  -- window-gated filter
+    AND (schedules.days_of_week & ?) != 0 -- same bitmask match
+    AND schedules.time_window_start <= ?  -- window-gated filter (param is formatted Manila time string)
   ORDER BY instances.created_at DESC      -- no pagination; Dashboard returns today's only, bounded by active system count
 ```
 

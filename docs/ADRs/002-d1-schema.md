@@ -6,7 +6,7 @@
 
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Current (P0 tables migrated; non-P0 tables planned)
 
 **Last updated:** July 2, 2026
 

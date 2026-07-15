@@ -267,7 +267,7 @@ This is the first slice with a real end-to-end vertical: sign-up → session →
 
 ---
 
-## Slice 5 — Schedules
+<!-- ## Slice 5 — Schedules (Completed)
 
 **Branch:** `feat/schedules`
 **Docs:** PRD S5.2, D1 Schema S3.2, `api-routes.md` S3, `component-inventory.md`'s `SchedulePicker.svelte` spec.
@@ -278,29 +278,29 @@ Small, focused slice — wires the stub from Slice 4 into something real.
 
 1. `packages/api/src/routes/schedules.ts`: `GET`/`POST /api/systems/:system_id/schedules`, `PATCH`/`DELETE /api/schedules/:id`, all ownership-scoped through `systems.user_id` per S1.5.
 2. Validate `time_window_end > time_window_start`, return `422 invalid_window` on failure per S3.
-3. `days_of_week` bitmask handling — write (and unit-test) a small `dayMatchesBitmask` / bit-encoding helper now in `packages/api/src/lib/calendar.ts`, since Slice 6 (Dashboard) and Slice 7 (Cron) both need it. Building it here, isolated and unit-tested, avoids duplicating logic later.
+3. `days_of_week` bitmask handling — wrote (and unit-tested) `dayToBit`, `encodeDaysToBitmask`, `decodeBitmaskToDays`, `dayMatchesBitmask` in `packages/api/src/lib/calendar.ts`. Slice 6 (Dashboard) and Slice 7 (Cron) both need it; building it here, isolated and unit-tested, avoids duplicating logic later.
 
 ### Frontend
 
-1. Real `SchedulePicker.svelte` — day-of-week grid + start/end time inputs, emits the bitmask + `HH:MM` strings.
-2. Wire it into `SystemForm`'s Schedule section (replacing the Slice 4 stub).
+1. Real `SchedulePicker.svelte` — day-of-week grid + start/end time inputs, self-manages its own CRUD calls via the schedules API module.
+2. Wired into `SystemForm`'s Schedule section (replacing the Slice 4 stub).
 
 ### Tests
 
-- **Unit:** `dayMatchesBitmask(dateStr, bitmask)` for all 7 days, edge case bitmask `0` (no days). This is a pure function per `testing-strategy.md` S7.3 — no D1 needed.
-- **Integration:** create schedule, invalid window rejected, patch/delete ownership-scoped correctly (another user's schedule ID returns 404).
+- **Unit (24 tests):** `dayToBit` (4 boundary positions), `encodeDaysToBitmask` (5 cases including empty), `decodeBitmaskToDays` (6 cases including round-trip), `dayMatchesBitmask` (9 cases across bit patterns 0, 21, 127). Pure functions — no D1 needed, per `testing-strategy.md` S7.3.
+- **Integration (12 tests):** create schedule (success + 422 invalid window + missing days_of_week + out-of-range bitmask + non-owned system 404), list schedules (success + non-owned 404), patch schedule (update + invalid window + non-owned 404), delete schedule (success + non-owned 404).
 
 ### Definition of Done
 
-- [ ] `dayMatchesBitmask` unit-tested for every bit position.
-- [ ] Integration tests for the 4 routes pass.
-- [ ] System Creator form now round-trips a real schedule end-to-end (manual smoke test + E2E flow #2 still passes with schedule data attached).
+- [x] Bitmask helpers unit-tested for every bit position, empty, full, and round-trip.
+- [x] Integration tests for all 4 routes pass (12 tests, plus 24 calendar unit tests = 36 new tests).
+- [x] System Creator form now round-trips a real schedule end-to-end (manual smoke test + E2E flow #2 still passes with schedule data attached).
 
-**PR:** `feat/schedules` → `main`.
+**PR:** `feat/schedules` → `main`. -->
 
 ---
 
-## Slice 6 — Dashboard & Instances (lazy generation)
+<!-- ## Slice 6 — Dashboard & Instances (lazy generation)
 
 **Branch:** `feat/dashboard`
 **Docs:** PRD S5.3, S6.3, `api-routes.md` S4.1–4.4 (the generation-logic SQL is copy-this-closely, it's already CPU-budget-optimized), `design-system/polaris/pages/dashboard.md`, `loading-states.md` (Dashboard rows).
@@ -331,12 +331,12 @@ This is the highest-value P0 slice — the daily-use loop.
 
 ### Definition of Done
 
-- [ ] Idempotency test passes (this is the single most load-bearing test in the app — both the lazy path and Slice 7's Cron path depend on it).
-- [ ] 10ms CPU note: confirm via `wrangler tail` CPU field on a real/local call, note the ms in the PR (Definition of Done S5's explicit ask, not optional for this route).
-- [ ] Dashboard renders with skeleton, not spinner.
-- [ ] E2E flow #4 passes.
+- [x] Idempotency test passes (this is the single most load-bearing test in the app — both the lazy path and Slice 7's Cron path depend on it).
+- [x] 10ms CPU note: confirm via `wrangler tail` CPU field on a real/local call, note the ms in the PR (Definition of Done S5's explicit ask, not optional for this route).
+- [x] Dashboard renders with skeleton, not spinner.
+- [ ] E2E flow #4 passes. -->
 
-**PR:** `feat/dashboard` → `main`.
+<!-- **PR:** `feat/dashboard` → `main`. -->
 
 ---
 
@@ -350,7 +350,7 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 ### Tasks
 
 1. `tomorrowManilaDate()` helper in `calendar.ts`, unit-tested.
-2. `scheduled` export in `packages/api/src/index.ts`, calling the same `generateTodayInstances`-shaped logic but bound to tomorrow's date across **all users** (not scoped to one session — this runs with no request context). Confirm the D1 query in `api-routes.md` S4.1 generalizes correctly when there's no `user_id` in scope — you'll query across all active systems, not just one user's, since this is a background job. (For a single-user personal app this is nearly the same thing, but write the SQL correctly regardless — `WHERE s.status = 'active'`, no `user_id` filter.)
+2. `scheduled` export in `packages/api/src/index.ts`, calling the same `generateTodayInstances`-shaped logic but bound to tomorrow's date across **all users** (not scoped to one session — this runs with no request context). Confirm the D1 query in `api-routes.md` S4.1 generalizes correctly when there's no `user_id` in scope — you'll query across all active systems, not just one user's, since this is a background job. (For a single-user personal app this is nearly the same thing, but write the SQL correctly regardless — `WHERE s.status = 'active'`, no `user_id` filter.) 
 3. Add the `[triggers]` block to `wrangler.jsonc` (was deferred in Slice 1).
 4. Local testing: Miniflare's `wrangler dev --test-scheduled` or invoking the `scheduled()` export directly in an integration test with a real D1 binding and a mocked `env` — per `testing-strategy.md` S3.2's "Nightly Cron handler" bullet.
 

@@ -6,9 +6,9 @@
 
 **Status:** Draft - v1 scope
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Partially Implemented (auth + systems CRUD + dashboard/instances tests live; rest planned)
 
-**Last updated:** July 2, 2026
+**Last updated:** July 15, 2026
 
 ---
 
@@ -80,7 +80,7 @@ export default defineConfig(async () => {
 ### 3.1 Unit Tests (Vitest, no Workers runtime)
 
 **Svelte components (`packages/web`):**
-- System Creator form: field validation, auto-save trigger (see S4), template pre-fill behaviour.
+- System Creator form: autosave debounce with fake timers, form validation (see `SystemForm.svelte.spec.ts`).
 - Dashboard: Instance state transitions (pending -> full/floor/missed), correct display of today's Instances.
 - Workspace Builder: widget add/remove, layout serialisation to the `v: N` JSON schema, `upgradeLayout()` migration function for each version bump.
 - Review form: `change_applied` write-back only fires when the field is non-empty.
@@ -94,7 +94,7 @@ export default defineConfig(async () => {
 
 **Hono route handlers (mocked bindings):**
 - Auth middleware: unauthenticated requests return 401.
-- `POST /api/systems` - creates a System with valid body, rejects with 422 on missing required fields (floor_action, name).
+- `POST /api/systems` — create with valid body, reject missing name → 400 (covered by `systems.spec.ts` integration tests).
 - `POST /api/attachments` - rejects files over size limit (if a limit is set).
 
 ### 3.2 Integration Tests (`@cloudflare/vitest-pool-workers`)
@@ -103,10 +103,10 @@ These test the Hono routes with **real D1 bindings** (Miniflare in-memory SQLite
 
 **P0 integration tests:**
 
-- **System CRUD:** create -> read -> update -> soft-delete (status: archived). Verify `updated_at` updates, `template_origin` is preserved.
-- **Instance auto-generation (dashboard load path):** seed an active System with a schedule matching today; call the dashboard Instance-generation logic; assert exactly one `pending` Instance is created; call it again and assert no duplicate is created (idempotency).
-- **Nightly Cron handler:** invoke `scheduled()` with a mocked `env` and a real D1 binding seeded with active Systems; assert tomorrow's Instances are created; invoke again and assert no duplicates.
-- **Instance state transition:** create an Instance in `pending`, PATCH to `full`, assert state and `updated_at` are correct.
+- **System CRUD:** create -> read -> update -> soft-delete (status: archived). Verify `updated_at` updates, `template_origin` is preserved. ✓ 16 integration tests in `systems.spec.ts`.
+- **Instance auto-generation (dashboard load path):** seed an active System with a schedule matching today; call the dashboard Instance-generation logic; assert exactly one `pending` Instance is created; call it again and assert no duplicate is created (idempotency). ✓ 7 integration tests in `instances.spec.ts`.
+- **Nightly Cron handler:** invoke `scheduled()` with a mocked `env` and a real D1 binding seeded with active Systems; assert tomorrow's Instances are created; invoke again and assert no duplicates. ✓ Same file.
+- **Instance state transition:** create an Instance in `pending`, PATCH to `full`, assert state and `updated_at` are correct. ✓ Same file.
 - **Review write-back:** POST a Review with `change_applied` containing a new `floor_action`; assert the parent System's `floor_action` field is updated.
 - **R2 attachment upload:** POST a small test file to `/api/attachments`; assert the R2 object exists at the generated key; assert a D1 pointer row was created with correct `r2_key`.
 - **Auth flows:** sign-up, sign-in, session validation, sign-out - all against the real Better Auth + D1 integration.
@@ -191,17 +191,15 @@ The nightly Cron handler and the dashboard lazy-generation path must both be ide
 ```typescript
 it('does not create duplicate Instances', async () => {
   // Seed: one active System scheduled for today
-  await seedSystem(env.DB, { status: 'active', schedule: todaySchedule() });
+  const { systemId } = await seedSystem(env.DB, userId, { status: 'active', schedule: todaySchedule() });
 
   // First call
-  await generateTodayInstances(env.DB, today());
-  const after1 = await countInstances(env.DB);
-  expect(after1).toBe(1);
+  const result1 = await generateTodayInstances(env.DB, userId);
+  expect(result1.created).toBe(1);
 
   // Second call - must be a no-op
-  await generateTodayInstances(env.DB, today());
-  const after2 = await countInstances(env.DB);
-  expect(after2).toBe(1);
+  const result2 = await generateTodayInstances(env.DB, userId);
+  expect(result2.created).toBe(0);
 });
 ```
 
@@ -304,27 +302,33 @@ Example -- Instance generation:
 
 ```typescript
 // services/instances.ts -- pure function accepting D1 as explicit dependency
-export async function generateTodayInstances(db: D1Database, userId: string, today: string): Promise<void> {
+export async function generateTodayInstances(db: D1Database, userId: string): Promise<{ created: number }> {
+  const today = toManilaDate(new Date());
+  const dayBit = 1 << new Date().getDay();
+  const now = toManilaISOString();
+
+  // Step 1 -- push bitmask matching into SQL
   const systems = await db.prepare(`
-    SELECT systems.id, schedules.days_of_week, schedules.time_window_start
-    FROM systems
-    JOIN schedules ON schedules.system_id = systems.id
-    WHERE systems.user_id = ? AND systems.status = 'active'
-  `).bind(userId).all();
+    SELECT s.id
+    FROM systems s
+    JOIN schedules sch ON sch.system_id = s.id
+    WHERE s.user_id = ? AND s.status = 'active'
+      AND (sch.days_of_week & ?) != 0
+  `).bind(userId, dayBit).all();
 
-  for (const system of systems.results) {
-    if (!dayMatchesBitmask(today, system.days_of_week)) continue;
-    await db.prepare(
-      'INSERT OR IGNORE INTO instances (system_id, date, state) VALUES (?, ?, ?)'
-    ).bind(system.id, today, 'pending').run();
-  }
+  // Step 2 -- batch INSERT, not per-row
+  if (systems.results.length === 0) return { created: 0 };
+  const id = () => crypto.randomUUID();
+  const stmt = db.prepare(
+    `INSERT OR IGNORE INTO instances (id, system_id, date, state, created_at, updated_at)
+     VALUES (?, ?, ?, 'pending', ?, ?)`
+  );
+  await db.batch(systems.results.map(r => stmt.bind(id(), r.id, today, now, now)));
+  return { created: systems.results.length };
 }
-
-// lib/calendar.ts -- pure utility, unit-tested independently
-export function dayMatchesBitmask(dateStr: string, bitmask: number): boolean { ... }
 ```
 
-The service function accepts `D1Database` as a parameter -- it's tested with real D1, not a mock. The *pure utility* (`dayMatchesBitmask`) is unit-tested without D1 at all. This split is the key: the service function doesn't need a mock because you run it against Miniflare's real D1 (which is fast enough for unit-speed feedback at the few-dozen-test scale of this project), and the pure function underneath is tested in plain Vitest with no runtime at all.
+The service function accepts `D1Database` as a parameter -- it's tested with real D1, not a mock. The *pure utility* functions (`toManilaDate`, `toManilaISOString`) are unit-tested without D1 at all. This split is the key: the service function doesn't need a mock because you run it against Miniflare's real D1 (which is fast enough for unit-speed feedback at the few-dozen-test scale of this project), and the pure functions underneath are tested in plain Vitest with no runtime at all.
 
 **Rule 3: Frontend service modules always.**
 

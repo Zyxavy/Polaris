@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
 
     let { data } = $props();
-    let { systems, next_cursor } = $derived(data);
+    let { systems, next_cursor, todayMap } = $derived(data);
 </script>
 
 <div class="max-w-3xl">
@@ -27,9 +27,22 @@
         >
           <div>
             <h3 class="font-body font-medium text-on-surface">{system.name}</h3>
-            {#if system.domain}
-              <p class="text-sm text-on-surface-muted font-body">{system.domain}</p>
-            {/if}
+            <div class="flex items-center gap-3 mt-0.5">
+              {#if system.domain}
+                <p class="text-sm text-on-surface-muted font-body">{system.domain}</p>
+              {/if}
+              {#if todayMap[system.id]}
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full
+                    {todayMap[system.id].state === 'full' ? 'bg-blush' :
+                     todayMap[system.id].state === 'floor' ? 'bg-secondary' :
+                     todayMap[system.id].state === 'missed' ? 'bg-muted' : 'bg-surface-container-low'}"></span>
+                  <span class="text-xs text-muted-foreground font-body capitalize">
+                    {todayMap[system.id].state}
+                  </span>
+                </span>
+              {/if}
+            </div>
           </div>
           <span class="text-xs font-body text-on-surface-muted">{system.status}</span>
         </button>

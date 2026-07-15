@@ -33,13 +33,14 @@ docs: update ADR 002 with hybrid service layer
 | Tool | Purpose | Key commands | Notes |
 |---|---|---|---|---|
 | **pnpm** | Package manager (not npm, not yarn) | `pnpm install`, `pnpm -r build`, `pnpm -r deploy` | |
-| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 24 tests: smoke (3), recovery (2), auth (3), systems CRUD (16) |
+| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 71 tests: smoke (3), recovery (2), auth (3), systems CRUD (16), calendar (24), schedules (12), instances (7), dashboard (4) |
 | **Vitest** | Web unit tests (browser) | `pnpm --filter web test:unit` | Vitest with Playwright browser |
 | **Playwright** | E2E flows | `pnpm --filter web test:e2e` | Starts API (migrations applied) + preview; runs `*.e2e.ts` |
 | **dev:e2e** | Start API server for E2E | `pnpm --filter api dev:e2e` | Applies D1 migrations then starts `wrangler dev --port 8787` |
 | **Svelte 5** | Frontend framework (runes mode) | Use `$state`, `$derived`, `$effect` — not Svelte 4 stores or `onMount` |
 | **Tailwind CSS** | Styling — no CSS modules or styled-components |
 | **Hono** | API framework (TypeScript) | `c.req.param()`, `c.req.json()`, `c.json()` |
+| **Graphify** | Knowledge graph of the codebase | `graphify query "<question>"`, `graphify path "A" "B"`, `graphify explain "X"` | Pre-built index at `graphify-out/graph.json` — query before grepping |
 
 ### Svelte 5 runes conventions
 
@@ -96,7 +97,7 @@ Shared application state lives in `packages/web/src/lib/stores/` as Svelte 5 run
 
 | Store file | Holds |
 |---|---|
-| `dashboard-store.ts` | Dashboard systems list, period info |
+| `dashboard.svelte.ts` | Dashboard systems list, period info |
 | `workspace-editor-store.ts` | Active workspace layout, dirty state |
 | `toast-store.ts` | Toast notification queue |
 

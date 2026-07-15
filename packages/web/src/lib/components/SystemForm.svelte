@@ -3,6 +3,7 @@
     import { ApiError } from '$lib/api/client';
     import type { System } from '$lib/api/systems';
     import { AUTOSAVE_DEBOUNCE_MS } from './system-form.config';
+    import SchedulePicker from './SchedulePicker.svelte';
 
     let { system: _system }: { system?: System | null } = $props();
 
@@ -221,11 +222,8 @@
     />
   </div>
 
-  <!-- Schedule (stub) -->
-  <div class="field-group">
-    <p class="font-body text-sm font-medium text-on-surface">Schedule</p>
-    <p class="mt-1 text-sm font-body text-on-surface-muted">Schedule configuration coming in Slice 5.</p>
-  </div>
+  <!-- Schedule -->
+  <SchedulePicker systemId={systemId} />
 
   <!-- Confirm button -->
   <div class="flex items-center gap-3 pt-4 border-t border-border">
