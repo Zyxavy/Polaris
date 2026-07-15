@@ -7,6 +7,7 @@ import { handleRecovery } from './lib/recovery';
 import systemsRoutes from './routes/systems';
 import recoveryRoutes from './routes/recovery';
 import schedulesRoutes from './routes/schedules';
+import { instanceRoutes, systemInstanceRoutes } from './routes/instances';
 
 const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: User | null; session: Session | null } }>();
 
@@ -43,6 +44,10 @@ app.route('/api/systems', systemsRoutes);
 // Schedules
 app.route('/api/systems/:system_id/schedules', schedulesRoutes);
 app.route('/api/schedules', schedulesRoutes);
+
+// Instances
+app.route('/api/instances', instanceRoutes);
+app.route('/api/systems', systemInstanceRoutes);
 
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));

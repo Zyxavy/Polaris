@@ -20,7 +20,7 @@ export async function getOwnedSchedule(db:D1Database, scheduleId: string, userId
     `).bind(scheduleId, userId).first<any>();
 }
 
-export async function getOwnedInstances(db: D1Database, instanceId: string, userId: string, ) {
+export async function getOwnedInstance(db: D1Database, instanceId: string, userId: string) {
     return await db.prepare(`
         SELECT instances.*
         FROM instances
