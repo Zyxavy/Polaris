@@ -58,10 +58,11 @@ app.route('/api/systems', systemInstanceRoutes);
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
 
+export default app;
+
 export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) {
   const tomorrow = tomorrowManilaDate();
   console.log(`[cron] pre-generate instances date=${tomorrow}`);
   await generateInstancesForAllUsers(env.DB, tomorrow);
   console.log(`[cron] pre-generate complete date=${tomorrow}`);
 }
-export default app;

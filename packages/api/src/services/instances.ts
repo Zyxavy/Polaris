@@ -25,10 +25,12 @@ export async function generateInstancesForAllUsers(db: D1Database, dateStr: stri
         stmt.bind(crypto.randomUUID(), s.id, dateStr, 'pending', now, now)
     );
 
-    await db.batch(batch).catch((e) => {
+    try {
+        await db.batch(batch);
+    } catch (e) {
         const msg = String(e);
         if (!msg.includes('UNIQUE constraint')) throw e;
-    });
+    }
 }
 
 export async function generateInstancesForDate(db: D1Database, userId: string, dateStr: string): Promise<void> {

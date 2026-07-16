@@ -62,7 +62,7 @@ async function countUserInstances(db: D1Database, userId: string): Promise<numbe
     return row!.cnt;
 }
 
-// ---- Suite 1: Idempotency ----
+// Suite 1: Idempotency
 
 describe('generateTodayInstances idempotency', () => {
     beforeEach(async () => {
@@ -101,7 +101,7 @@ describe('generateTodayInstances idempotency', () => {
     });
 });
 
-// ---- Suite 2: State transition ----
+// Suite 2: State transition
 
 describe('PATCH /api/instances/:id', () => {
     const FROZEN_TS = '2026-07-15T06:00:00.000Z';
@@ -198,7 +198,7 @@ describe('PATCH /api/instances/:id', () => {
     });
 });
 
-// ---- Suite 3: Window-gated filter ----
+// Suite 3: Window-gated filter
 
 describe('GET /api/dashboard window gate', () => {
     beforeEach(async () => {
@@ -222,5 +222,55 @@ describe('GET /api/dashboard window gate', () => {
 
         const total = await countUserInstances(env.DB, currentUserId);
         expect(total).toBe(2);
+    });
+});
+
+describe('scheduled handler (nightly cron)', () => {
+    beforeEach(async () => {
+        await applyD1Migrations(env.DB, migrations);
+        await env.DB.exec('DELETE FROM instances; DELETE FROM schedules; DELETE FROM systems; DELETE FROM user');
+        currentUserId = crypto.randomUUID();
+        await seedUser(env.DB, currentUserId);
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-07-15T06:00:00.000Z')); // 14:00 Manila
+    });
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('creates tomorrow instances via scheduled handler', async () => {
+        await seedActiveSystem(env.DB, currentUserId, { days_of_week: 127 });
+
+        // Import the scheduled export directly
+        const { scheduled } = await import('../index');
+        const mockEvent = {} as ScheduledEvent;
+        const mockCtx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
+        await scheduled(mockEvent, env, mockCtx);
+
+        // Verify: instances exist for tomorrow (2026-07-16)
+        const rows = await env.DB.prepare(
+            'SELECT COUNT(*) as cnt FROM instances WHERE date = ?'
+        ).bind('2026-07-16').first<{ cnt: number }>();
+        expect(rows!.cnt).toBeGreaterThanOrEqual(1);
+
+        // Verify: no instances created for today
+        const todayRows = await env.DB.prepare(
+            'SELECT COUNT(*) as cnt FROM instances WHERE date = ?'
+        ).bind('2026-07-15').first<{ cnt: number }>();
+        expect(todayRows!.cnt).toBe(0);
+    });
+
+    it('is idempotent when scheduled runs twice for same date', async () => {
+        await seedActiveSystem(env.DB, currentUserId, { days_of_week: 127 });
+
+        const { scheduled } = await import('../index');
+        const mockEvent = {} as ScheduledEvent;
+        const mockCtx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
+
+        await scheduled(mockEvent, env, mockCtx);
+        await scheduled(mockEvent, env, mockCtx);
+
+        const rows = await env.DB.prepare(
+            'SELECT COUNT(*) as cnt FROM instances WHERE date = ?'
+        ).bind('2026-07-16').first<{ cnt: number }>();
+        expect(rows!.cnt).toBe(1);
     });
 });
