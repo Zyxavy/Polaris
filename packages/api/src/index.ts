@@ -8,6 +8,8 @@ import systemsRoutes from './routes/systems';
 import recoveryRoutes from './routes/recovery';
 import schedulesRoutes from './routes/schedules';
 import dashboardRoutes from './routes/dashboard';
+import { tomorrowManilaDate } from './lib/calendar';
+import { generateInstancesForAllUsers } from './services/instances';
 import { instanceRoutes, systemInstanceRoutes } from './routes/instances';
 
 const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: User | null; session: Session | null } }>();
@@ -56,4 +58,10 @@ app.route('/api/systems', systemInstanceRoutes);
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
 
+export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) {
+  const tomorrow = tomorrowManilaDate();
+  console.log(`[cron] pre-generate instances date=${tomorrow}`);
+  await generateInstancesForAllUsers(env.DB, tomorrow);
+  console.log(`[cron] pre-generate complete date=${tomorrow}`);
+}
 export default app;
