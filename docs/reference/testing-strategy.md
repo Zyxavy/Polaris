@@ -6,7 +6,7 @@
 
 **Status:** Draft - v1 scope
 
-**Implementation status:** Partially Implemented (auth + systems CRUD + dashboard/instances tests live; rest planned)
+**Implementation status:** Partially Implemented (auth + systems CRUD + dashboard/instances + cron tests live; rest planned)
 
 **Last updated:** July 15, 2026
 

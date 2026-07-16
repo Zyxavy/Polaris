@@ -6,7 +6,7 @@
 
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Partially Implemented (S2–S6 live; S7–S10 planned)
+**Implementation status:** Partially Implemented (S2–S7 live; S8–S10 planned)
 
 **Last updated:** July 15, 2026
 

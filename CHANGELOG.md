@@ -207,6 +207,31 @@
 
 ---
 
+### Slice 7: Nightly Cron Instance Pre-generation
+
+#### Backend
+
+- Cleaned up `packages/api/src/lib/calendar.ts` `tomorrowManilaDate()`: removed unused `todayParts` variable and redundant `Intl.DateTimeFormat` — now uses `toLocaleDateString('en-CA')` directly.
+- Added `generateInstancesForAllUsers(db, dateStr)` to `packages/api/src/services/instances.ts`: same SQL pattern as Slice 6's per-user version, but drops the `user_id` filter — queries `WHERE s.status = 'active'` across all users, matching ADR 001 S5.8's design for a background job with no request context.
+- Added `scheduled` export to `packages/api/src/index.ts`: calls `generateInstancesForAllUsers` with tomorrow's date (via `tomorrowManilaDate()`), tagged with `[cron]` log prefix per `observability.md` S3.3.
+- Added `"triggers": { "crons": ["0 15 * * *"] }` to `packages/api/wrangler.jsonc` — deferred from Slice 1.
+
+#### Tests
+
+- Added 4 unit tests for `tomorrowManilaDate()` in `calendar.spec.ts`: normal day, month boundary (`Jul 31→Aug 1`), year boundary (`Dec 31→Jan 1`), UTC midnight crossover.
+- Added 2 integration tests for the cron handler in `instances.spec.ts`:
+  - Verifies instances are created only for tomorrow's date (never today's).
+  - Verifies idempotency: running `scheduled()` twice for the same date produces no duplicates.
+  - **Caveat:** `applyD1Migrations` does not reset data between tests in `@cloudflare/vitest-pool-workers` (migrations are tracked and only applied once). The cron tests explicitly clean all tables in `beforeEach` to avoid cross-test contamination from the 7 prior tests that accumulate instances by date.
+- All 9 instance tests now pass cleanly, including the 7 Slice-6 tests that remain the "safety net" coverage (lazy path works independently of cron).
+
+#### Caveats
+
+- The cron trigger is configured in `wrangler.jsonc` but has **never run in production** — it fires at 15:00 UTC daily. Until the first deploy of this branch to production, no pre-generation has occurred. The lazy dashboard-load path (Slice 6) is the sole generation mechanism today.
+- No deploy-time verification has been performed — `wrangler tail` has not been used to confirm the `[cron]` log line appears. This is expected to be checked during the first manual post-deploy verification per `cicd-deploy.md` S9.2.
+
+---
+
 ### Slice 6: Dashboard & Instances (Backend + Frontend)
 
 #### Backend
