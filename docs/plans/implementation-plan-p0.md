@@ -340,7 +340,7 @@ This is the highest-value P0 slice — the daily-use loop.
 
 ---
 
-## Slice 7 — Nightly Cron Instance Pre-generation
+<!-- ## Slice 7 — Nightly Cron Instance Pre-generation
 
 **Branch:** `feat/cron-instance-pregeneration`
 **Docs:** ADR 001 S5.8, PRD S5.3 (path 2), `testing-strategy.md` S4.3 (Cron idempotency test), `cicd-deploy.md` S2.2 (`[triggers] crons = ["0 15 * * *"]`).
@@ -364,7 +364,7 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 - [ ] Confirmed the lazy path (Slice 6) still works standalone if you simulate the Cron never having run — this is the "safety net" property ADR 001 S5.8 requires, worth an explicit test or at least a manual check.
 - [ ] `wrangler tail` shows a `[cron]`-tagged log line locally (per `observability.md` S3.3/S4.2) — add the logging convention now, don't defer it, since Slice 6 should already have `[api]`/`[d1]` prefixes established.
 
-**PR:** `feat/cron-instance-pregeneration` → `main`.
+**PR:** `feat/cron-instance-pregeneration` → `main`. -->
 
 ---
 
