@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { dayToBit, encodeDaysToBitmask, decodeBitmaskToDays, dayMatchesBitmask, toManilaDate, tomorrowManilaDate } from '../lib/calendar';
 
 describe('dayToBit', () => {
@@ -82,5 +82,34 @@ describe('toManilaDate', () => {
         vi.setSystemTime(new Date('2026-07-14T23:00:00.000Z'));
         expect(toManilaDate()).toBe('2026-07-15');
         vi.useRealTimers();
+    });
+});
+
+describe('tomorrowManilaDate', () => {
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('returns tomorrow in YYYY-MM-DD format', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-07-15T06:00:00.000Z')); // 14:00 Manila
+        expect(tomorrowManilaDate()).toBe('2026-07-16');
+    });
+
+    it('crosses month boundary correctly', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-07-31T12:00:00.000Z')); // 20:00 Manila
+        expect(tomorrowManilaDate()).toBe('2026-08-01');
+    });
+
+    it('crosses year boundary correctly', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-12-31T12:00:00.000Z'));
+        expect(tomorrowManilaDate()).toBe('2027-01-01');
+    });
+
+    it('handles Manila evening (UTC midnight boundary already crossed)', () => {
+        vi.useFakeTimers();
+        // 2026-07-15 23:00 UTC = 2026-07-16 07:00 Manila
+        vi.setSystemTime(new Date('2026-07-15T23:00:00.000Z'));
+        expect(tomorrowManilaDate()).toBe('2026-07-17');
     });
 });

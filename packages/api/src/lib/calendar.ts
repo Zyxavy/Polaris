@@ -24,13 +24,10 @@ export function toManilaDate(utcDate: Date = new Date()): string {
 
 export function tomorrowManilaDate(): string {
     const now = new Date();
-    
-    const formatter = new Intl.DateTimeFormat('en-Ca', { timeZone: 'Asia/Manila'});
-    const todayParts = formatter.formatToParts(now);
-    const todayStr = formatter.format(now); // YYYY-MM-DD
+    const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
     const [y, m, d] = todayStr.split('-').map(Number);
     const tomorrow = new Date(Date.UTC(y, m - 1, d + 1));
-    return formatter.format(tomorrow);
+    return tomorrow.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 }
 
 export function todayBit(): number {
