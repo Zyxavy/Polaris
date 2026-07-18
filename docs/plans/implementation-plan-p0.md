@@ -367,7 +367,7 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 **PR:** `feat/cron-instance-pregeneration` → `main`. -->
 
 ---
-
+<!-- 
 ## Slice 8 — Workspace + D1-backed Widgets (Timer, Counter, Checklist)
 
 **Branch:** `feat/workspace-core-widgets` 
@@ -402,7 +402,7 @@ The Log/Journal widget (Mongo-backed) is deliberately split into its own slice (
 - [ ] Checklist replace-not-append behavior verified by test.
 - [ ] E2E flow #5 (minus drag assertion) passes.
 
-**PR:** `feat/workspace-core-widgets` → `main`.
+**PR:** `feat/workspace-core-widgets` → `main`. -->
 
 ---
 

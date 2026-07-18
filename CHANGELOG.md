@@ -19,6 +19,7 @@
 - Created route page `packages/web/src/routes/(app)/systems/[id]/workspace/+page.ts` (loads workspace layout + today's instance) and `+page.svelte` (composes three-zone layout).
 - Created `packages/api/src/__tests__/workspace.spec.ts`: 24 tests — 7 unit (`upgradeLayout()` no-op, round-trip, edge cases) + 5 workspace integration + 5 counter-log + 2 timer-session + 5 checklist integration.
 - Created `packages/web/src/routes/(app)/systems/workspace.e2e.ts`: P0 flow #5 — add Timer + Counter widgets, save, reload, verify persistence.
+- Fixed pre-existing web unit test failures: installed missing `vitest-browser-svelte` and `@vitest/browser` packages (imported by `SystemForm.svelte.spec.ts` but never added to `package.json` — all 7 web unit tests now pass).
 - **Integration test count:** 71 → 101
 - **E2E test count:** 3 → 4
 
