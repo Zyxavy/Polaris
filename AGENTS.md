@@ -33,7 +33,7 @@ docs: update ADR 002 with hybrid service layer
 | Tool | Purpose | Key commands | Notes |
 |---|---|---|---|---|
 | **pnpm** | Package manager (not npm, not yarn) | `pnpm install`, `pnpm -r build`, `pnpm -r deploy` | |
-| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 71 tests: smoke (3), recovery (2), auth (3), systems CRUD (16), calendar (24), schedules (12), instances (7), dashboard (4) |
+| **Vitest** | API integration tests (D1 + Workers runtime) | `pnpm --filter api test:integration` | 101 tests: smoke (3), recovery (2), auth (3), systems CRUD (16), calendar (32), schedules (12), instances (9), workspace (24) |
 | **Vitest** | Web unit tests (browser) | `pnpm --filter web test:unit` | Vitest with Playwright browser |
 | **Playwright** | E2E flows | `pnpm --filter web test:e2e` | Starts API (migrations applied) + preview; runs `*.e2e.ts` |
 | **dev:e2e** | Start API server for E2E | `pnpm --filter api dev:e2e` | Applies D1 migrations then starts `wrangler dev --port 8787` |

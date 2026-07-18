@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### Slice 8: Workspace + Widget Data
+
+- Created `packages/api/src/lib/workspace.ts`: `upgradeLayout()` with `CURRENT_LAYOUT_VERSION = 1` and while-loop pattern for future version bumps.
+- Created `packages/api/src/lib/ownership.ts`: `getOwnedWorkspace` (JOIN through system's user_id), `getOwnedWidgetEntry` (JOIN through instance → system → user_id).
+- Created `packages/api/src/routes/workspace.ts`: `GET`/`PUT /api/systems/:system_id/workspace` with upsert via `ON CONFLICT(system_id)`.
+- Created `packages/api/src/routes/counter-logs.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter using `date()`), DELETE by id.
+- Created `packages/api/src/routes/timer-sessions.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter), DELETE by id.
+- Created `packages/api/src/routes/checklist.ts`: 2 handlers — PUT replaces widget_entries (SELECT-then-UPDATE/INSERT), GET returns current state (404 if not yet saved).
+- Fixed `counter-logs.ts` and `timer-sessions.ts` `from`/`to` filter to use `date(created_at)` for correct date-range comparison (full ISO timestamps were failing `<= date` comparison).
+- Created `packages/web/src/lib/api/workspaces.ts`: API module with `getWorkspace`, `putWorkspace`, Layout/Widget/Workspace interfaces.
+- Created `packages/web/src/lib/api/counter-logs.ts`, `timer-sessions.ts`, `checklist.ts`: typed API modules for widget data CRUD.
+- Created `packages/web/src/lib/stores/workspace-editor.svelte.ts`: `WorkspaceEditorStore` runes class with `load`, `addWidget`, `removeWidget`, `reorder`, `save`; instantiated per page visit.
+- Created widget components: `CounterWidget.svelte` (+1 button, optimistic total), `TimerWidget.svelte` (start/stop, `idle|running|saving` state machine), `ChecklistWidget.svelte` (checkbox list, 404→empty state, optimistic toggle).
+- Created workspace components: `WidgetPalette.svelte` (8 types, P0 active/P1 disabled), `WorkspaceCanvas.svelte` (drag-and-drop via `svelte-dnd-action`), `WidgetCard.svelte` (type dispatch wrapper), `SaveBar.svelte` (sticky bottom bar with dirty indicator).
+- Created route page `packages/web/src/routes/(app)/systems/[id]/workspace/+page.ts` (loads workspace layout + today's instance) and `+page.svelte` (composes three-zone layout).
+- Created `packages/api/src/__tests__/workspace.spec.ts`: 24 tests — 7 unit (`upgradeLayout()` no-op, round-trip, edge cases) + 5 workspace integration + 5 counter-log + 2 timer-session + 5 checklist integration.
+- Created `packages/web/src/routes/(app)/systems/workspace.e2e.ts`: P0 flow #5 — add Timer + Counter widgets, save, reload, verify persistence.
+- **Integration test count:** 71 → 101
+- **E2E test count:** 3 → 4
+
 ### Slice 0: Repo & Cloud Bootstrap
 
 - Provisioned D1 databases: `polaris-db-dev`, `polaris-db`

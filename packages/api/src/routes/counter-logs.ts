@@ -62,8 +62,8 @@ app.get('/widgets/:widget_id/counter-logs', async (c) => {
     ];
     const params: any[] = [widgetId, userId];
 
-    if (from) { conditions.push('cl.created_at >= ?'); params.push(from); }
-    if (to) { conditions.push('cl.created_at <= ?'); params.push(to); }
+    if (from) { conditions.push('date(cl.created_at) >= ?'); params.push(from); }
+    if (to) { conditions.push('date(cl.created_at) <= ?'); params.push(to); }
 
     const { results } = await db.prepare(`
         SELECT cl.* FROM counter_logs cl

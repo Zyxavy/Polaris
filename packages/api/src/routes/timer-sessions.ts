@@ -68,8 +68,8 @@ app.get('/widgets/:widget_id/timer-sessions', async (c) => {
     ];
     const params: any[] = [widgetId, userId];
 
-    if (from) { conditions.push('ts.created_at >= ?'); params.push(from); }
-    if (to) { conditions.push('ts.created_at <= ?'); params.push(to); }
+    if (from) { conditions.push('date(ts.created_at) >= ?'); params.push(from); }
+    if (to) { conditions.push('date(ts.created_at) <= ?'); params.push(to); }
 
     const { results } = await db.prepare(`
         SELECT ts.* FROM timer_sessions ts
