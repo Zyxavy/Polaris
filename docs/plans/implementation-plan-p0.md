@@ -340,7 +340,7 @@ This is the highest-value P0 slice — the daily-use loop.
 
 ---
 
-## Slice 7 — Nightly Cron Instance Pre-generation
+<!-- ## Slice 7 — Nightly Cron Instance Pre-generation
 
 **Branch:** `feat/cron-instance-pregeneration`
 **Docs:** ADR 001 S5.8, PRD S5.3 (path 2), `testing-strategy.md` S4.3 (Cron idempotency test), `cicd-deploy.md` S2.2 (`[triggers] crons = ["0 15 * * *"]`).
@@ -364,13 +364,13 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 - [ ] Confirmed the lazy path (Slice 6) still works standalone if you simulate the Cron never having run — this is the "safety net" property ADR 001 S5.8 requires, worth an explicit test or at least a manual check.
 - [ ] `wrangler tail` shows a `[cron]`-tagged log line locally (per `observability.md` S3.3/S4.2) — add the logging convention now, don't defer it, since Slice 6 should already have `[api]`/`[d1]` prefixes established.
 
-**PR:** `feat/cron-instance-pregeneration` → `main`.
+**PR:** `feat/cron-instance-pregeneration` → `main`. -->
 
 ---
-
+<!-- 
 ## Slice 8 — Workspace + D1-backed Widgets (Timer, Counter, Checklist)
 
-**Branch:** `feat/workspace-core-widgets`
+**Branch:** `feat/workspace-core-widgets` 
 **Docs:** PRD S5.4–S5.5, D1 Schema S3.3.1 + S3.4, `api-routes.md` S5–S6.1/6.2/6.3, `design-system/polaris/pages/workspace-builder.md`, `component-inventory.md` (Workspace components).
 
 The Log/Journal widget (Mongo-backed) is deliberately split into its own slice (9) — everything here is D1-only, which keeps this slice's infra surface small.
@@ -402,9 +402,14 @@ The Log/Journal widget (Mongo-backed) is deliberately split into its own slice (
 - [ ] Checklist replace-not-append behavior verified by test.
 - [ ] E2E flow #5 (minus drag assertion) passes.
 
-**PR:** `feat/workspace-core-widgets` → `main`.
+**PR:** `feat/workspace-core-widgets` → `main`. -->
 
 ---
+
+(## Two open gaps you'll hit and should bring to me before building around them
+
+1. **Log/Journal widget route contract** (Slice 9) — `api-routes.md` doesn't specify this endpoint despite Log being a P0 widget. Don't invent it silently; we should design it together so it stays consistent with the `PUT`-per-widget pattern used for Checklist/Notes.
+2. **Queue-retry pointer-row timing** (Slice 9) — the docs describe the Mongo-write-then-D1-pointer sequence for the happy path clearly, but the retry-success case (where the Queue consumer needs to write *both* the Mongo document and the D1 pointer, since the original request already returned `202`) isn't fully specified. Worth 15 minutes of design discussion before you write that consumer.)
 
 ## Slice 9 — MongoDB + Log/Journal Widget
 
@@ -581,10 +586,5 @@ This is the "is P0 actually done" gate before you consider starting P1 (template
 Slices 6/7 and 8/9 can run in either order relative to each other if you want to parallelize your own attention (e.g. do 8 before 7), but 9 must come after 8, and 10 needs both 6 and 8 done since Reviews reads Instance history and (indirectly) confirms the Workspace exists.
 
 ---
-
-## Two open gaps you'll hit and should bring to me before building around them
-
-1. **Log/Journal widget route contract** (Slice 9) — `api-routes.md` doesn't specify this endpoint despite Log being a P0 widget. Don't invent it silently; we should design it together so it stays consistent with the `PUT`-per-widget pattern used for Checklist/Notes.
-2. **Queue-retry pointer-row timing** (Slice 9) — the docs describe the Mongo-write-then-D1-pointer sequence for the happy path clearly, but the retry-success case (where the Queue consumer needs to write *both* the Mongo document and the D1 pointer, since the original request already returned `202`) isn't fully specified. Worth 15 minutes of design discussion before you write that consumer.
 
 Everything else in this plan traces directly to an existing doc section — when you open each PR, tell me which slice it is and I'll check it against the specific sections cited above rather than the whole doc set.

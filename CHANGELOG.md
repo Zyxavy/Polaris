@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+### Slice 8: Workspace + Widget Data
+
+- Created `packages/api/src/lib/workspace.ts`: `upgradeLayout()` with `CURRENT_LAYOUT_VERSION = 1` and while-loop pattern for future version bumps.
+- Created `packages/api/src/lib/ownership.ts`: `getOwnedWorkspace` (JOIN through system's user_id), `getOwnedWidgetEntry` (JOIN through instance → system → user_id).
+- Created `packages/api/src/routes/workspace.ts`: `GET`/`PUT /api/systems/:system_id/workspace` with upsert via `ON CONFLICT(system_id)`.
+- Created `packages/api/src/routes/counter-logs.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter using `date()`), DELETE by id.
+- Created `packages/api/src/routes/timer-sessions.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter), DELETE by id.
+- Created `packages/api/src/routes/checklist.ts`: 2 handlers — PUT replaces widget_entries (SELECT-then-UPDATE/INSERT), GET returns current state (404 if not yet saved).
+- Fixed `counter-logs.ts` and `timer-sessions.ts` `from`/`to` filter to use `date(created_at)` for correct date-range comparison (full ISO timestamps were failing `<= date` comparison).
+- Created `packages/web/src/lib/api/workspaces.ts`: API module with `getWorkspace`, `putWorkspace`, Layout/Widget/Workspace interfaces.
+- Created `packages/web/src/lib/api/counter-logs.ts`, `timer-sessions.ts`, `checklist.ts`: typed API modules for widget data CRUD.
+- Created `packages/web/src/lib/stores/workspace-editor.svelte.ts`: `WorkspaceEditorStore` runes class with `load`, `addWidget`, `removeWidget`, `reorder`, `save`; instantiated per page visit.
+- Created widget components: `CounterWidget.svelte` (+1 button, optimistic total), `TimerWidget.svelte` (start/stop, `idle|running|saving` state machine), `ChecklistWidget.svelte` (checkbox list, 404→empty state, optimistic toggle).
+- Created workspace components: `WidgetPalette.svelte` (8 types, P0 active/P1 disabled), `WorkspaceCanvas.svelte` (drag-and-drop via `svelte-dnd-action`), `WidgetCard.svelte` (type dispatch wrapper), `SaveBar.svelte` (sticky bottom bar with dirty indicator).
+- Created route page `packages/web/src/routes/(app)/systems/[id]/workspace/+page.ts` (loads workspace layout + today's instance) and `+page.svelte` (composes three-zone layout).
+- Created `packages/api/src/__tests__/workspace.spec.ts`: 24 tests — 7 unit (`upgradeLayout()` no-op, round-trip, edge cases) + 5 workspace integration + 5 counter-log + 2 timer-session + 5 checklist integration.
+- Created `packages/web/src/routes/(app)/systems/workspace.e2e.ts`: P0 flow #5 — add Timer + Counter widgets, save, reload, verify persistence.
+- Fixed pre-existing web unit test failures: installed missing `vitest-browser-svelte` and `@vitest/browser` packages (imported by `SystemForm.svelte.spec.ts` but never added to `package.json` — all 7 web unit tests now pass).
+- **Integration test count:** 71 → 101
+- **E2E test count:** 3 → 4
+
 ### Slice 0: Repo & Cloud Bootstrap
 
 - Provisioned D1 databases: `polaris-db-dev`, `polaris-db`
@@ -204,6 +225,31 @@
   - 3 patch tests (update fields + invalid window 422 + non-owned schedule 404)
   - 2 delete tests (success + non-owned schedule 404)
 - Fixed TypeScript errors: `systemId` undefined guard in ownership helper, `createRes` variable name conflict in schedules test (redeclared in nested scopes).
+
+---
+
+### Slice 7: Nightly Cron Instance Pre-generation
+
+#### Backend
+
+- Cleaned up `packages/api/src/lib/calendar.ts` `tomorrowManilaDate()`: removed unused `todayParts` variable and redundant `Intl.DateTimeFormat` — now uses `toLocaleDateString('en-CA')` directly.
+- Added `generateInstancesForAllUsers(db, dateStr)` to `packages/api/src/services/instances.ts`: same SQL pattern as Slice 6's per-user version, but drops the `user_id` filter — queries `WHERE s.status = 'active'` across all users, matching ADR 001 S5.8's design for a background job with no request context.
+- Added `scheduled` export to `packages/api/src/index.ts`: calls `generateInstancesForAllUsers` with tomorrow's date (via `tomorrowManilaDate()`), tagged with `[cron]` log prefix per `observability.md` S3.3.
+- Added `"triggers": { "crons": ["0 15 * * *"] }` to `packages/api/wrangler.jsonc` — deferred from Slice 1.
+
+#### Tests
+
+- Added 4 unit tests for `tomorrowManilaDate()` in `calendar.spec.ts`: normal day, month boundary (`Jul 31→Aug 1`), year boundary (`Dec 31→Jan 1`), UTC midnight crossover.
+- Added 2 integration tests for the cron handler in `instances.spec.ts`:
+  - Verifies instances are created only for tomorrow's date (never today's).
+  - Verifies idempotency: running `scheduled()` twice for the same date produces no duplicates.
+  - **Caveat:** `applyD1Migrations` does not reset data between tests in `@cloudflare/vitest-pool-workers` (migrations are tracked and only applied once). The cron tests explicitly clean all tables in `beforeEach` to avoid cross-test contamination from the 7 prior tests that accumulate instances by date.
+- All 9 instance tests now pass cleanly, including the 7 Slice-6 tests that remain the "safety net" coverage (lazy path works independently of cron).
+
+#### Caveats
+
+- The cron trigger is configured in `wrangler.jsonc` but has **never run in production** — it fires at 15:00 UTC daily. Until the first deploy of this branch to production, no pre-generation has occurred. The lazy dashboard-load path (Slice 6) is the sole generation mechanism today.
+- No deploy-time verification has been performed — `wrangler tail` has not been used to confirm the `[cron]` log line appears. This is expected to be checked during the first manual post-deploy verification per `cicd-deploy.md` S9.2.
 
 ---
 

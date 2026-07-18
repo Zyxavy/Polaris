@@ -8,7 +8,14 @@ import systemsRoutes from './routes/systems';
 import recoveryRoutes from './routes/recovery';
 import schedulesRoutes from './routes/schedules';
 import dashboardRoutes from './routes/dashboard';
+import { tomorrowManilaDate } from './lib/calendar';
+import { generateInstancesForAllUsers } from './services/instances';
 import { instanceRoutes, systemInstanceRoutes } from './routes/instances';
+import workspaceRoutes from './routes/workspace';
+import counterLogRoutes from './routes/counter-logs';
+import timerSessionRoutes from './routes/timer-sessions';
+import checklistRoutes from './routes/checklist';
+
 
 const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: User | null; session: Session | null } }>();
 
@@ -53,7 +60,26 @@ app.route('/api/dashboard', dashboardRoutes);
 app.route('/api/instances', instanceRoutes);
 app.route('/api/systems', systemInstanceRoutes);
 
+// Workspace
+app.route('/api/systems/:system_id/workspace', workspaceRoutes);
+
+// Counter logs
+app.route('/api', counterLogRoutes);
+
+// Timer sessions
+app.route('/api', timerSessionRoutes);
+
+// Checklist
+app.route('/api', checklistRoutes);
+
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
 
 export default app;
+
+export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) {
+  const tomorrow = tomorrowManilaDate();
+  console.log(`[cron] pre-generate instances date=${tomorrow}`);
+  await generateInstancesForAllUsers(env.DB, tomorrow);
+  console.log(`[cron] pre-generate complete date=${tomorrow}`);
+}
