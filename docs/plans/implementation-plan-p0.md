@@ -370,7 +370,7 @@ Small slice, reuses Slice 6's service function almost entirely — mostly wiring
 
 ## Slice 8 — Workspace + D1-backed Widgets (Timer, Counter, Checklist)
 
-**Branch:** `feat/workspace-core-widgets`
+**Branch:** `feat/workspace-core-widgets` 
 **Docs:** PRD S5.4–S5.5, D1 Schema S3.3.1 + S3.4, `api-routes.md` S5–S6.1/6.2/6.3, `design-system/polaris/pages/workspace-builder.md`, `component-inventory.md` (Workspace components).
 
 The Log/Journal widget (Mongo-backed) is deliberately split into its own slice (9) — everything here is D1-only, which keeps this slice's infra surface small.

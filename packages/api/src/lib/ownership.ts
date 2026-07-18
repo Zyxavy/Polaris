@@ -28,3 +28,21 @@ export async function getOwnedInstance(db: D1Database, instanceId: string, userI
         WHERE instances.id = ? AND systems.user_id = ?
     `).bind(instanceId, userId).first<any>();
 }
+
+export async function getOwnedWorkspace(db: D1Database, systemId: string, userId: string) {
+    return await db.prepare(`
+        SELECT w.* FROM workspaces w
+        JOIN systems s ON w.system_id = s.id
+        WHERE w.system_id = ? AND s.user_id = ?
+    `).bind(systemId, userId).first<any>();
+}
+
+export async function getOwnedWidgetEntry(db: D1Database, instanceId: string, widgetId: string, entryType: string, userId: string) {
+    return await db.prepare(`
+        SELECT we.* FROM widget_entries we
+        JOIN instances i ON we.instance_id = i.id
+        JOIN systems s ON i.system_id = s.id
+        WHERE we.instance_id = ? AND we.widget_id = ? AND we.entry_type = ?
+        AND s.user_id = ?
+    `).bind(instanceId, widgetId, entryType, userId).first<any>();
+}
