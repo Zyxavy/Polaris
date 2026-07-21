@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { X } from 'lucide-svelte';
+    import { X } from '@lucide/svelte';
     import type { Widget } from '$lib/api/workspaces';
     import CounterWidget from './CounterWidget.svelte';
     import TimerWidget from './TimerWidget.svelte';

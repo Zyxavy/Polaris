@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Timer, Plus, ListChecks, FileText, Link, Flame, ChartLine, StickyNote } from 'lucide-svelte';
+    import { Timer, Plus, ListChecks, FileText, Link, Flame, ChartLine, StickyNote } from '@lucide/svelte';
 
     let { onAdd }: { onAdd: (type: string) => void } = $props();
 

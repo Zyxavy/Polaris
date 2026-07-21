@@ -36,8 +36,8 @@
     "wrangler": "^4.97.0"
   },
   "dependencies": {
+    "@lucide/svelte": "^1.25.0",
     "better-auth": "^1.6.23",
-    "lucide-svelte": "^1.0.1",
     "svelte-dnd-action": "^0.9.74"
   }
 }
