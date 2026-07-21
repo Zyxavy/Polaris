@@ -427,7 +427,7 @@ This is the one slice that touches infrastructure not yet exercised (Mongo drive
 5. Write path per ADR 001 S5.5 exactly: attempt direct Mongo write → on success, write the `widget_entries` pointer row (`entry_type: 'log_meta'`, `data: {"mongo_id": "..."}`) to D1 → 200. On Mongo write failure → enqueue to `polaris-journal-retry` → 202, D1 pointer row is **not** written yet (it can't be, you don't have the Mongo `_id`) — the Queue consumer must write both the Mongo document *and* the D1 pointer row on successful retry. This two-write coordination on the retry path isn't fully spelled out in the docs either — work through it with me before implementing, since getting the pointer-row timing wrong breaks the "seam" MongoDB Schema S2 describes.
 6. Queue consumer (`queue` export in the same Worker) per ADR 001 S5.5 steps 4–5, retries with backoff, dead-letter queue is inspected manually (no code needed for that part).
 
-### Frontend
+### Frontend 
 
 1. `LogWidget.svelte` — text entry + history list.
 2. Add it to the Workspace palette (now un-stub it from Slice 8).
