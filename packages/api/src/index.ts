@@ -15,7 +15,9 @@ import workspaceRoutes from './routes/workspace';
 import counterLogRoutes from './routes/counter-logs';
 import timerSessionRoutes from './routes/timer-sessions';
 import checklistRoutes from './routes/checklist';
-
+import journalLogRoutes from './routes/journal-log';
+import { getMongoClient } from './lib/mongo';
+import type { JournalRetryMessage } from './routes/journal-log';
 
 const app = new Hono<{ Bindings: CloudflareBindings; Variables: { user: User | null; session: Session | null } }>();
 
@@ -72,6 +74,9 @@ app.route('/api', timerSessionRoutes);
 // Checklist
 app.route('/api', checklistRoutes);
 
+// Journal / Log widget
+app.route('/api', journalLogRoutes);
+
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
 
@@ -82,4 +87,49 @@ export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, 
   console.log(`[cron] pre-generate instances date=${tomorrow}`);
   await generateInstancesForAllUsers(env.DB, tomorrow);
   console.log(`[cron] pre-generate complete date=${tomorrow}`);
+}
+
+export async function queue(
+    batch: MessageBatch<JournalRetryMessage>,
+    env: CloudflareBindings,
+    ctx: ExecutionContext
+) {
+    for (const msg of batch.messages) {
+        const { entry_id, system_id, workspace_id, instance_id, widget_id, user_id, text, created_at } = msg.body;
+
+        try {
+            //Idempotent Mongo write
+            const client = await getMongoClient(env.MONGODB_URI);
+            const collection = client.db().collection('journal_entries');
+
+            const result = await collection.updateOne(
+                { _id: entry_id },
+                {
+                    $setOnInsert: {
+                        system_id, instance_id, widget_id, user_id, text,
+                        schema_version: 1,
+                        created_at: new Date(created_at),
+                        updated_at: new Date(created_at),
+                    },
+                },
+                { upsert: true }
+            );
+
+            // D1 pointer row
+            await env.DB.prepare(
+                `INSERT OR IGNORE INTO widget_entries
+                    (id, workspace_id, widget_id, instance_id, entry_type, data, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+                entry_id, workspace_id, widget_id, instance_id, 'log_meta',
+                JSON.stringify({ mongo_id: entry_id }), created_at
+            ).run();
+
+            console.log(`[mongo] queue-retry success entry=${entry_id} upserted=${result.upsertedCount}`);
+            msg.ack();
+        } catch (err) {
+            console.error(`[mongo] queue-retry failed entry=${entry_id}`, err);
+            msg.retry({ delaySeconds: 5 });
+        }
+    }
 }
