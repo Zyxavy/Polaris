@@ -405,7 +405,7 @@ The Log/Journal widget (Mongo-backed) is deliberately split into its own slice (
 **PR:** `feat/workspace-core-widgets` → `main`. -->
 
 ---
-
+<!-- 
 (## Two open gaps you'll hit and should bring to me before building around them
 
 1. **Log/Journal widget route contract** (Slice 9) — `api-routes.md` doesn't specify this endpoint despite Log being a P0 widget. Don't invent it silently; we should design it together so it stays consistent with the `PUT`-per-widget pattern used for Checklist/Notes.
@@ -439,12 +439,12 @@ This is the one slice that touches infrastructure not yet exercised (Mongo drive
 
 ### Definition of Done
 
-- [ ] Direct-write happy path unit-tested with a mocked driver.
-- [ ] Manual verification of the retry path documented in the PR description (screenshot or `wrangler tail` log excerpt) — this is explicitly one of the few things the test suite can't cover per `testing-strategy.md` S6.
-- [ ] `[mongo]`-tagged log lines present per `observability.md` S3.3.
-- [ ] Update `api-routes.md` with the Log widget route contract you and I settle on — this is a real gap in the current doc, closing it satisfies Definition of Done S6/S7 (cross-doc consistency).
+- [x] Direct-write happy path unit-tested with a mocked driver.
+- [x] Manual verification of the retry path documented in the PR description (screenshot or `wrangler tail` log excerpt) — this is explicitly one of the few things the test suite can't cover per `testing-strategy.md` S6.
+- [x] `[mongo]`-tagged log lines present per `observability.md` S3.3.
+- [x] Update `api-routes.md` with the Log widget route contract you and I settle on — this is a real gap in the current doc, closing it satisfies Definition of Done S6/S7 (cross-doc consistency).
 
-**PR:** `feat/journal-widget-mongo` → `main`.
+**PR:** `feat/journal-widget-mongo` → `main`. -->
 
 ---
 

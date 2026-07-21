@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { applyD1Migrations } from 'cloudflare:test';
-import { describe, it, expect, beforeEach, inject } from 'vitest';
+import { describe, it, expect, vi, beforeEach, inject } from 'vitest';
 import { Hono } from 'hono';
 import { upgradeLayout } from '../lib/workspace';
 import workspaceRoutes from '../routes/workspace';
@@ -251,10 +251,15 @@ describe('counter-log routes', () => {
     });
 
     it('GET with from/to filter returns only matching logs', async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-07-18T12:00:00.000Z'));
+
         await app.fetch(new Request(`http://localhost/api/instances/${instanceId}/counter-logs`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ widget_id: 'counter-widget', value: 1 }),
         }), env);
+
+        vi.useRealTimers();
 
         const getRes = await app.fetch(new Request('http://localhost/api/widgets/counter-widget/counter-logs?from=2026-07-18&to=2026-07-18'), env);
         expect(getRes.status).toBe(200);

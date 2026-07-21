@@ -7,7 +7,7 @@
         { type: 'timer', label: 'Timer', icon: Timer, comingSoon: false },
         { type: 'counter', label: 'Counter', icon: Plus, comingSoon: false },
         { type: 'checklist', label: 'Checklist', icon: ListChecks, comingSoon: false },
-        { type: 'log', label: 'Log', icon: FileText, comingSoon: true },
+        { type: 'log', label: 'Log', icon: FileText, comingSoon: false  },
         { type: 'link-list', label: 'Link List', icon: Link, comingSoon: true },
         { type: 'streak', label: 'Streak', icon: Flame, comingSoon: true },
         { type: 'progress', label: 'Progress Chart', icon: ChartLine, comingSoon: true },

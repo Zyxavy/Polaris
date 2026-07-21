@@ -23,6 +23,25 @@
 - **Integration test count:** 71 → 101
 - **E2E test count:** 3 → 4
 
+### Slice 9: MongoDB + Log/Journal Widget
+
+- Added `mongodb@^7.5.0` dependency to `packages/api`.
+- Created `packages/api/src/lib/mongo.ts`: lazy `getMongoClient()` singleton with dynamic `import('mongodb')` to avoid loading the driver at module resolution time (Workers cold-start optimisation).
+- Created `packages/api/src/routes/journal-log.ts`: `POST /api/instances/:instance_id/journal_log/:widget_id` (direct Mongo write + D1 `widget_entries` pointer row → `201`; on failure enqueue to `polaris-journal-retry` → `202`) and `GET` (cursor-paginated read from Mongo).
+- Created `packages/api/src/index.ts` queue consumer: `export async function queue()` — idempotent Mongo `updateOne` with `$setOnInsert` + upsert, D1 `INSERT OR IGNORE` pointer row, retry with 5s backoff on failure.
+- Created `packages/web/src/lib/api/journal-log.ts`: typed `postJournalEntry()` and `getJournalEntries()` API module.
+- Created `packages/web/src/lib/components/LogWidget.svelte`: text entry (`<textarea>` + send button), optimistic entry insertion, error revert, cursor-based "Load more" history.
+- Updated `WidgetCard.svelte`: `'log'` type dispatch to `<LogWidget>`.
+- Updated `WidgetPalette.svelte`: un-stubbed Log widget (`comingSoon: false`).
+- Added `packages/api/wrangler.jsonc`: queue bindings (`JOURNAL_RETRY_QUEUE` producer + `polaris-journal-retry` consumer), `MONGODB_URI` var.
+- Updated `packages/api/worker-configuration.d.ts`, `vitest.config.ts`: queue + MONGODB_URI bindings.
+- Created `packages/api/src/__tests__/journal.spec.ts`: 8 integration tests — 5 POST (201 success with D1 pointer row verification, 400 missing text, 400 empty text, 404 non-owned instance, 202 Mongo failure) + 3 GET (cursor pagination, empty list, 404 non-owned).
+- Switched `mongo.ts` to type-only import + dynamic `import()` to fix Miniflare `node:process` crash (all 109 tests now pass).
+- Fixed pre-existing workspace date-filter test by pinning system time with `vi.useFakeTimers()`.
+- Updated `docs/reference/api-routes.md`: added S6.4 Log/Journal contract, updated route inventory, bumped implementation status to S9 live.
+- **Integration test count:** 101 → 109
+- **E2E test count:** 4 → 4 (no new E2E; manual retry verification only, per testing-strategy.md S6)
+
 ### Slice 0: Repo & Cloud Bootstrap
 
 - Provisioned D1 databases: `polaris-db-dev`, `polaris-db`
