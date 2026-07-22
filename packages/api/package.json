@@ -9,6 +9,7 @@
     "test:unit": "vitest run",
     "test:int": "vitest run",
     "dev:e2e": "wrangler d1 migrations apply DB --local && wrangler dev --port 8787",
+    "build": "wrangler types --env-interface CloudflareBindings",
     "lint": "eslint src/"
   },
   "dependencies": {
