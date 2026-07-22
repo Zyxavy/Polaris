@@ -52,6 +52,17 @@
 
   "env": {
     "production": {
+      "queues": {
+        "producers": [
+          { "binding": "JOURNAL_RETRY_QUEUE", "queue": "polaris-journal-retry" }
+        ],
+        "consumers": [
+          { "queue": "polaris-journal-retry", "max_batch_size": 10, "max_batch_timeout": 5 }
+        ]
+      },
+      "r2_buckets": [
+        { "bucket_name": "polaris-attachments", "binding": "ATTACHMENTS" }
+      ],
       "d1_databases": [
         {
           "binding": "DB",
