@@ -42,6 +42,27 @@
 - **Integration test count:** 101 → 109
 - **E2E test count:** 4 → 4 (no new E2E; manual retry verification only, per testing-strategy.md S6)
 
+### Slice 10: Reviews (Per-System + Review Day)
+
+- Created `migrations/0015_reviews_unique.sql`: UNIQUE index on `(system_id, period_start, period_end)` for DB-level duplicate protection.
+- Extracted shared `encodeDateCursor`/`decodeDateCursor` to `packages/api/src/lib/cursor.ts` (used by both instances and reviews routes).
+- Added `getOwnedReview` to `packages/api/src/lib/ownership.ts`.
+- Created `packages/api/src/services/reviews.ts`: `createReview` with `DuplicateReviewError`, `deriveChangeText` pure function, two-table write-back (review row + system field update).
+- Created `packages/api/src/routes/reviews.ts`: `GET /api/systems/:system_id/reviews` (cursor-paginated history), `POST /api/systems/:system_id/reviews` (create + write-back), `GET /api/review-day` (single SQL with `GROUP BY` + `SUM(CASE)` for instance summary across all systems).
+- Mounted review routes in `packages/api/src/index.ts` at both `/api/systems/:system_id/reviews` and `/api/review-day`.
+- Created `packages/web/src/lib/api/reviews.ts`: typed `getReviews`, `createReview`, `getReviewDay` wrappers.
+- Created `packages/web/src/lib/components/InstanceSummary.svelte`: shared sm/md variants with blush/secondary/muted colour tokens.
+- Created `packages/web/src/lib/components/ReviewForm.svelte`: `buildChangeApplied()` diff logic, 409 inline banner for duplicate period, editable blueprint fields.
+- Created `packages/web/src/lib/components/DueReviewCard.svelte` and `DueReviewList.svelte`: Review Day card grid with empty state.
+- Created review pages under `packages/web/src/routes/(app)/systems/[id]/reviews/`: history list (`+page.ts`/`+page.svelte`), new review form (`new/+page.svelte`) with period computation + instance loading via `$effect`.
+- Created review day page at `packages/web/src/routes/(app)/review-day/+page.ts`/`+page.svelte`.
+- Created `packages/web/src/routes/(app)/systems/reviews.e2e.ts`: P0 flow #6 — create system with schedule, fill review with `what_worked`/`change_applied`, submit, verify `floor_action` write-back.
+- Created `packages/api/src/__tests__/reviews.spec.ts`: 10 integration tests — write-back updates system, duplicate period returns 409, paginated history, review-day aggregation (due, excluded, non-active).
+- Updated `docs/reference/api-routes.md`: reviews routes implementation status to S10 live.
+- Fixed pre-existing issues: MongoDB type errors in `index.ts` queue handler, ownership SQL string contamination, `InstanceSummary.svelte` to use `blush`/`secondary`/`muted` tokens.
+- **Integration test count:** 109 → 119
+- **E2E test count:** 4 → 5
+
 ### Slice 0: Repo & Cloud Bootstrap
 
 - Provisioned D1 databases: `polaris-db-dev`, `polaris-db`

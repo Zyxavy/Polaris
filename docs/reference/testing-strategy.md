@@ -6,7 +6,7 @@
 
 **Status:** Draft - v1 scope
 
-**Implementation status:** Partially Implemented (auth + systems CRUD + dashboard/instances + cron tests live; rest planned)
+**Implementation status:** Partially Implemented (auth + systems CRUD + dashboard/instances + cron + reviews tests live; rest planned)
 
 **Last updated:** July 15, 2026
 
@@ -107,7 +107,7 @@ These test the Hono routes with **real D1 bindings** (Miniflare in-memory SQLite
 - **Instance auto-generation (dashboard load path):** seed an active System with a schedule matching today; call the dashboard Instance-generation logic; assert exactly one `pending` Instance is created; call it again and assert no duplicate is created (idempotency). ✓ 7 integration tests in `instances.spec.ts`.
 - **Nightly Cron handler:** invoke `scheduled()` with a mocked `env` and a real D1 binding seeded with active Systems; assert tomorrow's Instances are created; invoke again and assert no duplicates. ✓ Same file.
 - **Instance state transition:** create an Instance in `pending`, PATCH to `full`, assert state and `updated_at` are correct. ✓ Same file.
-- **Review write-back:** POST a Review with `change_applied` containing a new `floor_action`; assert the parent System's `floor_action` field is updated.
+- **Review write-back:** POST a Review with `change_applied` containing a new `floor_action`; assert the parent System's `floor_action` field is updated. ✓ 10 integration tests in `reviews.spec.ts`.
 - **R2 attachment upload:** POST a small test file to `/api/attachments`; assert the R2 object exists at the generated key; assert a D1 pointer row was created with correct `r2_key`.
 - **Auth flows:** sign-up, sign-in, session validation, sign-out - all against the real Better Auth + D1 integration.
 - **Link List / Notes upsert:** PUT with a full payload, assert row created with `instance_id = NULL`; PUT again with a different payload, assert the row is replaced (not duplicated) for the same `(workspace_id, widget_id)`.

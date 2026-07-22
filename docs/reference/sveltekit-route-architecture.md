@@ -5,9 +5,9 @@
 **Document type:** Frontend architecture -- the page tree, auth guard, store design, component hierarchy, and navigation model for `packages/web`. Companion to the [API Route Design](api-routes.md) (owns every endpoint this frontend calls), [Auth Integration](auth-integration.md) (owns `authClient`/session primitives this document consumes), and the [PRD](../PRD/PRD-systems-app.md) (owns the user flows this route tree implements).
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Current
+**Implementation status:** Current (S2–S10 live)
 
-**Last updated:** July 15, 2026
+**Last updated:** July 22, 2026
 
 ---
 
