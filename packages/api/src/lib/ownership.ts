@@ -22,7 +22,7 @@ export async function getOwnedSchedule(db:D1Database, scheduleId: string, userId
 
 export async function getOwnedInstance(db: D1Database, instanceId: string, userId: string) {
     return await db.prepare(`
-        SELECT instances.*git push --set-upstream origin feat/reviews
+        SELECT instances.*
         FROM instances
         JOIN systems ON systems.id = instances.system_id
         WHERE instances.id = ? AND systems.user_id = ?

@@ -16,6 +16,7 @@ import counterLogRoutes from './routes/counter-logs';
 import timerSessionRoutes from './routes/timer-sessions';
 import checklistRoutes from './routes/checklist';
 import journalLogRoutes from './routes/journal-log';
+import reviewsRoutes, { reviewDayRoutes } from './routes/reviews';
 import { getMongoClient } from './lib/mongo';
 import type { JournalRetryMessage } from './routes/journal-log';
 
@@ -77,6 +78,10 @@ app.route('/api', checklistRoutes);
 // Journal / Log widget
 app.route('/api', journalLogRoutes);
 
+// Reviews
+app.route('/api/systems/:system_id/reviews', reviewsRoutes);
+app.route('/api', reviewDayRoutes);
+
 // Placeholder
 app.get('/', (c) => c.text('Hello Hono!'));
 
@@ -99,11 +104,13 @@ export async function queue(
 
         try {
             //Idempotent Mongo write
-            const client = await getMongoClient(env.MONGODB_URI);
+            const mongoUri = env.MONGODB_URI;
+            if (!mongoUri) { msg.retry({ delaySeconds: 10 }); continue; }
+            const client = await getMongoClient(mongoUri);
             const collection = client.db().collection('journal_entries');
 
             const result = await collection.updateOne(
-                { _id: entry_id },
+                { _id: entry_id as string },
                 {
                     $setOnInsert: {
                         system_id, instance_id, widget_id, user_id, text,
