@@ -104,7 +104,7 @@ Shared application state lives in `packages/web/src/lib/stores/` as Svelte 5 run
 ### Auth
 
 - Better Auth instance is created once in `packages/api/src/auth.ts` using the D1 adapter.
-- Session cookie: `sameSite: lax`, `httpOnly`, `secure`, no explicit domain scope (cross-origin between `polaris.kelpselp.workers.dev` and `polaris-api.kelpselp.workers.dev`).
+- Session cookie: `sameSite: lax`, `httpOnly`, `secure`, no explicit domain scope (cross-origin between `polaris-web.kelpselp.workers.dev` and `polaris-api.kelpselp.workers.dev`).
 - Frontend auth guard: `authClient.getSession()` in the root layout load function — not `useSession()` with an effect.
 - Recovery codes flow: 3 codes generated at sign-up, stored in D1 `recovery_codes` table, displayed with hide/show in `/account` settings. Password reset via `POST /api/auth/recover` (custom route registered before Better Auth's catch-all handler).
 - `requireAuth` early-return pattern: the middleware checks `c.get('user')` first and skips session validation if a user is already set in context. This allows parent middleware (or test harnesses) to pre-authenticate without needing valid session cookies, and makes `requireAuth` safe to stack at both route-group and global level without redundant API calls.

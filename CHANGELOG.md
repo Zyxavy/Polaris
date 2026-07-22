@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Slice 12: CI/CD Pipeline
+
+- **CI workflow** (`.github/workflows/ci.yml`): matrix over `[api, web]` for `lint`/`test:unit`/`build` in parallel, then `integration` (api only), `e2e` (both packages), and `deploy` (main-only, sequential: migrations → API → web). Fail-fast on matrix, deploy gated by all upstream jobs passing.
+- **Package scripts**: added `lint` (ESLint for api, svelte-check for web), `test:unit`/`test:int`/`test:e2e` to both packages and root convenience scripts.
+- **ESLint**: flat config (`eslint.config.js`) with `@typescript-eslint` for `packages/api` type-checking.
+- **Wrangler config (api)**: `compatibility_date` bumped to `2026-07-22`, observability enabled (`head_sampling_rate: 1` logs, 1% traces).
+- **Wrangler config (web)**: migrated from deprecated `site` pattern to modern `assets` with `not_found_handling: "single-page-application"` (SPA fallback handled by platform, no Worker script needed).
+- **`VITE_API_BASE_URL`**: added `packages/web/.env.production` so production builds point to `https://polaris-api.kelpselp.workers.dev` (was missing — caused JSON.parse errors on all API calls). `.env.production` tracked in git (public URL only).
+- **Manual first deploy**: both Workers deployed to production URLs. Queue `polaris-journal-retry` confirmed existing. Secrets set via `wrangler secret put`.
+- **Known issues**: `--env production` flag needed for api deploy to target production D1 database; root `deploy` script deploys to dev database by default.
+- **`docs/reference/cicd-deploy.md`**: updated to reflect actual wrangler configs, scripts, URLs (`polaris-web.kelpselp.workers.dev`), and checklist status.
+
 ### Slice 11: Frontend Polish Pass
 
 - **NavBar**: floating pill on mobile (`bg-surface/70 backdrop-blur-xl rounded-full`) with Lucide Svelte icons (`LayoutDashboard`, `Cog`, `ClipboardCheck`, `BookOpen`); sidebar layout at `xl:` breakpoint (`hidden xl:flex`); `aria-current="page"` for active tab.
