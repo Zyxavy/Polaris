@@ -22,11 +22,19 @@ export async function getOwnedSchedule(db:D1Database, scheduleId: string, userId
 
 export async function getOwnedInstance(db: D1Database, instanceId: string, userId: string) {
     return await db.prepare(`
-        SELECT instances.*
+        SELECT instances.*git push --set-upstream origin feat/reviews
         FROM instances
         JOIN systems ON systems.id = instances.system_id
         WHERE instances.id = ? AND systems.user_id = ?
     `).bind(instanceId, userId).first<any>();
+}
+
+export async function getOwnedReview(db: D1Database, reviewId: string, userId: string) {
+    return await db.prepare(
+        `SELECT r.* FROM reviews r
+        JOIN systems s ON r.system_id = s.id
+        WHERE r.id = ? AND s.user_id = ?`
+    ).bind(reviewId, userId).first<any>();
 }
 
 export async function getOwnedWorkspace(db: D1Database, systemId: string, userId: string) {

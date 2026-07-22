@@ -445,7 +445,7 @@ This is the one slice that touches infrastructure not yet exercised (Mongo drive
 - [x] Update `api-routes.md` with the Log widget route contract you and I settle on — this is a real gap in the current doc, closing it satisfies Definition of Done S6/S7 (cross-doc consistency).
 
 **PR:** `feat/journal-widget-mongo` → `main`. -->
-
+ 
 ---
 
 ## Slice 10 — Reviews (per-System) + Review Day
