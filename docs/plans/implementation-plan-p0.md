@@ -517,7 +517,7 @@ By now every P0 route exists functionally but was built slice-by-slice with plac
 
 ---
 
-## Slice 12 — CI/CD Pipeline
+<!-- ## Slice 12 — CI/CD Pipeline
 
 **Branch:** `chore/cicd`
 **Docs:** `cicd-deploy.md` (full doc — this is the first time you're implementing what that doc specifies).
@@ -535,7 +535,7 @@ By now every P0 route exists functionally but was built slice-by-slice with plac
 - [ ] Manual first deploy succeeded and was verified against the live URL (S9.1's exact verification step: sign up, create a system, see it on the dashboard).
 - [ ] Deploy job in CI ran successfully at least once on `main`.
 
-**PR:** `chore/cicd` → `main`. (This one deploys as part of merging — treat the merge itself as the release event.)
+**PR:** `chore/cicd` → `main`. (This one deploys as part of merging — treat the merge itself as the release event.) -->
 
 ---
 
