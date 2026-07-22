@@ -18,6 +18,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        if: matrix.package == 'web'
+        run: npx playwright install --with-deps chromium
+
       - name: Lint (${{ matrix.package }})
         run: pnpm --filter ${{ matrix.package }} lint
 
