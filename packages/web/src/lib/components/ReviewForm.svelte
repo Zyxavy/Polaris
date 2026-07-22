@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createReview, type CreateReviewResponse } from '$lib/api/reviews';
+    import { createReview } from '$lib/api/reviews';
     import { ApiError } from '$lib/api/client';
     import { toastStore } from '$lib/stores/toast.svelte';
     import InstanceSummary from './InstanceSummary.svelte';
