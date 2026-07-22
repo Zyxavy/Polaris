@@ -15,7 +15,7 @@
     ];
 </script>
 
-<div
+<aside aria-label="Widget palette"
   class="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible
          lg:w-[200px] shrink-0 bg-surface-container-low rounded-xl p-4
          scrollbar-none"
@@ -42,4 +42,4 @@
       {/if}
     </button>
   {/each}
-</div>
+</aside>

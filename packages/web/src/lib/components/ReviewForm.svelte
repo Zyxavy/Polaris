@@ -25,6 +25,7 @@
         periodEnd: string;
         instanceCounts: { full: number; floor: number; missed: number };
     } = $props();
+    const snap = { ...initial };
 
     let whatWorked = $state('');
     let whatBroke = $state('');
@@ -32,22 +33,22 @@
     let saving = $state(false);
     let conflictError = $state<string | null>(null);
 
-    let floorAction = $state(initial.floor_action);
-    let purpose = $state(initial.purpose);
-    let philosophy = $state(initial.philosophy);
-    let protocol = $state(initial.protocol);
-    let trigger = $state(initial.trigger);
-    let environmentCue = $state(initial.environment_cue);
+    let floorAction = $state(snap.floor_action);
+    let purpose = $state(snap.purpose);
+    let philosophy = $state(snap.philosophy);
+    let protocol = $state(snap.protocol);
+    let trigger = $state(snap.trigger);
+    let environmentCue = $state(snap.environment_cue);
     let changeNote = $state('');
 
     function buildChangeApplied(): Record<string, string> | null {
         const changes: Record<string, string> = {};
-        if (floorAction !== initial.floor_action) changes.floor_action = floorAction;
-        if (purpose !== initial.purpose) changes.purpose = purpose;
-        if (philosophy !== initial.philosophy) changes.philosophy = philosophy;
-        if (protocol !== initial.protocol) changes.protocol = protocol;
-        if (trigger !== initial.trigger) changes.trigger = trigger;
-        if (environmentCue !== initial.environment_cue) changes.environment_cue = environmentCue;
+        if (floorAction !== snap.floor_action) changes.floor_action = floorAction;
+        if (purpose !== snap.purpose) changes.purpose = purpose;
+        if (philosophy !== snap.philosophy) changes.philosophy = philosophy;
+        if (protocol !== snap.protocol) changes.protocol = protocol;
+        if (trigger !== snap.trigger) changes.trigger = trigger;
+        if (environmentCue !== snap.environment_cue) changes.environment_cue = environmentCue;
         return Object.keys(changes).length > 0 ? changes : null;
     }
 

@@ -29,11 +29,11 @@ test('P0 flow #5: workspace widget CRUD: add, save, reload, persist', async ({ p
     await expect(page.getByText('Drag widgets from the palette to build your workspace')).toBeVisible();
 
     // Add a Timer widget by clicking its palette entry
-    await page.locator('aside button:has-text("Timer")').click();
+    await page.getByRole('complementary', { name: 'Widget palette' }).getByRole('button', { name: 'Timer' }).click();
     await expect(page.locator('h4:has-text("Timer")')).toBeVisible();
 
     // Add a Counter widget
-    await page.locator('aside button:has-text("Counter")').click();
+    await page.getByRole('complementary', { name: 'Widget palette' }).getByRole('button', { name: 'Counter' }).click();
     await expect(page.locator('h4:has-text("Counter")')).toBeVisible();
 
     // Both widgets should be on the canvas

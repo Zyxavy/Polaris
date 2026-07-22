@@ -26,7 +26,7 @@
 </script>
 
 <nav
-  class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50
+  class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 xl:hidden
          h-14 px-6 flex items-center gap-6 sm:gap-8
          bg-surface/70 backdrop-blur-xl rounded-full
          shadow-ambient-lg transition-shadow duration-200"

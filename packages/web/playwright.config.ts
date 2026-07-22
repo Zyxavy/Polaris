@@ -9,7 +9,7 @@ export default defineConfig({
 			reuseExistingServer: true,
 		},
 		{
-			command: 'pnpm build && pnpm preview',
+			command: 'pnpm preview',
 			port: 4173,
 			env: { VITE_API_BASE_URL: 'http://localhost:8787' },
 			reuseExistingServer: true,

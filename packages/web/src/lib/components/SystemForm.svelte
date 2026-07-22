@@ -6,18 +6,19 @@
     import SchedulePicker from './SchedulePicker.svelte';
 
     let { system: initial }: { system?: System | null } = $props();
+    const snap = { ...initial };
 
-    let systemId = $state<string | null>(initial?.id ?? null);
-    let name = $state(initial?.name ?? '');
-    let domain = $state(initial?.domain ?? '');
-    let purpose = $state(initial?.purpose ?? '');
-    let philosophy = $state(initial?.philosophy ?? '');
-    let protocol = $state(initial?.protocol ?? '');
-    let floor_action = $state(initial?.floor_action ?? '');
-    let trigger = $state(initial?.trigger ?? '');
-    let barrier_list = $state<string[]>(initial?.barrier_list ?? []);
+    let systemId = $state<string | null>(snap?.id ?? null);
+    let name = $state(snap?.name ?? '');
+    let domain = $state(snap?.domain ?? '');
+    let purpose = $state(snap?.purpose ?? '');
+    let philosophy = $state(snap?.philosophy ?? '');
+    let protocol = $state(snap?.protocol ?? '');
+    let floor_action = $state(snap?.floor_action ?? '');
+    let trigger = $state(snap?.trigger ?? '');
+    let barrier_list = $state<string[]>(snap?.barrier_list ?? []);
     let barrierInput = $state('');
-    let environment_cue = $state(initial?.environment_cue ?? '');
+    let environment_cue = $state(snap?.environment_cue ?? '');
 
     let confirmError = $state<string | null>(null);
     let saving = $state(false);
@@ -33,14 +34,14 @@
         saving = true;
         try {
             const payload: any = { name: name.trim() };
-            if (domain !== (initial?.domain ?? '')) payload.domain = domain || null;
-            if (purpose !== (initial?.purpose ?? '')) payload.purpose = purpose;
-            if (philosophy !== (initial?.philosophy ?? '')) payload.philosophy = philosophy;
-            if (protocol !== (initial?.protocol ?? '')) payload.protocol = protocol;
-            if (floor_action !== (initial?.floor_action ?? '')) payload.floor_action = floor_action;
-            if (trigger !== (initial?.trigger ?? '')) payload.trigger = trigger;
-            if (JSON.stringify(barrier_list) !== JSON.stringify(initial?.barrier_list ?? [])) payload.barrier_list = barrier_list;
-            if (environment_cue !== (initial?.environment_cue ?? '')) payload.environment_cue = environment_cue;
+            if (domain !== (snap?.domain ?? '')) payload.domain = domain || null;
+            if (purpose !== (snap?.purpose ?? '')) payload.purpose = purpose;
+            if (philosophy !== (snap?.philosophy ?? '')) payload.philosophy = philosophy;
+            if (protocol !== (snap?.protocol ?? '')) payload.protocol = protocol;
+            if (floor_action !== (snap?.floor_action ?? '')) payload.floor_action = floor_action;
+            if (trigger !== (snap?.trigger ?? '')) payload.trigger = trigger;
+            if (JSON.stringify(barrier_list) !== JSON.stringify(snap?.barrier_list ?? [])) payload.barrier_list = barrier_list;
+            if (environment_cue !== (snap?.environment_cue ?? '')) payload.environment_cue = environment_cue;
 
             if (!systemId) {
                 const created = await createSystem(payload);
