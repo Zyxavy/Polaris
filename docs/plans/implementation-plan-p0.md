@@ -448,7 +448,7 @@ This is the one slice that touches infrastructure not yet exercised (Mongo drive
  
 ---
 
-## Slice 10 — Reviews (per-System) + Review Day
+<!-- ## Slice 10 — Reviews (per-System) + Review Day
 
 **Branch:** `feat/reviews`
 **Docs:** PRD S5.7, S6.4, D1 Schema S3.6, `api-routes.md` S8, `design-system/polaris/pages/per-system-review.md` and `review-day.md`.
@@ -478,15 +478,15 @@ This is the slice that "closes the loop" per the product's core thesis — don't
 
 ### Definition of Done
 
-- [ ] Write-back integration test passes.
-- [ ] 409 duplicate-period test passes.
-- [ ] `InstanceSummary` genuinely shared (not copy-pasted) between Review Day and the per-system form — check this in your own PR before asking me to review.
-- [ ] E2E flow #6 passes.
+- [x] Write-back integration test passes.
+- [x] 409 duplicate-period test passes.
+- [x] `InstanceSummary` genuinely shared (not copy-pasted) between Review Day and the per-system form — check this in your own PR before asking me to review.
+- [x] E2E flow #6 passes.
 
-**PR:** `feat/reviews` → `main`.
+**PR:** `feat/reviews` → `main`. -->
 
 ---
-
+<!-- 
 ## Slice 11 — Frontend Polish Pass
 
 **Branch:** `feat/ui-polish`
@@ -513,7 +513,7 @@ By now every P0 route exists functionally but was built slice-by-slice with plac
 - [ ] Manual pass at all 3 breakpoints for every P0 page.
 - [ ] `prefers-reduced-motion` respected (checklist item, easy to skip — verify explicitly).
 
-**PR:** `feat/ui-polish` → `main`.
+**PR:** `feat/ui-polish` → `main`. -->
 
 ---
 
