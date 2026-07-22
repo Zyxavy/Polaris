@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Playwright browsers
         if: matrix.package == 'web'
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --filter web run playwright:install
 
       - name: Lint (${{ matrix.package }})
         run: pnpm --filter ${{ matrix.package }} lint
