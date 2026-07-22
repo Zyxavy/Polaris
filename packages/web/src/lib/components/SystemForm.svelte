@@ -5,9 +5,8 @@
     import { AUTOSAVE_DEBOUNCE_MS } from './system-form.config';
     import SchedulePicker from './SchedulePicker.svelte';
 
-    let { system: _system }: { system?: System | null } = $props();
+    let { system: initial }: { system?: System | null } = $props();
 
-    const initial = _system;
     let systemId = $state<string | null>(initial?.id ?? null);
     let name = $state(initial?.name ?? '');
     let domain = $state(initial?.domain ?? '');

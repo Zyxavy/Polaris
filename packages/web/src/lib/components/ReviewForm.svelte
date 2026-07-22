@@ -7,7 +7,7 @@
 
     let {
         systemId,
-        system,
+        system: initial,
         periodStart,
         periodEnd,
         instanceCounts,
@@ -32,23 +32,22 @@
     let saving = $state(false);
     let conflictError = $state<string | null>(null);
 
-    // Editable blueprint fields, pre-filled from current system values
-    let floorAction = $state(system.floor_action);
-    let purpose = $state(system.purpose);
-    let philosophy = $state(system.philosophy);
-    let protocol = $state(system.protocol);
-    let trigger = $state(system.trigger);
-    let environmentCue = $state(system.environment_cue);
+    let floorAction = $state(initial.floor_action);
+    let purpose = $state(initial.purpose);
+    let philosophy = $state(initial.philosophy);
+    let protocol = $state(initial.protocol);
+    let trigger = $state(initial.trigger);
+    let environmentCue = $state(initial.environment_cue);
     let changeNote = $state('');
 
     function buildChangeApplied(): Record<string, string> | null {
         const changes: Record<string, string> = {};
-        if (floorAction !== system.floor_action) changes.floor_action = floorAction;
-        if (purpose !== system.purpose) changes.purpose = purpose;
-        if (philosophy !== system.philosophy) changes.philosophy = philosophy;
-        if (protocol !== system.protocol) changes.protocol = protocol;
-        if (trigger !== system.trigger) changes.trigger = trigger;
-        if (environmentCue !== system.environment_cue) changes.environment_cue = environmentCue;
+        if (floorAction !== initial.floor_action) changes.floor_action = floorAction;
+        if (purpose !== initial.purpose) changes.purpose = purpose;
+        if (philosophy !== initial.philosophy) changes.philosophy = philosophy;
+        if (protocol !== initial.protocol) changes.protocol = protocol;
+        if (trigger !== initial.trigger) changes.trigger = trigger;
+        if (environmentCue !== initial.environment_cue) changes.environment_cue = environmentCue;
         return Object.keys(changes).length > 0 ? changes : null;
     }
 

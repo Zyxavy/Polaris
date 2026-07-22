@@ -5,7 +5,7 @@
   import Cog from '@lucide/svelte/icons/cog';
   import ClipboardCheck from '@lucide/svelte/icons/clipboard-check';
   import BookOpen from '@lucide/svelte/icons/book-open';
-  import type { ComponentType } from 'svelte';
+  import type { Component } from 'svelte';
 
   let { session }: { session: any } = $props();
 
@@ -14,7 +14,7 @@
   interface NavItem {
     label: string;
     href: string;
-    icon: ComponentType;
+    icon: Component;
   }
 
   const navItems: NavItem[] = [
