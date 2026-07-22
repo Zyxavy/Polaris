@@ -33,10 +33,10 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
 
 | Variable | Package | Dev | Production | Secret? |
 |---|---|---|---|---|
-| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://polaris-api.kelpselp.workers.dev` | No |
+| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://polaris-api-production.kelpselp.workers.dev` | No |
 | `ENVIRONMENT` | `api` | `development` | `production` | No |
 | `BETTER_AUTH_SECRET` | `api` | Auto-generated dev secret | Generated secret, stored in `wrangler secret` | Yes |
-| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api.kelpselp.workers.dev` | No |
+| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api-production.kelpselp.workers.dev` | No |
 | `MONGODB_URI` | `api` | `mongodb://localhost:27017/polaris` (local Mongo) | Atlas connection string, stored in `wrangler secret` | Yes |
 
 ### 2.2 `wrangler.jsonc` -- `packages/api/`
@@ -127,7 +127,7 @@ Uses the modern Workers Static Assets pattern. No Worker script is needed -- the
 
 ```env
 # packages/web/.env.production
-VITE_API_BASE_URL=https://polaris-api.kelpselp.workers.dev
+VITE_API_BASE_URL=https://polaris-api-production.kelpselp.workers.dev
 ```
 
 For local development, `packages/web/.env.development` keeps `VITE_API_BASE_URL` empty so API calls use the Vite proxy (`localhost:5173/api` → `localhost:8787`).
@@ -365,7 +365,7 @@ jobs:
 | Environment | API URL | Web URL |
 |---|---|---|
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
-| Production | `https://polaris-api.kelpselp.workers.dev` | `https://polaris-web.kelpselp.workers.dev` |
+| Production | `https://polaris-api-production.kelpselp.workers.dev` | `https://polaris-web.kelpselp.workers.dev` |
 
 These URLs are determined by the `name` field in each `wrangler.jsonc` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
 
