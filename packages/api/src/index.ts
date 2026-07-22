@@ -87,7 +87,7 @@ app.get('/', (c) => c.text('Hello Hono!'));
 
 export default app;
 
-export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, ctx: ExecutionContext) {
+export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, _ctx: ExecutionContext) {
   const tomorrow = tomorrowManilaDate();
   console.log(`[cron] pre-generate instances date=${tomorrow}`);
   await generateInstancesForAllUsers(env.DB, tomorrow);
@@ -97,7 +97,7 @@ export async function scheduled(event: ScheduledEvent, env: CloudflareBindings, 
 export async function queue(
     batch: MessageBatch<JournalRetryMessage>,
     env: CloudflareBindings,
-    ctx: ExecutionContext
+    _ctx: ExecutionContext
 ) {
     for (const msg of batch.messages) {
         const { entry_id, system_id, workspace_id, instance_id, widget_id, user_id, text, created_at } = msg.body;

@@ -42,16 +42,6 @@ async function seedSystem(db: D1Database, userId: string): Promise<string> {
     return systemId;
 }
 
-async function seedSchedule(db: D1Database, systemId: string): Promise<string> {
-    const scheduleId = crypto.randomUUID();
-    const now = new Date().toISOString();
-    await db.prepare(
-        `INSERT INTO schedules (id, system_id, days_of_week, time_window_start, time_window_end, recurrence, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(scheduleId, systemId, 127, '00:00', '23:59', 'weekly', now, now).run();
-    return scheduleId;
-}
-
 async function seedInstance(db: D1Database, systemId: string, date: string): Promise<string> {
     const instanceId = crypto.randomUUID();
     const now = new Date().toISOString();
