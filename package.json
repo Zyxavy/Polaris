@@ -7,7 +7,12 @@
     "deploy": "pnpm -r deploy",
     "deploy:migrations": "cd packages/api && wrangler d1 migrations apply DB",
     "deploy:api": "cd packages/api && wrangler deploy",
-    "deploy:web": "cd packages/web && vite build && wrangler deploy"
+    "deploy:web": "cd packages/web && vite build && wrangler deploy",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test:unit": "pnpm -r test:unit",
+    "test:int": "pnpm --filter api test:int",
+    "test:e2e": "pnpm --filter web test:e2e"
   },
   "keywords": [],
   "author": "",
