@@ -6,6 +6,9 @@
 
 <NavBar session={data.session} />
 <ToastContainer />
-<main class="p-6">
+<main
+  class="max-w-6xl mx-auto px-6 py-8 pb-[calc(56px+1.5rem)] lg:pb-8"
+  style="min-height: 100dvh"
+>
   {@render children()}
 </main>

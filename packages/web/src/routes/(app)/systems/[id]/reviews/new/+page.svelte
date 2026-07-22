@@ -53,7 +53,7 @@
     });
 </script>
 
-<div class="max-w-2xl">
+<div class="w-full md:max-w-2xl lg:max-w-3xl mx-auto px-4 md:px-0">
     <h1 class="font-display text-2xl text-on-surface mb-1">{system.name}</h1>
     <p class="font-body text-sm text-on-surface-muted mb-6">
         Reviewing {period.period_start} — {period.period_end}

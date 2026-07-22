@@ -230,7 +230,8 @@
     <button
       type="submit"
       disabled={!name.trim()}
-      class="rounded-md bg-primary px-4 py-2 text-sm font-body font-medium text-white disabled:opacity-50"
+      class="rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary px-5 py-2.5 text-sm font-body font-semibold disabled:opacity-50
+             transition-all duration-200 hover:opacity-90 active:scale-[0.98] cursor-pointer"
     >
       {saving ? 'Saving...' : 'Save System'}
     </button>

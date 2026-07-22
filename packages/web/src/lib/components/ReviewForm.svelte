@@ -178,7 +178,8 @@
     <button
         onclick={handleSubmit}
         disabled={saving}
-        class="self-start rounded-md bg-primary px-6 py-2 text-sm font-body font-medium text-white disabled:opacity-50"
+        class="self-start rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-2 text-sm font-body font-semibold disabled:opacity-50
+                       transition-all duration-200 hover:opacity-90 active:scale-[0.98] cursor-pointer"
     >
         {saving ? 'Saving...' : 'Submit Review'}
     </button>

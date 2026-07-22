@@ -18,7 +18,8 @@
 
     <button
         onclick={() => goto(`/systems/${entry.system.id}/reviews/new?period_start=${entry.period_start}&period_end=${entry.period_end}`)}
-        class="self-start rounded-md bg-primary px-4 py-1.5 text-xs font-body font-medium text-white"
+        class="self-start rounded-2xl bg-gradient-to-br from-primary to-primary-container text-on-primary px-4 py-1.5 text-xs font-body font-semibold
+                       transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
     >
         Start Review
     </button>

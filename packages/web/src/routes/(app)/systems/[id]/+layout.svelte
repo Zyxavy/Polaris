@@ -12,28 +12,36 @@
         { label: 'Edit', path: (id: string) => `/systems/${id}/edit` },
     ];
 
-    function isActive(tabPath: (id: string) => string) {
-        return page.url.pathname === tabPath(system.id);
+    function tabFromUrl() {
+        const path = page.url.pathname;
+        if (path.endsWith('/workspace')) return 'workspace';
+        if (path.includes('/reviews')) return 'reviews';
+        if (path.endsWith('/edit')) return 'edit';
+        return 'overview';
     }
 
+    let activeTab = $derived(tabFromUrl());
 </script>
 
-<div class="max-w-4xl">
-    <h1 class="font-display text-2xl text-on-surface mb-1">{system.name}</h1>
-    {#if system.domain}
-        <p class="font-body text-sm text-on-surface-muted mb-4">{system.domain}</p>
-    {/if}
+<div class="w-full md:max-w-2xl lg:max-w-4xl mx-auto px-4 md:px-0">
+  <h1 class="font-display text-2xl text-on-surface mb-1">{system.name}</h1>
+  {#if system.domain}
+    <p class="font-body text-sm text-on-surface-muted mb-4">{system.domain}</p>
+  {/if}
 
-    <nav class="flex gap-4 border-b border-border mb-6">
-        {#each tabs as tab}
-        <button
-            onclick={() => goto(tab.path(system.id))}
-            class="pb-2 font-body text-sm {isActive(tab.path) ? 'text-primary border-b-2 border-primary' : 'text-on-surface-muted hover:text-on-surface'}"
-        >
-            {tab.label}
-        </button>
-        {/each}
-    </nav>
+  <nav class="flex gap-6 overflow-x-auto border-b border-border/50 mb-6 pb-0">
+    {#each tabs as tab}
+      <button
+        onclick={() => goto(tab.path(system.id))}
+        class="pb-3 font-body text-sm whitespace-nowrap transition-colors duration-150
+               {activeTab === tab.label.toLowerCase()
+                 ? 'text-primary font-semibold'
+                 : 'text-muted-foreground hover:text-on-surface'}"
+      >
+        {tab.label}
+      </button>
+    {/each}
+  </nav>
 
-    {@render children()}
-    </div>
+  {@render children()}
+</div>

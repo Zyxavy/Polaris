@@ -3,6 +3,8 @@
 @plugin '@tailwindcss/typography';
 
 @variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@variant motion-safe (&:where([data-reduced-motion="false"], [data-reduced-motion="false"] *));
+@variant motion-reduce (&:where([data-reduced-motion="true"], [data-reduced-motion="true"] *));
 
 @theme {
   --color-surface: #e9e4d7;
@@ -28,6 +30,10 @@
   --shadow-ambient-md: 0 8px 24px rgba(85, 98, 77, 0.05);
   --shadow-ambient-lg: 0 16px 40px rgba(85, 98, 77, 0.06);
   --shadow-ambient-xl: 0 24px 60px rgba(85, 98, 77, 0.07);
+
+  --nav-height-mobile: 64px;
+  --nav-height-desktop: 0px;
+  --nav-bottom-offset: calc(56px + 1.5rem);
 }
 
 @keyframes skeleton-pulse {

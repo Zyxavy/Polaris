@@ -18,14 +18,16 @@
 {#if !loaded}
     <div class="skeleton h-[60vh] rounded-xl"></div>
 {:else}
-    <div class="flex gap-4">
+    <div class="flex flex-col lg:flex-row gap-4">
         <WidgetPalette onAdd={(t) => store.addWidget(t)} />
-        <WorkspaceCanvas
-            widgets={store.layout.widgets}
-            instanceId={data.instanceId}
-            onReorder={(ws) => store.reorder(ws)}
-            onRemove={(id) => store.removeWidget(id)}
-        />
+        <div class="flex-1">
+            <WorkspaceCanvas
+                widgets={store.layout.widgets}
+                instanceId={data.instanceId}
+                onReorder={(ws) => store.reorder(ws)}
+                onRemove={(id) => store.removeWidget(id)}
+            />
+        </div>
     </div>
     <SaveBar dirty={store.dirty} onSave={() => store.save()} />
 {/if}
