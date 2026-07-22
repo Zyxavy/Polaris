@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
 	webServer: [
 		{
-			command: 'npm run dev:e2e',
+			command: 'pnpm run dev:e2e',
 			port: 8787,
 			cwd: '../api',
 			reuseExistingServer: true,

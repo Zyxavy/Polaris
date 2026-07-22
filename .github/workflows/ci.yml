@@ -55,6 +55,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter web run playwright:install
+
       - run: pnpm -r build
       - run: pnpm --filter web test:e2e
         env:
@@ -75,13 +79,13 @@ jobs:
 
       - name: Apply D1 migrations
         working-directory: packages/api
-        run: pnpm exec wrangler d1 migrations apply DB --remote
+        run: pnpm exec wrangler d1 migrations apply DB --remote --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy API Worker
         working-directory: packages/api
-        run: pnpm exec wrangler deploy
+        run: pnpm exec wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 

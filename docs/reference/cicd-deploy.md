@@ -46,7 +46,7 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "polaris-api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-07-22",
+  "compatibility_date": "2026-07-07",
   "compatibility_flags": ["nodejs_compat"],
 
   "observability": {
@@ -177,6 +177,7 @@ Each package has its own scripts in its `package.json`:
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler d1 migrations apply DB && wrangler deploy",
+    "build": "wrangler types --env-interface CloudflareBindings",
     "lint": "eslint src/",
     "test:unit": "vitest run",
     "test:int": "vitest run",
@@ -192,7 +193,8 @@ Each package has its own scripts in its `package.json`:
     "deploy": "vite build && wrangler deploy",
     "lint": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test:unit": "vitest",
-    "test:e2e": "playwright install chromium && playwright test"
+    "test:e2e": "playwright install chromium && playwright test",
+    "playwright:install": "playwright install --with-deps chromium"
   }
 }
 ```
@@ -267,6 +269,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -289,6 +293,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -302,11 +308,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter web run playwright:install
+
       - run: pnpm -r build
       - run: pnpm --filter web test:e2e
         env:
@@ -322,6 +334,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -330,19 +344,19 @@ jobs:
 
       - name: Apply D1 migrations
         working-directory: packages/api
-        run: npx wrangler d1 migrations apply DB --remote
+        run: pnpm exec wrangler d1 migrations apply DB --remote --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy API Worker
         working-directory: packages/api
-        run: npx wrangler deploy
+        run: pnpm exec wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy Web static assets
         working-directory: packages/web
-        run: npx wrangler deploy
+        run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
