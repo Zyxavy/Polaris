@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Slice 11: Frontend Polish Pass
+
+- **NavBar**: floating pill on mobile (`bg-surface/70 backdrop-blur-xl rounded-full`) with Lucide Svelte icons (`LayoutDashboard`, `Cog`, `ClipboardCheck`, `BookOpen`); sidebar layout at `xl:` breakpoint (`hidden xl:flex`); `aria-current="page"` for active tab.
+- **ToastContainer**: top-right fixed position, `max-w-sm`, `fly` transition (200ms), dismiss button, `pointer-events-none` container.
+- **Toast store**: extracted `ToastType` / `ToastItem` types, added `'success'` type, added `dismiss(id)` method.
+- **Guides**: moved from `routes/guides/` (public) to `routes/(app)/guides/` (authenticated, inherits NavBar). 3 guide cards with blush-numbered badges, detail bullets, quick-start CTA, cascading `fly` transition.
+- **Skeleton/error/empty states**: systems list page (4-card skeleton grid, error + retry, empty with CTA), reviews history (skeleton + error), reviews new (responsive container), system detail tab bar (no underline, `text-primary font-semibold` active).
+- **Responsive containers**: all forms and detail pages use `w-full md:max-w-2xl lg:max-w-3xl mx-auto px-4 md:px-0`.
+- **`(app)/+layout.svelte`**: `<main>` wrapper with `max-w-6xl mx-auto px-6 py-8`, `pb-[calc(56px+1.5rem)]` for mobile nav offset, `lg:pb-8` revert at desktop.
+- **Gradient CTAs**: all action buttons use `bg-gradient-to-br from-primary to-primary-container rounded-2xl` per MASTER.md spec (DueReviewCard, ReviewForm, SystemForm, systems page, guides page, landing page).
+- **Landing page** (`+page.svelte`): full hero with headline ("Your Personal Systems, Reviewed"), tagline, gradient "Get started" CTA, ghost "Log in" link. Replaced "Hello Polaris" stub.
+- **Cards**: surface nesting (`bg-surface-container-lowest shadow-ambient-sm`) per no-line rule, never `border`.
+- **WidgetPalette**: responsive — horizontal scroll strip on mobile (`flex lg:flex-row`), sidebar column on desktop (`lg:flex-col`).
+- **Animation policy**: all `motion-safe:` / `motion-reduce:` Tailwind variants removed; all `reducedMotion` JS state removed from ToastContainer and guides page. Animations always play.
+- **`layout.css`**: added `--nav-height-mobile`, `--nav-bottom-offset` CSS custom properties.
+- **Build**: `pnpm --filter web build` zero errors. **Tests**: `pnpm --filter web test:unit` 7/7 pass.
+- **Files changed**: 19 files: 523 insertions, 177 deletions across `packages/web/src/`.
+
 ### Slice 8: Workspace + Widget Data
 
 - Created `packages/api/src/lib/workspace.ts`: `upgradeLayout()` with `CURRENT_LAYOUT_VERSION = 1` and while-loop pattern for future version bumps.
