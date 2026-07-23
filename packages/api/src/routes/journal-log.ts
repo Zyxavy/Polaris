@@ -131,23 +131,21 @@ app.post('/instances/:instance_id/journal_log/:widget_id', async (c) => {
 });
 
 app.get('/instances/:instance_id/journal_log/:widget_id', async (c) => {
-    const userId = c.get('user').id;
-    const db = c.env.DB;
-    const instanceId = c.req.param('instance_id');
-    const widgetId = c.req.param('widget_id');
-
-    // Verify ownership
-    const instance = await getOwnedInstance(db, instanceId, userId);
-    if (!instance) {
-        return c.json({ error: 'not_found', message: 'Instance not found.' }, 404);
-    }
-
-    // Parse pagination params
-    const cursor = c.req.query('cursor');
-    const limitParam = c.req.query('limit');
-    const limit = Math.min(Math.max(parseInt(limitParam || '50', 10) || 50, 1), 100);
-
     try {
+        const userId = c.get('user').id;
+        const db = c.env.DB;
+        const instanceId = c.req.param('instance_id');
+        const widgetId = c.req.param('widget_id');
+
+        const instance = await getOwnedInstance(db, instanceId, userId);
+        if (!instance) {
+            return c.json({ error: 'not_found', message: 'Instance not found.' }, 404);
+        }
+
+        const cursor = c.req.query('cursor');
+        const limitParam = c.req.query('limit');
+        const limit = Math.min(Math.max(parseInt(limitParam || '50', 10) || 50, 1), 100);
+
         const client = await getMongoClient(c.env.MONGODB_URI);
         const collection = client.db().collection('journal_entries');
 
@@ -190,8 +188,8 @@ app.get('/instances/:instance_id/journal_log/:widget_id', async (c) => {
             })) satisfies JournalEntryResult[],
             next_cursor,
         });
-    } catch {
-        console.warn(`[mongo] read-failed instance=${instanceId} widget=${widgetId}`);
+    } catch (err) {
+        console.warn(`[journal] get-failed instance=${c.req.param('instance_id')}`, err);
         return c.json({ entries: [], next_cursor: null });
     }
 });
