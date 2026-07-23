@@ -89,6 +89,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
+      - run: pnpm -r build
+        env:
+          VITE_API_BASE_URL: "https://polaris-api-production.kelpselp.workers.dev"
+
       - name: Deploy Web static assets
         working-directory: packages/web
         run: pnpm exec wrangler deploy
