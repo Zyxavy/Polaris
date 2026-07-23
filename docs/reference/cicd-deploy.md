@@ -379,7 +379,7 @@ jobs:
 | Environment | API URL | Web URL |
 |---|---|---|
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
-| Production | `https://polaris-api-production.kelpselp.workers.dev` | `https://polaris-web.kelpselp.workers.dev` |
+| Production | `https://polaris-api-production.kelpselp.workers.dev` | `https://polaris.kelpselp.workers.dev` |
 
 These URLs are determined by the `name` field in each `wrangler.jsonc` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
 
@@ -465,7 +465,7 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 - [ ] `CLOUDFLARE_API_TOKEN` added to GitHub Actions repo secrets -- required for the `deploy` job (S4.2) to authenticate; note this is separate from the `wrangler secret put` values above, which live in Cloudflare's secrets store, not GitHub's
 - [x] `pnpm -r build` succeeds locally
 - [x] `pnpm -r deploy` succeeds locally (first manual deploy completed during Slice 12)
-- [ ] Verify: sign up at `https://polaris-web.kelpselp.workers.dev`, create a system, see it on the dashboard
+- [ ] Verify: sign up at `https://polaris.kelpselp.workers.dev`, create a system, see it on the dashboard
 - [ ] Push to `main` once and confirm the CI `deploy` job runs migrations + both deploys successfully end-to-end
 
 **Note:** Steps still unchecked (`CLOUDFLARE_API_TOKEN`, verification, and CI push) are pending the Slice 12 merge to `main`.

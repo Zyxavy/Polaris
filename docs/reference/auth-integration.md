@@ -47,7 +47,7 @@ export function createAuth(env: {
     },
     trustedOrigins: [
       'http://localhost:5173',                          // Vite dev server
-      'https://polaris-web.kelpselp.workers.dev',       // production frontend origin
+      'https://polaris.kelpselp.workers.dev',       // production frontend origin
     ],
   });
 }

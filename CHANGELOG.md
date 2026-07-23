@@ -389,7 +389,7 @@ All 14 slices of the P0 scope are implemented. The core product loop (sign-up â†
 - **`VITE_API_BASE_URL`**: added `packages/web/.env.production` so production builds point to `https://polaris-api.kelpselp.workers.dev` (was missing â€” caused JSON.parse errors on all API calls). `.env.production` tracked in git (public URL only).
 - **Manual first deploy**: both Workers deployed to production URLs. Queue `polaris-journal-retry` confirmed existing. Secrets set via `wrangler secret put`.
 - **Known issues**: `--env production` flag needed for api deploy to target production D1 database; root `deploy` script deploys to dev database by default.
-- **`docs/reference/cicd-deploy.md`**: updated to reflect actual wrangler configs, scripts, URLs (`polaris-web.kelpselp.workers.dev`), and checklist status.
+- **`docs/reference/cicd-deploy.md`**: updated to reflect actual wrangler configs, scripts, URLs (`polaris.kelpselp.workers.dev`), and checklist status.
 
 ---
 
