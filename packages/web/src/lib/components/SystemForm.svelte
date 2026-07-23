@@ -6,7 +6,7 @@
     import SchedulePicker from './SchedulePicker.svelte';
 
     let { system: initial }: { system?: System | null } = $props();
-    const snap = { ...initial };
+    const snap = (() => ({ ...initial }))();
 
     let systemId = $state<string | null>(snap?.id ?? null);
     let name = $state(snap?.name ?? '');

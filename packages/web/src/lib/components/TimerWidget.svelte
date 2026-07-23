@@ -13,7 +13,7 @@
     let todayTotal = $state(0);
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let showSettings = $state(false);
-    let durationSecs = $state(widget.config?.duration_secs ?? 0);
+    let durationSecs = $state((() => widget.config?.duration_secs ?? 0)());
     let isCountdown = $derived(durationSecs > 0);
     let display = $derived(isCountdown ? Math.max(0, durationSecs - elapsed) : elapsed);
     let isFinished = $derived(isCountdown && durationSecs > 0 && elapsed >= durationSecs);
@@ -72,6 +72,7 @@
     }
 
     async function saveSession() {
+        if (!instanceId) return;
         const endedAt = new Date().toISOString();
         try {
             await createTimerSession(instanceId, {

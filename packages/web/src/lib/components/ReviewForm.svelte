@@ -25,7 +25,7 @@
         periodEnd: string;
         instanceCounts: { full: number; floor: number; missed: number };
     } = $props();
-    const snap = { ...initial };
+    const snap = (() => ({ ...initial }))();
 
     let whatWorked = $state('');
     let whatBroke = $state('');
