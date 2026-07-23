@@ -13,7 +13,9 @@
     "preview": "vite preview",
     "test:unit": "vitest",
     "test": "pnpm test:unit -- --run && pnpm test:e2e",
-    "test:e2e": "playwright install chromium && playwright test"
+    "test:e2e": "playwright test",
+    "lint": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "playwright:install": "playwright install --with-deps chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -36,8 +38,8 @@
     "wrangler": "^4.97.0"
   },
   "dependencies": {
+    "@lucide/svelte": "^1.25.0",
     "better-auth": "^1.6.23",
-    "lucide-svelte": "^1.0.1",
     "svelte-dnd-action": "^0.9.74"
   }
 }

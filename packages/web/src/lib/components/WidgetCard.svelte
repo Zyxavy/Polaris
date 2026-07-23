@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { X } from 'lucide-svelte';
+    import { X } from '@lucide/svelte';
     import type { Widget } from '$lib/api/workspaces';
     import CounterWidget from './CounterWidget.svelte';
     import TimerWidget from './TimerWidget.svelte';
     import ChecklistWidget from './ChecklistWidget.svelte';
+    import LogWidget from './LogWidget.svelte';
 
     let { widget, instanceId, onRemove }: {
         widget: Widget;
@@ -32,6 +33,8 @@
         <TimerWidget {widget} {instanceId} />
     {:else if widget.type === 'checklist'}
         <ChecklistWidget {widget} {instanceId} />
+    {:else if widget.type === 'log'}
+        <LogWidget {widget} {instanceId} />
     {:else}
         <div class="flex-1 flex items-center justify-center">
             <p class="text-xs text-muted-foreground">Coming in a future update</p>

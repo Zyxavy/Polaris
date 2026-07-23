@@ -29,6 +29,14 @@ export async function getOwnedInstance(db: D1Database, instanceId: string, userI
     `).bind(instanceId, userId).first<any>();
 }
 
+export async function getOwnedReview(db: D1Database, reviewId: string, userId: string) {
+    return await db.prepare(
+        `SELECT r.* FROM reviews r
+        JOIN systems s ON r.system_id = s.id
+        WHERE r.id = ? AND s.user_id = ?`
+    ).bind(reviewId, userId).first<any>();
+}
+
 export async function getOwnedWorkspace(db: D1Database, systemId: string, userId: string) {
     return await db.prepare(`
         SELECT w.* FROM workspaces w

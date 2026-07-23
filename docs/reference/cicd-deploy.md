@@ -4,11 +4,11 @@
 
 **Document type:** Deployment reference -- defines the CI pipeline, deploy order, environment configuration, and rollback strategy. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) (owns the monorepo structure and deployment targets this document operationalizes), the [Testing Strategy](testing-strategy.md) (owns the CI pipeline's test stages), and the [API Route Design](api-routes.md) / [SvelteKit Route Architecture](sveltekit-route-architecture.md) (which define the two deployable artifacts).
 
-**Status:** Draft -- v1 scope
+**Status:** Live — v1 active
 
-**Implementation status:** Planned / Target Architecture
+**Implementation status:** Implemented — Slice 12
 
-**Last updated:** July 2, 2026
+**Last updated:** July 22, 2026
 
 ---
 
@@ -33,73 +33,104 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
 
 | Variable | Package | Dev | Production | Secret? |
 |---|---|---|---|---|
-| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://polaris-api.kelpselp.workers.dev` | No |
+| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://polaris-api-production.kelpselp.workers.dev` | No |
 | `ENVIRONMENT` | `api` | `development` | `production` | No |
 | `BETTER_AUTH_SECRET` | `api` | Auto-generated dev secret | Generated secret, stored in `wrangler secret` | Yes |
-| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api.kelpselp.workers.dev` | No |
+| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://polaris-api-production.kelpselp.workers.dev` | No |
 | `MONGODB_URI` | `api` | `mongodb://localhost:27017/polaris` (local Mongo) | Atlas connection string, stored in `wrangler secret` | Yes |
 
 ### 2.2 `wrangler.jsonc` -- `packages/api/`
 
-```toml
-name = "polaris-api"
-main = "src/index.ts"
-compatibility_date = "2026-07-01"
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "polaris-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-07",
+  "compatibility_flags": ["nodejs_compat"],
 
-# Bindings
-[[d1_databases]]
-binding = "DB"
-database_name = "polaris-db"
-database_id = "<uuid>"
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  },
 
-[[r2_buckets]]
-binding = "ATTACHMENTS"
-bucket_name = "polaris-attachments"
+  "triggers": {
+    "crons": ["0 15 * * *"]       // 11 PM Asia/Manila, UTC+8
+  },
 
-[[queues]]
-binding = "JOURNAL_RETRY"
-queue_name = "polaris-journal-retry"
+  "queues": {
+    "producers": [
+      { "binding": "JOURNAL_RETRY_QUEUE", "queue": "polaris-journal-retry" }
+    ],
+    "consumers": [
+      { "queue": "polaris-journal-retry", "max_batch_size": 10, "max_batch_timeout": 5 }
+    ]
+  },
 
-[ai]
-binding = "AI"
+  "vars": {
+    "MONGODB_URI": "mongodb://localhost:27017/polaris"   // dev only; production set via wrangler secret
+  },
 
-[triggers]
-crons = ["0 15 * * *"]   # 11 PM Asia/Manila, UTC+8
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "polaris-db-dev",
+      "database_id": "bd7d9f42-2c4a-442c-9fd0-a53ded81cc6c"
+    }
+  ],
 
-# Environment-specific values
-[env.development]
-vars = { ENVIRONMENT = "development" }
-[[env.development.d1_databases]]
-binding = "DB"
-database_name = "polaris-db-dev"
-database_id = "<dev-uuid>"
+  "r2_buckets": [
+    { "bucket_name": "polaris-attachments", "binding": "ATTACHMENTS" }
+  ],
 
-[env.production]
-vars = { ENVIRONMENT = "production" }
-[[env.production.d1_databases]]
-binding = "DB"
-database_name = "polaris-db"
-database_id = "<prod-uuid>"
+  "env": {
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "polaris-db",
+          "database_id": "6072aa3b-6fad-48a4-b2d6-72eaaaef6a3e"
+        }
+      ]
+    }
+  }
+}
 ```
 
-**Note:** `BETTER_AUTH_SECRET` and `MONGODB_URI` are NOT in `wrangler.jsonc` -- they are set via `wrangler secret put` and accessed via `env.BETTER_AUTH_SECRET` / `env.MONGODB_URI` at runtime. This keeps them out of version control.
+**Secrets:** `BETTER_AUTH_SECRET` and `MONGODB_URI` (production) are NOT in `wrangler.jsonc` -- they are set via `wrangler secret put` and accessed via `env.BETTER_AUTH_SECRET` / `env.MONGODB_URI` at runtime. This keeps them out of version control.
+
+**Deploy with `--env production`** to use the production D1 database (`polaris-db`). Without the flag, the root config's dev database is used. Example:
+```bash
+cd packages/api
+wrangler d1 migrations apply DB --remote --env production
+wrangler deploy --env production
+```
 
 ### 2.3 `wrangler.jsonc` -- `packages/web/`
 
 ```jsonc
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "polaris-web",
-  "main": "build/index.html",
-  "compatibility_date": "2026-6-30",
-  "site": {
-    "bucket": "build"
+  "compatibility_date": "2026-07-22",
+  "assets": {
+    "directory": "build",
+    "not_found_handling": "single-page-application"
   }
 }
 ```
 
-**Note:** The `"site"` key above is the Workers Sites pattern (deprecated). The modern Workers Static Assets pattern uses `"assets": { "directory": "build", "binding": "ASSETS" }` instead. Both patterns are supported by `wrangler deploy` as of June 2026; the `"site"` pattern remains here because the SvelteKit Cloudflare adapter still emits it by default. When the adapter or wrangler deprecates `"site"`, migrate to the `"assets"` pattern.
+Uses the modern Workers Static Assets pattern. No Worker script is needed -- the platform serves files from `build/` directly. The `not_found_handling: "single-page-application"` option serves `index.html` for any unmatched route, providing SPA fallback automatically (the Worker from `packages/web/src/worker.ts` was removed in favor of this built-in feature).
 
-Workers Static Assets (the modern pattern replacing `workers-site/` and `@cloudflare/kv-asset-handler`) serves the `build/` directory directly without a custom Worker script. `main` is set to `build/index.html` as the SPA fallback entry point. No bindings are needed -- this deployment serves files only.
+**`VITE_API_BASE_URL`** is baked in at build time via `packages/web/.env.production`. It is NOT set at the Worker runtime -- Vite replaces `import.meta.env.VITE_*` during `vite build`, making the value static in the compiled JS bundle. The file is tracked in git (no secrets in it -- just a public URL).
+
+```env
+# packages/web/.env.production
+VITE_API_BASE_URL=https://polaris-api-production.kelpselp.workers.dev
+```
+
+For local development, `packages/web/.env.development` keeps `VITE_API_BASE_URL` empty so API calls use the Vite proxy (`localhost:5173/api` → `localhost:8787`).
 
 ---
 
@@ -125,25 +156,52 @@ Migrations run **before** the API Worker deploy so the new code sees the latest 
 ```jsonc
 {
   "scripts": {
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test:unit": "pnpm -r test:unit",
+    "test:int": "pnpm --filter api test:int",
+    "test:e2e": "pnpm --filter web test:e2e",
     "deploy": "pnpm -r deploy",
     "deploy:migrations": "cd packages/api && wrangler d1 migrations apply DB",
     "deploy:api": "cd packages/api && wrangler deploy",
-    "deploy:web": "cd packages/web && wrangler deploy",
+    "deploy:web": "cd packages/web && vite build && wrangler deploy",
   }
 }
 ```
 
-Each package has its own `deploy` script in its `package.json`:
+Each package has its own scripts in its `package.json`:
 
 ```jsonc
 // packages/api/package.json
-{ "scripts": { "deploy": "wrangler d1 migrations apply DB && wrangler deploy" } }
+{
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler d1 migrations apply DB && wrangler deploy",
+    "build": "wrangler types --env-interface CloudflareBindings",
+    "lint": "eslint src/",
+    "test:unit": "vitest run",
+    "test:int": "vitest run",
+    "dev:e2e": "wrangler d1 migrations apply DB --local && wrangler dev --port 8787"
+  }
+}
 
 // packages/web/package.json
-{ "scripts": { "deploy": "vite build && wrangler deploy" } }
+{
+  "scripts": {
+    "dev": "vite dev",
+    "build": "svelte-kit sync && vite build",
+    "deploy": "vite build && wrangler deploy",
+    "lint": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test:unit": "vitest",
+    "test:e2e": "playwright install chromium && playwright test",
+    "playwright:install": "playwright install --with-deps chromium"
+  }
+}
 ```
 
 Running `pnpm -r deploy` from the root runs both in workspace order (api first, web second) because pnpm respects the dependency graph: `web` depends on `api` (for types), so pnpm runs `api`'s deploy first.
+
+**Note:** The `deploy` script for both packages runs migrations (api) or the full build (web). The `deploy:api` and `deploy:web` root scripts are lower-level for targeted manual deploys (e.g., `pnpm deploy:api -- --env production`).
 
 ### 3.2 Day-to-day manual deploy (fallback, pre-CI or local verification)
 
@@ -162,7 +220,7 @@ Runs on every push to `main` and every PR. Defined in `.github/workflows/ci.yml`
 
 ### 4.0 Why a matrix, and what it does/doesn't parallelize
 
-**Note on script availability:** The CI pipeline references `lint`, `test:unit`, `test:int`, and `test:e2e` scripts. As of the current scaffold, only `build` and `deploy` exist in `root package.json`. The test/lint scripts are target-state -- they must be added to each package's `package.json` as part of the P0 Implementation Plan before CI can run.
+All referenced scripts (`lint`, `test:unit`, `test:int`, `test:e2e`) are now defined in both packages' `package.json` and the root convenience scripts. The CI pipeline is ready to run.
 
 `lint`, `test:unit`, and `build` are independent per package -- `web`'s lint failing has no bearing on `api`'s unit tests passing, and today's `pnpm -r` runs them serially anyway. Matrixing over `package: [api, web]` runs these three stages concurrently instead, which is the actual bottleneck.
 
@@ -209,9 +267,11 @@ jobs:
         package: [api, web]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm       # keyed on the single root pnpm-lock.yaml -- shared across both matrix legs
@@ -231,9 +291,11 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -244,26 +306,37 @@ jobs:
     needs: [test, integration]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter web run playwright:install
+
       - run: pnpm -r build
-      - run: pnpm test:e2e
+      - run: pnpm --filter web test:e2e
         env:
           VITE_API_BASE_URL: "http://localhost:8787"
+
+  # Note: The CI workflow at .github/workflows/ci.yml is the source of truth.
+  # This doc's YAML is kept in sync with the actual file.
 
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: [test, integration, e2e]     # any failure anywhere above skips this job entirely
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -271,19 +344,19 @@ jobs:
 
       - name: Apply D1 migrations
         working-directory: packages/api
-        run: npx wrangler d1 migrations apply DB --remote
+        run: pnpm exec wrangler d1 migrations apply DB --remote --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy API Worker
         working-directory: packages/api
-        run: npx wrangler deploy
+        run: pnpm exec wrangler deploy --env production
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy Web static assets
         working-directory: packages/web
-        run: npx wrangler deploy
+        run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
@@ -306,7 +379,7 @@ jobs:
 | Environment | API URL | Web URL |
 |---|---|---|
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
-| Production | `https://polaris-api.kelpselp.workers.dev` | `https://polaris.kelpselp.workers.dev` |
+| Production | `https://polaris-api-production.kelpselp.workers.dev` | `https://polaris-web.kelpselp.workers.dev` |
 
 These URLs are determined by the `name` field in each `wrangler.jsonc` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
 
@@ -380,21 +453,22 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 
 ### 9.1 First-time setup (manual, once)
 
-- [ ] Cloudflare account created
-- [ ] D1 databases created (`wrangler d1 create polaris-db-dev`, `polaris-db`)
-- [ ] R2 bucket created (`wrangler r2 bucket create polaris-attachments`)
-- [ ] Queue created (`wrangler queues create polaris-journal-retry`)
-- [ ] Secrets set locally (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)
-- [ ] Database UUIDs from step 2 written into both `wrangler.jsonc` files
-- [ ] Migration files scaffolded via `wrangler d1 migrations create DB <name>` (one per table, per ADR 002 S6.2's numbered plan: `0001_enable_foreign_keys` through `0013_recovery_codes`) -- this only creates the empty, correctly-named file; the SQL inside each is hand-written, never auto-generated, and each file is frozen once created (append-only, no edits after the fact)
-- [ ] Migrations applied manually (`wrangler d1 migrations apply DB --remote`) -- CI isn't wired up yet at this point
-- [ ] Better Auth tables generated via the Better Auth CLI (`npx @better-auth/cli generate --config path/to/auth.ts --output packages/api/migrations/`) -- this is the only correct path for the Better Auth-managed tables (`user`, `session`, `account`, `verification`) per ADR 002 S2 and ADR 006 S1.1; do not hand-write these alongside the app's own migration files
-- [ ] Better Auth tables applied to D1 via the CLI's `migrate` command (or by applying the CLI-generated SQL through `wrangler d1 migrations apply`, consistent with the app's own migration application step above)
+- [x] Cloudflare account created
+- [x] D1 databases created (`wrangler d1 create polaris-db-dev`, `polaris-db`)
+- [x] R2 bucket created (`wrangler r2 bucket create polaris-attachments`)
+- [x] Queue created (`wrangler queues create polaris-journal-retry`)
+- [x] Secrets set locally (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)
+- [x] Database UUIDs from step 2 written into both `wrangler.jsonc` files
+- [x] Migration files scaffolded via `wrangler d1 migrations create DB <name>` -- one per table, per ADR 002 S6.2's numbered plan
+- [x] Better Auth tables generated and applied to D1 (migration `0014_better_auth_core.sql`)
+- [x] All 15 migrations applied to remote D1 (`wrangler d1 migrations apply DB --remote`)
 - [ ] `CLOUDFLARE_API_TOKEN` added to GitHub Actions repo secrets -- required for the `deploy` job (S4.2) to authenticate; note this is separate from the `wrangler secret put` values above, which live in Cloudflare's secrets store, not GitHub's
-- [ ] `pnpm -r build` succeeds locally
-- [ ] `pnpm -r deploy` succeeds locally (manual first deploy, before trusting CI with it)
-- [ ] Verify: sign up at `https://polaris.kelpselp.workers.dev`, create a system, see it on the dashboard
+- [x] `pnpm -r build` succeeds locally
+- [x] `pnpm -r deploy` succeeds locally (first manual deploy completed during Slice 12)
+- [ ] Verify: sign up at `https://polaris-web.kelpselp.workers.dev`, create a system, see it on the dashboard
 - [ ] Push to `main` once and confirm the CI `deploy` job runs migrations + both deploys successfully end-to-end
+
+**Note:** Steps still unchecked (`CLOUDFLARE_API_TOKEN`, verification, and CI push) are pending the Slice 12 merge to `main`.
 
 ### 9.2 Ongoing deploys (after first-time setup, CI-driven)
 

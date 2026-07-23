@@ -405,7 +405,7 @@ The Log/Journal widget (Mongo-backed) is deliberately split into its own slice (
 **PR:** `feat/workspace-core-widgets` → `main`. -->
 
 ---
-
+<!-- 
 (## Two open gaps you'll hit and should bring to me before building around them
 
 1. **Log/Journal widget route contract** (Slice 9) — `api-routes.md` doesn't specify this endpoint despite Log being a P0 widget. Don't invent it silently; we should design it together so it stays consistent with the `PUT`-per-widget pattern used for Checklist/Notes.
@@ -427,7 +427,7 @@ This is the one slice that touches infrastructure not yet exercised (Mongo drive
 5. Write path per ADR 001 S5.5 exactly: attempt direct Mongo write → on success, write the `widget_entries` pointer row (`entry_type: 'log_meta'`, `data: {"mongo_id": "..."}`) to D1 → 200. On Mongo write failure → enqueue to `polaris-journal-retry` → 202, D1 pointer row is **not** written yet (it can't be, you don't have the Mongo `_id`) — the Queue consumer must write both the Mongo document *and* the D1 pointer row on successful retry. This two-write coordination on the retry path isn't fully spelled out in the docs either — work through it with me before implementing, since getting the pointer-row timing wrong breaks the "seam" MongoDB Schema S2 describes.
 6. Queue consumer (`queue` export in the same Worker) per ADR 001 S5.5 steps 4–5, retries with backoff, dead-letter queue is inspected manually (no code needed for that part).
 
-### Frontend
+### Frontend 
 
 1. `LogWidget.svelte` — text entry + history list.
 2. Add it to the Workspace palette (now un-stub it from Slice 8).
@@ -439,16 +439,16 @@ This is the one slice that touches infrastructure not yet exercised (Mongo drive
 
 ### Definition of Done
 
-- [ ] Direct-write happy path unit-tested with a mocked driver.
-- [ ] Manual verification of the retry path documented in the PR description (screenshot or `wrangler tail` log excerpt) — this is explicitly one of the few things the test suite can't cover per `testing-strategy.md` S6.
-- [ ] `[mongo]`-tagged log lines present per `observability.md` S3.3.
-- [ ] Update `api-routes.md` with the Log widget route contract you and I settle on — this is a real gap in the current doc, closing it satisfies Definition of Done S6/S7 (cross-doc consistency).
+- [x] Direct-write happy path unit-tested with a mocked driver.
+- [x] Manual verification of the retry path documented in the PR description (screenshot or `wrangler tail` log excerpt) — this is explicitly one of the few things the test suite can't cover per `testing-strategy.md` S6.
+- [x] `[mongo]`-tagged log lines present per `observability.md` S3.3.
+- [x] Update `api-routes.md` with the Log widget route contract you and I settle on — this is a real gap in the current doc, closing it satisfies Definition of Done S6/S7 (cross-doc consistency).
 
-**PR:** `feat/journal-widget-mongo` → `main`.
-
+**PR:** `feat/journal-widget-mongo` → `main`. -->
+ 
 ---
 
-## Slice 10 — Reviews (per-System) + Review Day
+<!-- ## Slice 10 — Reviews (per-System) + Review Day
 
 **Branch:** `feat/reviews`
 **Docs:** PRD S5.7, S6.4, D1 Schema S3.6, `api-routes.md` S8, `design-system/polaris/pages/per-system-review.md` and `review-day.md`.
@@ -478,15 +478,15 @@ This is the slice that "closes the loop" per the product's core thesis — don't
 
 ### Definition of Done
 
-- [ ] Write-back integration test passes.
-- [ ] 409 duplicate-period test passes.
-- [ ] `InstanceSummary` genuinely shared (not copy-pasted) between Review Day and the per-system form — check this in your own PR before asking me to review.
-- [ ] E2E flow #6 passes.
+- [x] Write-back integration test passes.
+- [x] 409 duplicate-period test passes.
+- [x] `InstanceSummary` genuinely shared (not copy-pasted) between Review Day and the per-system form — check this in your own PR before asking me to review.
+- [x] E2E flow #6 passes.
 
-**PR:** `feat/reviews` → `main`.
+**PR:** `feat/reviews` → `main`. -->
 
 ---
-
+<!-- 
 ## Slice 11 — Frontend Polish Pass
 
 **Branch:** `feat/ui-polish`
@@ -513,11 +513,11 @@ By now every P0 route exists functionally but was built slice-by-slice with plac
 - [ ] Manual pass at all 3 breakpoints for every P0 page.
 - [ ] `prefers-reduced-motion` respected (checklist item, easy to skip — verify explicitly).
 
-**PR:** `feat/ui-polish` → `main`.
+**PR:** `feat/ui-polish` → `main`. -->
 
 ---
 
-## Slice 12 — CI/CD Pipeline
+<!-- ## Slice 12 — CI/CD Pipeline
 
 **Branch:** `chore/cicd`
 **Docs:** `cicd-deploy.md` (full doc — this is the first time you're implementing what that doc specifies).
@@ -535,10 +535,10 @@ By now every P0 route exists functionally but was built slice-by-slice with plac
 - [ ] Manual first deploy succeeded and was verified against the live URL (S9.1's exact verification step: sign up, create a system, see it on the dashboard).
 - [ ] Deploy job in CI ran successfully at least once on `main`.
 
-**PR:** `chore/cicd` → `main`. (This one deploys as part of merging — treat the merge itself as the release event.)
+**PR:** `chore/cicd` → `main`. (This one deploys as part of merging — treat the merge itself as the release event.) -->
 
 ---
-
+<!-- 
 ## Slice 13 — Definition-of-Done / Security / Disaster-Recovery Sweep
 
 **Branch:** `chore/p0-hardening`
@@ -560,7 +560,7 @@ This is the "is P0 actually done" gate before you consider starting P1 (template
 - [ ] First production D1 backup exists in `polaris-backups`.
 - [ ] Dependabot alerts on.
 
-**PR:** `chore/p0-hardening` → `main`. **P0 is complete once this merges.**
+**PR:** `chore/p0-hardening` → `main`. **P0 is complete once this merges.** -->
 
 ---
 

@@ -5,9 +5,9 @@
 **Document type:** Frontend architecture -- the page tree, auth guard, store design, component hierarchy, and navigation model for `packages/web`. Companion to the [API Route Design](api-routes.md) (owns every endpoint this frontend calls), [Auth Integration](auth-integration.md) (owns `authClient`/session primitives this document consumes), and the [PRD](../PRD/PRD-systems-app.md) (owns the user flows this route tree implements).
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Current
+**Implementation status:** Current (S2–S11 live)
 
-**Last updated:** July 15, 2026
+**Last updated:** July 22, 2026
 
 ---
 
@@ -242,16 +242,16 @@ No chrome, no auth check. The landing page is always reachable.
 </main>
 ```
 
-The NavBar is the app's primary navigation. It renders the following items:
+The NavBar renders as a floating pill on mobile (`bg-surface/70 backdrop-blur-xl rounded-full` with a bottom offset via `pb-[calc(56px+1.5rem)]` on `<main>`) and expands to a sidebar at `xl:` breakpoint. It renders the following items:
 
-| Tab | Route | Shown when |
-|---|---|---|
-| Dashboard | `/dashboard` | Always, default active |
-| Guides | `/guides` | Always, highlighted on first visit post-signup |
-| Review Day | `/review-day` | Always, with a badge if any system is due |
-| Systems | `/systems` | Always |
+| Tab | Icon | Route | Shown when |
+|---|---|---|---|---|
+| Dashboard | `LayoutDashboard` | `/dashboard` | Always, default active |
+| Guides | `BookOpen` | `/guides` | Always, highlighted on first visit post-signup |
+| Review Day | `ClipboardCheck` | `/review-day` | Always, with a badge if any system is due |
+| Systems | `Cog` | `/systems` | Always |
 
-The NavBar also shows the user's name/email (from `session.user`) and a sign-out button that calls `authClient.signOut()` and navigates to `/`.
+The NavBar uses Lucide Svelte icons (imported as `ComponentType` from `@lucide/svelte/icons/*`), shows the user's name/email (from `session.user`), and a sign-out button that calls `authClient.signOut()` and navigates to `/`. At `xl:` the pill expands into a full sidebar with icon+label rows and the sign-out action at the bottom.
 
 `<ToastContainer>` is mounted here -- the one place in the app where `toastStore.items` is rendered (S5.4). No page below `(app)/` re-declares it.
 
@@ -357,20 +357,34 @@ Scoped to the Workspace Builder page only -- instantiated fresh per visit, not a
 
 ```typescript
 // packages/web/src/lib/stores/toast.svelte.ts
-class ToastStore {
-  items = $state<{ id: string; type: 'error' | 'info'; message: string }[]>([]);
+export type ToastType = 'error' | 'info' | 'success';
 
-  push(item: { type: 'error' | 'info'; message: string }) {
+export interface ToastItem {
+  id: string;
+  type: ToastType;
+  message: string;
+}
+
+class ToastStore {
+  items = $state<ToastItem[]>([]);
+
+  push(item: { type: ToastType; message: string }) {
     const id = crypto.randomUUID();
     this.items = [...this.items, { id, ...item }];
     setTimeout(() => {
       this.items = this.items.filter(i => i.id !== id);
     }, 4000);
   }
+
+  dismiss(id: string) {
+    this.items = this.items.filter(i => i.id !== id);
+  }
 }
 
 export const toastStore = new ToastStore();
 ```
+
+`dismiss(id)` is called by the `<ToastContainer>` dismiss button. The component renders each item with a `fly` transition (200ms) and a close button.
 
 The single consumer of every API error across the app (S6). Rendered by `<ToastContainer>` in the app layout (S4).
 
@@ -463,7 +477,21 @@ One file per resource group, mirroring API Route Design's section numbering, so 
 
 ## 7. Component Hierarchy Per Page
 
-Only pages with non-trivial composition are broken down -- simple pages (Guides, marketing landing page, sign-up/login forms) are single-component and don't need a hierarchy diagram.
+Only pages with non-trivial composition are broken down -- simple pages (marketing landing page, sign-up/login forms) are single-component and don't need a hierarchy diagram.
+
+### 7.0 Guides (`(app)/guides/+page.svelte`)
+
+```
++page.svelte
+├── 3 guide cards with blush-numbered badges (1/2/3)
+│   ├── "Set up your first system"
+│   ├── "Do your first review"
+│   └── "Track your progress"
+├── Quick-start CTA (gradient button linking to /systems/new)
+└── cascading `fly` transition at 400ms stagger
+```
+
+A single-component page with three guide cards describing the core product loop. Each card has a blush-numbered badge, a description with detail bullets, and inline links. Below the cards is a gradient CTA button ("Create your first system") that navigates to `/systems/new`.
 
 ### 7.1 Dashboard (`(app)/dashboard/+page.svelte`)
 

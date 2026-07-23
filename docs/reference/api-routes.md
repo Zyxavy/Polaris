@@ -6,9 +6,9 @@
 
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Partially Implemented (S2–S8 live; S9–S10 planned)
+**Implementation status:** Partially Implemented (S2–S8 live; S9 Attachments, S10 AI Assist, S11 Workspace Templates are P1 — not yet implemented)
 
-**Last updated:** July 15, 2026
+**Last updated:** July 22, 2026
 
 ---
 
@@ -436,7 +436,36 @@ Response 200: same shape, or 404 if the checklist hasn't been touched for this i
 
 `PUT` here too, same reasoning as the Workspace layout -- the client always sends the complete current step list, not a single-step toggle, since a `widget_entries` row is replaced wholesale rather than patched (D1 Schema S3.3.1 stores it as one JSON blob per instance+widget, not one row per step). No `DELETE` for Checklist specifically: correcting a mis-checked step is already a `PUT` with the corrected `steps` array, so a separate delete path would be redundant rather than a missing capability.
 
-### 6.4 Link List
+### 6.4 Log / Journal entries
+
+MongoDB-backed, using the D1 `widget_entries` row as a pointer (`entry_type = 'log_meta'`, `data = {"mongo_id": "..."}`) rather than holding the text itself — see ADR 003 S2 for the seam design.
+
+```
+POST /api/instances/:instance_id/journal_log/:widget_id
+Request body: { "text": "Finished chapter 3. Slower going than expected." }
+Response 201: { "entry_id": "...", "created_at": "..." }
+Response 202: { "entry_id": "...", "status": "pending" }   -- Mongo down, queued for retry
+Response 400: { "error": "invalid_input", "message": "text must be a non-empty string." }
+```
+
+The happy path (`201`) means both the Mongo document and the D1 pointer row were written synchronously. The `202` retry path means the direct Mongo write failed, the entry was enqueued to `polaris-journal-retry`, and the frontend should treat the entry as accepted but pending — it will appear once the Queue consumer retries successfully. The frontend does not poll for resolution in v1; the entry becomes visible on next full page load or workspace re-fetch.
+
+```
+GET /api/instances/:instance_id/journal_log/:widget_id?cursor=&limit=
+Response 200:
+{
+  "entries": [
+    { "entry_id": "...", "text": "...", "created_at": "..." }
+  ],
+  "next_cursor": "..."     // null when this page is the last one
+}
+```
+
+Cursor-based pagination (S1.6), sorted by `{created_at: -1, _id: -1}` (newest first). No `DELETE` endpoint in v1 — journal entries are append-only immutable records (ADR 003 S7).
+
+Ownership-scoped via `instance_id -> system_id -> user_id` (POST) and via the same join chain (GET). The `widget_id` is a soft reference into the workspace layout, matching the same non-FK pattern used by all other widget routes.
+
+### 6.5 Link List
 
 ```
 PUT /api/workspaces/:workspace_id/link-list/:widget_id
@@ -451,7 +480,7 @@ Response 200: same shape, or 404 if untouched (frontend renders empty list)
 complete link list, not a single add/remove diff. Ownership-scoped via
 `workspace_id -> system_id -> user_id`.
 
-### 6.5 Notes
+### 6.6 Notes
 
 ```
 PUT /api/workspaces/:workspace_id/notes/:widget_id
@@ -625,6 +654,8 @@ Already fully specified in the [AI Workers reference](ai-workers.md) S5 (`POST /
 | `DELETE` | `/api/timer-sessions/:id` | ownership-scoped | |
 | `PUT` | `/api/instances/:instance_id/checklist/:widget_id` | ownership-scoped | |
 | `GET` | `/api/instances/:instance_id/checklist/:widget_id` | ownership-scoped | |
+| `POST` | `/api/instances/:instance_id/journal_log/:widget_id` | ownership-scoped | MongoDB-backed; `201` direct or `202` queued retry |
+| `GET` | `/api/instances/:instance_id/journal_log/:widget_id` | ownership-scoped | cursor-paginated, newest-first |
 | `PUT` | `/api/workspaces/:workspace_id/link-list/:widget_id` | ownership-scoped | |
 | `GET` | `/api/workspaces/:workspace_id/link-list/:widget_id` | ownership-scoped | |
 | `PUT` | `/api/workspaces/:workspace_id/notes/:widget_id` | ownership-scoped | |

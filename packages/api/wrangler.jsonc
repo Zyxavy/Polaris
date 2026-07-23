@@ -2,11 +2,37 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "polaris-api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-06-30",
+  "compatibility_date": "2026-07-07",
   "compatibility_flags": ["nodejs_compat"],
+
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+  },
 
   "triggers": {
     "crons": ["0 15 * * *"]
+  },
+
+  "queues": {
+    "producers": [
+      {
+        "binding": "JOURNAL_RETRY_QUEUE",
+        "queue": "polaris-journal-retry"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "polaris-journal-retry",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5
+      }
+    ]
+  },
+
+  "vars": {
+    "MONGODB_URI": "mongodb://localhost:27017/polaris"
   },
 
   "d1_databases": [
@@ -26,6 +52,17 @@
 
   "env": {
     "production": {
+      "queues": {
+        "producers": [
+          { "binding": "JOURNAL_RETRY_QUEUE", "queue": "polaris-journal-retry" }
+        ],
+        "consumers": [
+          { "queue": "polaris-journal-retry", "max_batch_size": 10, "max_batch_timeout": 5 }
+        ]
+      },
+      "r2_buckets": [
+        { "bucket_name": "polaris-attachments", "binding": "ATTACHMENTS" }
+      ],
       "d1_databases": [
         {
           "binding": "DB",

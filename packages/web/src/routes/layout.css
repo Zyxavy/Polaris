@@ -3,31 +3,37 @@
 @plugin '@tailwindcss/typography';
 
 @variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@variant motion-safe (&:where([data-reduced-motion="false"], [data-reduced-motion="false"] *));
+@variant motion-reduce (&:where([data-reduced-motion="true"], [data-reduced-motion="true"] *));
 
 @theme {
-  --color-surface: #e9e4d7;
-  --color-surface-container-low: #DDD5C3;
-  --color-surface-container-lowest: #F4F0E6;
-  --color-on-surface: #191c18;
-  --color-primary: #55624d;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #98a68e;
-  --color-secondary: #755754;
-  --color-blush: #fed7d2;
-  --color-muted: rgba(25, 28, 24, 0.04);
-  --color-muted-foreground: #6B6B6B;
-  --color-border: rgba(25, 28, 24, 0.12);
-  --color-outline-variant: #c5c8be;
+  --color-surface: #ece2d0;
+  --color-surface-container-low: #cebebe;
+  --color-surface-container-lowest: #f5efe3;
+  --color-on-surface: #020202;
+  --color-primary: #503b31;
+  --color-on-primary: #ece2d0;
+  --color-primary-container: #705d56;
+  --color-secondary: #705d56;
+  --color-blush: #cebebe;
+  --color-muted: rgba(2, 2, 2, 0.04);
+  --color-muted-foreground: #705d56;
+  --color-border: rgba(2, 2, 2, 0.12);
+  --color-outline-variant: #cebebe;
   --color-destructive: #C24545;
-  --color-ring: #55624d;
+  --color-ring: #503b31;
 
   --font-display: 'Manrope', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
 
-  --shadow-ambient-sm: 0 2px 8px rgba(85, 98, 77, 0.04);
-  --shadow-ambient-md: 0 8px 24px rgba(85, 98, 77, 0.05);
-  --shadow-ambient-lg: 0 16px 40px rgba(85, 98, 77, 0.06);
-  --shadow-ambient-xl: 0 24px 60px rgba(85, 98, 77, 0.07);
+  --shadow-ambient-sm: 0 2px 8px rgba(80, 59, 49, 0.04);
+  --shadow-ambient-md: 0 8px 24px rgba(80, 59, 49, 0.05);
+  --shadow-ambient-lg: 0 16px 40px rgba(80, 59, 49, 0.06);
+  --shadow-ambient-xl: 0 24px 60px rgba(80, 59, 49, 0.07);
+
+  --nav-height-mobile: 64px;
+  --nav-height-desktop: 0px;
+  --nav-bottom-offset: calc(56px + 1.5rem);
 }
 
 @keyframes skeleton-pulse {
@@ -42,21 +48,21 @@
 }
 
 [data-theme="dark"] {
-  --color-surface: #101519;
-  --color-surface-container-low: #1A1F24;
-  --color-surface-container-lowest: #22282E;
-  --color-on-surface: #D1CFC0;
-  --color-primary: #8FA88A;
-  --color-on-primary: #101519;
-  --color-primary-container: #6B7D65;
-  --color-secondary: #A08684;
-  --color-blush: #D6A09B;
-  --color-muted: rgba(255, 255, 255, 0.04);
-  --color-muted-foreground: #9B9B8E;
-  --color-border: rgba(209, 207, 192, 0.10);
-  --color-outline-variant: #4A4D46;
+  --color-surface: #020202;
+  --color-surface-container-low: #503b31;
+  --color-surface-container-lowest: #705d56;
+  --color-on-surface: #ece2d0;
+  --color-primary: #cebebe;
+  --color-on-primary: #020202;
+  --color-primary-container: #503b31;
+  --color-secondary: #cebebe;
+  --color-blush: #705d56;
+  --color-muted: rgba(236, 226, 208, 0.04);
+  --color-muted-foreground: #cebebe;
+  --color-border: rgba(236, 226, 208, 0.10);
+  --color-outline-variant: #503b31;
   --color-destructive: #E07070;
-  --color-ring: #8FA88A;
+  --color-ring: #cebebe;
   --shadow-ambient-sm: 0 2px 8px rgba(0,0,0,0);
   --shadow-ambient-md: 0 8px 24px rgba(0,0,0,0);
   --shadow-ambient-lg: 0 16px 40px rgba(0,0,0,0);
