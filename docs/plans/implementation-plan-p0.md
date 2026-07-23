@@ -538,7 +538,7 @@ By now every P0 route exists functionally but was built slice-by-slice with plac
 **PR:** `chore/cicd` → `main`. (This one deploys as part of merging — treat the merge itself as the release event.) -->
 
 ---
-
+<!-- 
 ## Slice 13 — Definition-of-Done / Security / Disaster-Recovery Sweep
 
 **Branch:** `chore/p0-hardening`
@@ -560,7 +560,7 @@ This is the "is P0 actually done" gate before you consider starting P1 (template
 - [ ] First production D1 backup exists in `polaris-backups`.
 - [ ] Dependabot alerts on.
 
-**PR:** `chore/p0-hardening` → `main`. **P0 is complete once this merges.**
+**PR:** `chore/p0-hardening` → `main`. **P0 is complete once this merges.** -->
 
 ---
 
