@@ -31,8 +31,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "paragon-db-dev",
-      "database_id": "bd7d9f42-2c4a-442c-9fd0-a53ded81cc6c"
+      "database_name": "paragon-db",
+      "database_id": "fe4d1263-fbfc-4986-afd1-982e0533c200"
     }
   ],
 
@@ -41,25 +41,5 @@
       "bucket_name": "paragon-attachments",
       "binding": "ATTACHMENTS"
     }
-  ],
-
-  "env": {
-    "production": {
-      "queues": {
-        "producers": [
-          { "binding": "JOURNAL_RETRY_QUEUE", "queue": "paragon-journal-retry" }
-        ]
-      },
-      "r2_buckets": [
-        { "bucket_name": "paragon-attachments", "binding": "ATTACHMENTS" }
-      ],
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "paragon-db",
-          "database_id": "6072aa3b-6fad-48a4-b2d6-72eaaaef6a3e"
-        }
-      ]
-    }
-  }
+  ]
 }

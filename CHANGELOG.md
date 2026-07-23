@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Project Rename: Polaris → Paragon
+
+- Renamed every reference across code, infra, docs, and design system: `polaris-` worker/D1/R2/queue names → `paragon-`, `POLARIS-` recovery codes → `PARAGON-`, `Polaris` project name → `Paragon`
+- Created new Cloudflare resources: `paragon-db-dev`, `paragon-db`, `paragon-attachments`, `paragon-backups`, `paragon-journal-retry`
+- Simplified API Worker to single-instance deployment (removed `env.production` block, no more `--env production` flag)
+- Remaining: delete old `polaris-*` Cloudflare resources after confirming new deployment is stable
+
 ### MVP Milestone: P0 Complete
 
 All 14 slices of the P0 scope are implemented. The core product loop (sign-up → create system → schedule → daily dashboard → review → write-back) works end-to-end with CI, deployment, and a first security/disaster-recovery sweep complete. P1 work (templates, AI, remaining widgets, attachments) begins next.

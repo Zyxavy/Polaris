@@ -33,9 +33,9 @@ This is a runbook for personal app. Consistent with the proportionality principl
 **Command:**
 
 ```bash
-wrangler d1 export paragon-db --remote --output=backups/Paragon-db-$(date -I).sql
-wrangler r2 object put paragon-backups/$(date -I).sql --file=backups/Paragon-db-$(date -I).sql
-rm backups/Paragon-db-$(date -I).sql   # don't keep local copies lying around after upload
+wrangler d1 export paragon-db --remote --output=backups/paragon-db-$(date -I).sql
+wrangler r2 object put paragon-backups/$(date -I).sql --file=backups/paragon-db-$(date -I).sql
+rm backups/paragon-db-$(date -I).sql   # don't keep local copies lying around after upload
 ```
 
 This exports the full D1 database as a `.sql` file and uploads it into a dedicated R2 bucket (`paragon-backups` -- create this once via `wrangler r2 bucket create paragon-backups`, separate from the `paragon-attachments` bucket per ADR 001 S5.7, so backup retention/cleanup never risks touching live attachment data).

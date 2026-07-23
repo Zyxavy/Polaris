@@ -33,18 +33,18 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
 
 | Variable | Package | Dev | Production | Secret? |
 |---|---|---|---|---|
-| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://Paragon-api-production.kelpselp.workers.dev` | No |
+| `VITE_API_BASE_URL` | `web` | `''` (empty -- same-origin via Vite proxy) | `https://paragon-api.kelpselp.workers.dev` | No |
 | `ENVIRONMENT` | `api` | `development` | `production` | No |
 | `BETTER_AUTH_SECRET` | `api` | Auto-generated dev secret | Generated secret, stored in `wrangler secret` | Yes |
-| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://Paragon-api-production.kelpselp.workers.dev` | No |
-| `MONGODB_URI` | `api` | `mongodb://localhost:27017/Paragon` (local Mongo) | Atlas connection string, stored in `wrangler secret` | Yes |
+| `BETTER_AUTH_URL` | `api` | `http://localhost:8787` | `https://paragon-api.kelpselp.workers.dev` | No |
+| `MONGODB_URI` | `api` | `mongodb://localhost:27017/paragon` (local Mongo) | Atlas connection string, stored in `wrangler secret` | Yes |
 
 ### 2.2 `wrangler.jsonc` -- `packages/api/`
 
 ```jsonc
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "Paragon-api",
+  "name": "paragon-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-07",
   "compatibility_flags": ["nodejs_compat"],
@@ -69,13 +69,13 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
   },
 
   "vars": {
-    "MONGODB_URI": "mongodb://localhost:27017/Paragon"   // dev only; production set via wrangler secret
+    "MONGODB_URI": "mongodb://localhost:27017/paragon"   // dev only; production set via wrangler secret
   },
 
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "paragon-db-dev",
+      "database_name": "paragon-db",
       "database_id": "bd7d9f42-2c4a-442c-9fd0-a53ded81cc6c"
     }
   ],
@@ -100,11 +100,11 @@ Both artifacts are built and tested in parallel via CI's package matrix (S4) bef
 
 **Secrets:** `BETTER_AUTH_SECRET` and `MONGODB_URI` (production) are NOT in `wrangler.jsonc` -- they are set via `wrangler secret put` and accessed via `env.BETTER_AUTH_SECRET` / `env.MONGODB_URI` at runtime. This keeps them out of version control.
 
-**Deploy with `--env production`** to use the production D1 database (`paragon-db`). Without the flag, the root config's dev database is used. Example:
+**Deploy with ``** to use the production D1 database (`paragon-db`). Without the flag, the root config's dev database is used. Example:
 ```bash
 cd packages/api
-wrangler d1 migrations apply DB --remote --env production
-wrangler deploy --env production
+wrangler d1 migrations apply DB --remote
+wrangler deploy
 ```
 
 ### 2.3 `wrangler.jsonc` -- `packages/web/`
@@ -127,7 +127,7 @@ Uses the modern Workers Static Assets pattern. No Worker script is needed -- the
 
 ```env
 # packages/web/.env.production
-VITE_API_BASE_URL=https://Paragon-api-production.kelpselp.workers.dev
+VITE_API_BASE_URL=https://paragon-api.kelpselp.workers.dev
 ```
 
 For local development, `packages/web/.env.development` keeps `VITE_API_BASE_URL` empty so API calls use the Vite proxy (`localhost:5173/api` → `localhost:8787`).
@@ -201,7 +201,7 @@ Each package has its own scripts in its `package.json`:
 
 Running `pnpm -r deploy` from the root runs both in workspace order (api first, web second) because pnpm respects the dependency graph: `web` depends on `api` (for types), so pnpm runs `api`'s deploy first.
 
-**Note:** The `deploy` script for both packages runs migrations (api) or the full build (web). The `deploy:api` and `deploy:web` root scripts are lower-level for targeted manual deploys (e.g., `pnpm deploy:api -- --env production`).
+**Note:** The `deploy` script for both packages runs migrations (api) or the full build (web). The `deploy:api` and `deploy:web` root scripts are lower-level for targeted manual deploys (e.g., `pnpm deploy:api --`).
 
 ### 3.2 Day-to-day manual deploy (fallback, pre-CI or local verification)
 
@@ -344,13 +344,13 @@ jobs:
 
       - name: Apply D1 migrations
         working-directory: packages/api
-        run: pnpm exec wrangler d1 migrations apply DB --remote --env production
+        run: pnpm exec wrangler d1 migrations apply DB --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Deploy API Worker
         working-directory: packages/api
-        run: pnpm exec wrangler deploy --env production
+        run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
@@ -379,9 +379,9 @@ jobs:
 | Environment | API URL | Web URL |
 |---|---|---|
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
-| Production | `https://Paragon-api-production.kelpselp.workers.dev` | `https://paragon.kelpselp.workers.dev` |
+| Production | `https://paragon-api.kelpselp.workers.dev` | `https://paragon.kelpselp.workers.dev` |
 
-These URLs are determined by the `name` field in each `wrangler.jsonc` (`Paragon-api` and `Paragon` substituted with the actual account subdomain `kelpselp`).
+These URLs are determined by the `name` field in each `wrangler.jsonc` (`paragon-api` and `paragon` substituted with the actual account subdomain `kelpselp`).
 
 ---
 
@@ -454,7 +454,7 @@ These are stored in Cloudflare's secrets store, not in `.env` files or `wrangler
 ### 9.1 First-time setup (manual, once)
 
 - [x] Cloudflare account created
-- [x] D1 databases created (`wrangler d1 create paragon-db-dev`, `paragon-db`)
+- [x] D1 databases created (`wrangler d1 create paragon-db`, `paragon-db`)
 - [x] R2 bucket created (`wrangler r2 bucket create paragon-attachments`)
 - [x] Queue created (`wrangler queues create paragon-journal-retry`)
 - [x] Secrets set locally (`wrangler secret put BETTER_AUTH_SECRET`, `MONGODB_URI`)

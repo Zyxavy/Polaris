@@ -1,8 +1,8 @@
 # Paragon
 
-Build systems that survive your worst days. Log daily. Review weekly.
+*Repetition is the mother of learning, the father of action, which makes it the architect of accomplishment*
 
-A personal systems design web app. The unit of the product is the *system*: a defined protocol with a floor action, a schedule, a dedicated workspace, and a recurring review loop that feeds changes back into the design.
+Build systems that survive your worst days. Log daily. Review weekly.
 
 **Implementation status:** Current
 

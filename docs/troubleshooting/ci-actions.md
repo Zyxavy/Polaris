@@ -69,17 +69,17 @@ CI runs `pnpm -r build` before the e2e job, but `playwright.config.ts` also ran 
 
 ### 9. `VITE_API_BASE_URL` not set during CI web build
 
-E2E tests built the web bundle without `VITE_API_BASE_URL` set. Vite baked the value from `.env.production` (`https://Paragon-api-production.kelpselp.workers.dev`) instead of the local API worker (`http://localhost:8787`). All API calls from the test app went to the production URL or fell back to same-origin, causing every e2e test to fail.
+E2E tests built the web bundle without `VITE_API_BASE_URL` set. Vite baked the value from `.env.production` (`https://paragon-api.kelpselp.workers.dev`) instead of the local API worker (`http://localhost:8787`). All API calls from the test app went to the production URL or fell back to same-origin, causing every e2e test to fail.
 
 The CI workflow set the env var on the `test:e2e` step, but Vite reads `VITE_*` vars at build time, not at runtime. The build ran in a separate step without the env var.
 
 **Fix:** Moved `VITE_API_BASE_URL: "http://localhost:8787"` to the `pnpm -r build` step so Vite bakes the correct localhost URL into the bundle at build time.
 
-### 10. Deploy job missing `--env production`
+### 10. Deploy job missing ``
 
-The CI deploy job ran `wrangler deploy` without `--env production`, targeting the default (dev) environment and dev D1 database (`paragon-db-dev`). Production must use `--env production` to use `paragon-db`.
+The CI deploy job ran `wrangler deploy` without ``, targeting the default (dev) environment and dev D1 database (`paragon-db`). Production must use `` to use `paragon-db`.
 
-**Fix:** Added `--env production` to both the D1 migration command (`wrangler d1 migrations apply DB --remote --env production`) and the API deploy command (`wrangler deploy --env production`) in the CI workflow.
+**Fix:** Added `` to both the D1 migration command (`wrangler d1 migrations apply DB --remote `) and the API deploy command (`wrangler deploy `) in the CI workflow.
 
 ## E2E Test Failures
 
@@ -152,7 +152,7 @@ Test files (`__tests__/*.ts`) use `any` extensively for mock responses and dynam
 ### 19. Queue consumer registration fails during deploy
 
 ```
-✘ [ERROR] Some triggers failed to deploy for Paragon-api-production:
+✘ [ERROR] Some triggers failed to deploy for paragon-api:
     - A request to the Cloudflare API (/accounts/.../queues/...) failed.
 ```
 
@@ -163,7 +163,7 @@ The `consumers` block in `wrangler.jsonc` queues config tells wrangler to regist
 **Fix:** Remove the `consumers` block from `wrangler.jsonc` (both top-level and `env.production`) so the deploy doesn't try to register it. Register the consumer manually after deploy:
 
 ```bash
-wrangler queues consumer add paragon-journal-retry --script Paragon-api-production --env production
+wrangler queues consumer add paragon-journal-retry --script paragon-api 
 ```
 
 ### 20. Deploy job runs on fresh runner — no build artifacts
@@ -180,7 +180,7 @@ GitHub Actions jobs run on isolated VMs. The `test` job (which runs `pnpm --filt
 ```yaml
 - run: pnpm -r build
   env:
-    VITE_API_BASE_URL: "https://Paragon-api-production.kelpselp.workers.dev"
+    VITE_API_BASE_URL: "https://paragon-api.kelpselp.workers.dev"
 - name: Deploy Web static assets
   working-directory: packages/web
   run: pnpm exec wrangler deploy
@@ -193,7 +193,7 @@ GitHub Actions jobs run on isolated VMs. The `test` job (which runs `pnpm --filt
   This deployment will replace the remote secret with your environment variable.
 ```
 
-Setting `vars.MONGODB_URI` in `env.production` of `wrangler.jsonc` (git-tracked) replaces the secret set via `wrangler secret put MONGODB_URI --env production`. The Worker connects to the dev `localhost` URI instead of the production MongoDB Atlas URI.
+Setting `vars.MONGODB_URI` in `env.production` of `wrangler.jsonc` (git-tracked) replaces the secret set via `wrangler secret put MONGODB_URI `. The Worker connects to the dev `localhost` URI instead of the production MongoDB Atlas URI.
 
 **Fix:** Remove the `vars` block from `env.production` entirely. Secrets set via `wrangler secret put` take precedence over `vars` at runtime and can be scoped per environment. The dev URI stays in the top-level `vars` for local development.
 

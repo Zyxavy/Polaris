@@ -143,7 +143,7 @@ ADR 001 S8's open risk table flags "Better Auth CSRF blocks Vite proxy in dev" w
 import { createAuthClient } from 'better-auth/svelte';
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_API_BASE_URL,   // e.g. https://Paragon-api.kelpselp.workers.dev in prod, proxied path in dev
+  baseURL: import.meta.env.VITE_API_BASE_URL,   // e.g. https://paragon-api.kelpselp.workers.dev in prod, proxied path in dev
 });
 
 export const { useSession, signIn, signOut, signUp } = authClient;
@@ -235,7 +235,7 @@ CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 
 **Settings display:**
 
-`GET /api/recovery-codes` (authenticated) returns all unused codes for the user. Settings page renders them with a hide/show toggle (toggles between `Paragon-****-****` and the full plaintext). A "Regenerate" button calls `POST /api/recovery-codes/generate` again.
+`GET /api/recovery-codes` (authenticated) returns all unused codes for the user. Settings page renders them with a hide/show toggle (toggles between `PARAGON-****-****` and the full plaintext). A "Regenerate" button calls `POST /api/recovery-codes/generate` again.
 
 **Recovery route (`POST /api/auth/recover`):**
 
