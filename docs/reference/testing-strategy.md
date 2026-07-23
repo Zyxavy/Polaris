@@ -333,9 +333,9 @@ The service function accepts `D1Database` as a parameter -- it's tested with rea
 **Rule 3: Frontend service modules always.**
 
 ```typescript
-// packages/web/src/lib/services/systems.ts
-import { apiFetch } from '$lib/api';
-import type { System } from '$lib/types';
+// packages/web/src/lib/api/systems.ts
+import { apiFetch } from '$lib/api/client';
+import type { System } from './systems';
 
 export async function getSystems(status?: string): Promise<System[]> {
   const params = status ? `?status=${status}` : '';
@@ -348,7 +348,7 @@ export async function createSystem(input: CreateSystemInput): Promise<System> {
 }
 ```
 
-Components import from `$lib/services/systems`, never from `$lib/api` directly. In tests, `vi.mock('$lib/services/systems')` replaces the module with stubs -- no fetch mocking, no Miniflare, no network.
+Components import from `$lib/api/systems`, never from `$lib/api/client` directly. In tests, `vi.mock('$lib/api/systems')` replaces the module with stubs -- no fetch mocking, no Miniflare, no network.
 
 ### 7.4 File structure summary
 

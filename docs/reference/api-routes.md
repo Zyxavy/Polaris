@@ -6,7 +6,7 @@
 
 **Status:** Draft -- v1 scope
 
-**Implementation status:** Partially Implemented (S2–S10 live)
+**Implementation status:** Partially Implemented (S2–S8 live; S9 Attachments, S10 AI Assist, S11 Workspace Templates are P1 — not yet implemented)
 
 **Last updated:** July 22, 2026
 

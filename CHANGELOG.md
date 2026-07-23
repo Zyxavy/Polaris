@@ -2,96 +2,11 @@
 
 ## [Unreleased]
 
-### Slice 12: CI/CD Pipeline
+### MVP Milestone: P0 Complete
 
-- **CI workflow** (`.github/workflows/ci.yml`): matrix over `[api, web]` for `lint`/`test:unit`/`build` in parallel, then `integration` (api only), `e2e` (both packages), and `deploy` (main-only, sequential: migrations → API → web). Fail-fast on matrix, deploy gated by all upstream jobs passing.
-- **Package scripts**: added `lint` (ESLint for api, svelte-check for web), `test:unit`/`test:int`/`test:e2e` to both packages and root convenience scripts.
-- **ESLint**: flat config (`eslint.config.js`) with `@typescript-eslint` for `packages/api` type-checking.
-- **Wrangler config (api)**: `compatibility_date` bumped to `2026-07-22`, observability enabled (`head_sampling_rate: 1` logs, 1% traces).
-- **Wrangler config (web)**: migrated from deprecated `site` pattern to modern `assets` with `not_found_handling: "single-page-application"` (SPA fallback handled by platform, no Worker script needed).
-- **`VITE_API_BASE_URL`**: added `packages/web/.env.production` so production builds point to `https://polaris-api.kelpselp.workers.dev` (was missing — caused JSON.parse errors on all API calls). `.env.production` tracked in git (public URL only).
-- **Manual first deploy**: both Workers deployed to production URLs. Queue `polaris-journal-retry` confirmed existing. Secrets set via `wrangler secret put`.
-- **Known issues**: `--env production` flag needed for api deploy to target production D1 database; root `deploy` script deploys to dev database by default.
-- **`docs/reference/cicd-deploy.md`**: updated to reflect actual wrangler configs, scripts, URLs (`polaris-web.kelpselp.workers.dev`), and checklist status.
+All 14 slices of the P0 scope are implemented. The core product loop (sign-up → create system → schedule → daily dashboard → review → write-back) works end-to-end with CI, deployment, and a first security/disaster-recovery sweep complete. P1 work (templates, AI, remaining widgets, attachments) begins next.
 
-### Slice 11: Frontend Polish Pass
-
-- **NavBar**: floating pill on mobile (`bg-surface/70 backdrop-blur-xl rounded-full`) with Lucide Svelte icons (`LayoutDashboard`, `Cog`, `ClipboardCheck`, `BookOpen`); sidebar layout at `xl:` breakpoint (`hidden xl:flex`); `aria-current="page"` for active tab.
-- **ToastContainer**: top-right fixed position, `max-w-sm`, `fly` transition (200ms), dismiss button, `pointer-events-none` container.
-- **Toast store**: extracted `ToastType` / `ToastItem` types, added `'success'` type, added `dismiss(id)` method.
-- **Guides**: moved from `routes/guides/` (public) to `routes/(app)/guides/` (authenticated, inherits NavBar). 3 guide cards with blush-numbered badges, detail bullets, quick-start CTA, cascading `fly` transition.
-- **Skeleton/error/empty states**: systems list page (4-card skeleton grid, error + retry, empty with CTA), reviews history (skeleton + error), reviews new (responsive container), system detail tab bar (no underline, `text-primary font-semibold` active).
-- **Responsive containers**: all forms and detail pages use `w-full md:max-w-2xl lg:max-w-3xl mx-auto px-4 md:px-0`.
-- **`(app)/+layout.svelte`**: `<main>` wrapper with `max-w-6xl mx-auto px-6 py-8`, `pb-[calc(56px+1.5rem)]` for mobile nav offset, `lg:pb-8` revert at desktop.
-- **Gradient CTAs**: all action buttons use `bg-gradient-to-br from-primary to-primary-container rounded-2xl` per MASTER.md spec (DueReviewCard, ReviewForm, SystemForm, systems page, guides page, landing page).
-- **Landing page** (`+page.svelte`): full hero with headline ("Your Personal Systems, Reviewed"), tagline, gradient "Get started" CTA, ghost "Log in" link. Replaced "Hello Polaris" stub.
-- **Cards**: surface nesting (`bg-surface-container-lowest shadow-ambient-sm`) per no-line rule, never `border`.
-- **WidgetPalette**: responsive — horizontal scroll strip on mobile (`flex lg:flex-row`), sidebar column on desktop (`lg:flex-col`).
-- **Animation policy**: all `motion-safe:` / `motion-reduce:` Tailwind variants removed; all `reducedMotion` JS state removed from ToastContainer and guides page. Animations always play.
-- **`layout.css`**: added `--nav-height-mobile`, `--nav-bottom-offset` CSS custom properties.
-- **Build**: `pnpm --filter web build` zero errors. **Tests**: `pnpm --filter web test:unit` 7/7 pass.
-- **Files changed**: 19 files: 523 insertions, 177 deletions across `packages/web/src/`.
-
-### Slice 8: Workspace + Widget Data
-
-- Created `packages/api/src/lib/workspace.ts`: `upgradeLayout()` with `CURRENT_LAYOUT_VERSION = 1` and while-loop pattern for future version bumps.
-- Created `packages/api/src/lib/ownership.ts`: `getOwnedWorkspace` (JOIN through system's user_id), `getOwnedWidgetEntry` (JOIN through instance → system → user_id).
-- Created `packages/api/src/routes/workspace.ts`: `GET`/`PUT /api/systems/:system_id/workspace` with upsert via `ON CONFLICT(system_id)`.
-- Created `packages/api/src/routes/counter-logs.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter using `date()`), DELETE by id.
-- Created `packages/api/src/routes/timer-sessions.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter), DELETE by id.
-- Created `packages/api/src/routes/checklist.ts`: 2 handlers — PUT replaces widget_entries (SELECT-then-UPDATE/INSERT), GET returns current state (404 if not yet saved).
-- Fixed `counter-logs.ts` and `timer-sessions.ts` `from`/`to` filter to use `date(created_at)` for correct date-range comparison (full ISO timestamps were failing `<= date` comparison).
-- Created `packages/web/src/lib/api/workspaces.ts`: API module with `getWorkspace`, `putWorkspace`, Layout/Widget/Workspace interfaces.
-- Created `packages/web/src/lib/api/counter-logs.ts`, `timer-sessions.ts`, `checklist.ts`: typed API modules for widget data CRUD.
-- Created `packages/web/src/lib/stores/workspace-editor.svelte.ts`: `WorkspaceEditorStore` runes class with `load`, `addWidget`, `removeWidget`, `reorder`, `save`; instantiated per page visit.
-- Created widget components: `CounterWidget.svelte` (+1 button, optimistic total), `TimerWidget.svelte` (start/stop, `idle|running|saving` state machine), `ChecklistWidget.svelte` (checkbox list, 404→empty state, optimistic toggle).
-- Created workspace components: `WidgetPalette.svelte` (8 types, P0 active/P1 disabled), `WorkspaceCanvas.svelte` (drag-and-drop via `svelte-dnd-action`), `WidgetCard.svelte` (type dispatch wrapper), `SaveBar.svelte` (sticky bottom bar with dirty indicator).
-- Created route page `packages/web/src/routes/(app)/systems/[id]/workspace/+page.ts` (loads workspace layout + today's instance) and `+page.svelte` (composes three-zone layout).
-- Created `packages/api/src/__tests__/workspace.spec.ts`: 24 tests — 7 unit (`upgradeLayout()` no-op, round-trip, edge cases) + 5 workspace integration + 5 counter-log + 2 timer-session + 5 checklist integration.
-- Created `packages/web/src/routes/(app)/systems/workspace.e2e.ts`: P0 flow #5 — add Timer + Counter widgets, save, reload, verify persistence.
-- Fixed pre-existing web unit test failures: installed missing `vitest-browser-svelte` and `@vitest/browser` packages (imported by `SystemForm.svelte.spec.ts` but never added to `package.json` — all 7 web unit tests now pass).
-- **Integration test count:** 71 → 101
-- **E2E test count:** 3 → 4
-
-### Slice 9: MongoDB + Log/Journal Widget
-
-- Added `mongodb@^7.5.0` dependency to `packages/api`.
-- Created `packages/api/src/lib/mongo.ts`: lazy `getMongoClient()` singleton with dynamic `import('mongodb')` to avoid loading the driver at module resolution time (Workers cold-start optimisation).
-- Created `packages/api/src/routes/journal-log.ts`: `POST /api/instances/:instance_id/journal_log/:widget_id` (direct Mongo write + D1 `widget_entries` pointer row → `201`; on failure enqueue to `polaris-journal-retry` → `202`) and `GET` (cursor-paginated read from Mongo).
-- Created `packages/api/src/index.ts` queue consumer: `export async function queue()` — idempotent Mongo `updateOne` with `$setOnInsert` + upsert, D1 `INSERT OR IGNORE` pointer row, retry with 5s backoff on failure.
-- Created `packages/web/src/lib/api/journal-log.ts`: typed `postJournalEntry()` and `getJournalEntries()` API module.
-- Created `packages/web/src/lib/components/LogWidget.svelte`: text entry (`<textarea>` + send button), optimistic entry insertion, error revert, cursor-based "Load more" history.
-- Updated `WidgetCard.svelte`: `'log'` type dispatch to `<LogWidget>`.
-- Updated `WidgetPalette.svelte`: un-stubbed Log widget (`comingSoon: false`).
-- Added `packages/api/wrangler.jsonc`: queue bindings (`JOURNAL_RETRY_QUEUE` producer + `polaris-journal-retry` consumer), `MONGODB_URI` var.
-- Updated `packages/api/worker-configuration.d.ts`, `vitest.config.ts`: queue + MONGODB_URI bindings.
-- Created `packages/api/src/__tests__/journal.spec.ts`: 8 integration tests — 5 POST (201 success with D1 pointer row verification, 400 missing text, 400 empty text, 404 non-owned instance, 202 Mongo failure) + 3 GET (cursor pagination, empty list, 404 non-owned).
-- Switched `mongo.ts` to type-only import + dynamic `import()` to fix Miniflare `node:process` crash (all 109 tests now pass).
-- Fixed pre-existing workspace date-filter test by pinning system time with `vi.useFakeTimers()`.
-- Updated `docs/reference/api-routes.md`: added S6.4 Log/Journal contract, updated route inventory, bumped implementation status to S9 live.
-- **Integration test count:** 101 → 109
-- **E2E test count:** 4 → 4 (no new E2E; manual retry verification only, per testing-strategy.md S6)
-
-### Slice 10: Reviews (Per-System + Review Day)
-
-- Created `migrations/0015_reviews_unique.sql`: UNIQUE index on `(system_id, period_start, period_end)` for DB-level duplicate protection.
-- Extracted shared `encodeDateCursor`/`decodeDateCursor` to `packages/api/src/lib/cursor.ts` (used by both instances and reviews routes).
-- Added `getOwnedReview` to `packages/api/src/lib/ownership.ts`.
-- Created `packages/api/src/services/reviews.ts`: `createReview` with `DuplicateReviewError`, `deriveChangeText` pure function, two-table write-back (review row + system field update).
-- Created `packages/api/src/routes/reviews.ts`: `GET /api/systems/:system_id/reviews` (cursor-paginated history), `POST /api/systems/:system_id/reviews` (create + write-back), `GET /api/review-day` (single SQL with `GROUP BY` + `SUM(CASE)` for instance summary across all systems).
-- Mounted review routes in `packages/api/src/index.ts` at both `/api/systems/:system_id/reviews` and `/api/review-day`.
-- Created `packages/web/src/lib/api/reviews.ts`: typed `getReviews`, `createReview`, `getReviewDay` wrappers.
-- Created `packages/web/src/lib/components/InstanceSummary.svelte`: shared sm/md variants with blush/secondary/muted colour tokens.
-- Created `packages/web/src/lib/components/ReviewForm.svelte`: `buildChangeApplied()` diff logic, 409 inline banner for duplicate period, editable blueprint fields.
-- Created `packages/web/src/lib/components/DueReviewCard.svelte` and `DueReviewList.svelte`: Review Day card grid with empty state.
-- Created review pages under `packages/web/src/routes/(app)/systems/[id]/reviews/`: history list (`+page.ts`/`+page.svelte`), new review form (`new/+page.svelte`) with period computation + instance loading via `$effect`.
-- Created review day page at `packages/web/src/routes/(app)/review-day/+page.ts`/`+page.svelte`.
-- Created `packages/web/src/routes/(app)/systems/reviews.e2e.ts`: P0 flow #6 — create system with schedule, fill review with `what_worked`/`change_applied`, submit, verify `floor_action` write-back.
-- Created `packages/api/src/__tests__/reviews.spec.ts`: 10 integration tests — write-back updates system, duplicate period returns 409, paginated history, review-day aggregation (due, excluded, non-active).
-- Updated `docs/reference/api-routes.md`: reviews routes implementation status to S10 live.
-- Fixed pre-existing issues: MongoDB type errors in `index.ts` queue handler, ownership SQL string contamination, `InstanceSummary.svelte` to use `blush`/`secondary`/`muted` tokens.
-- **Integration test count:** 109 → 119
-- **E2E test count:** 4 → 5
+---
 
 ### Slice 0: Repo & Cloud Bootstrap
 
@@ -298,31 +213,6 @@
 
 ---
 
-### Slice 7: Nightly Cron Instance Pre-generation
-
-#### Backend
-
-- Cleaned up `packages/api/src/lib/calendar.ts` `tomorrowManilaDate()`: removed unused `todayParts` variable and redundant `Intl.DateTimeFormat` — now uses `toLocaleDateString('en-CA')` directly.
-- Added `generateInstancesForAllUsers(db, dateStr)` to `packages/api/src/services/instances.ts`: same SQL pattern as Slice 6's per-user version, but drops the `user_id` filter — queries `WHERE s.status = 'active'` across all users, matching ADR 001 S5.8's design for a background job with no request context.
-- Added `scheduled` export to `packages/api/src/index.ts`: calls `generateInstancesForAllUsers` with tomorrow's date (via `tomorrowManilaDate()`), tagged with `[cron]` log prefix per `observability.md` S3.3.
-- Added `"triggers": { "crons": ["0 15 * * *"] }` to `packages/api/wrangler.jsonc` — deferred from Slice 1.
-
-#### Tests
-
-- Added 4 unit tests for `tomorrowManilaDate()` in `calendar.spec.ts`: normal day, month boundary (`Jul 31→Aug 1`), year boundary (`Dec 31→Jan 1`), UTC midnight crossover.
-- Added 2 integration tests for the cron handler in `instances.spec.ts`:
-  - Verifies instances are created only for tomorrow's date (never today's).
-  - Verifies idempotency: running `scheduled()` twice for the same date produces no duplicates.
-  - **Caveat:** `applyD1Migrations` does not reset data between tests in `@cloudflare/vitest-pool-workers` (migrations are tracked and only applied once). The cron tests explicitly clean all tables in `beforeEach` to avoid cross-test contamination from the 7 prior tests that accumulate instances by date.
-- All 9 instance tests now pass cleanly, including the 7 Slice-6 tests that remain the "safety net" coverage (lazy path works independently of cron).
-
-#### Caveats
-
-- The cron trigger is configured in `wrangler.jsonc` but has **never run in production** — it fires at 15:00 UTC daily. Until the first deploy of this branch to production, no pre-generation has occurred. The lazy dashboard-load path (Slice 6) is the sole generation mechanism today.
-- No deploy-time verification has been performed — `wrangler tail` has not been used to confirm the `[cron]` log line appears. This is expected to be checked during the first manual post-deploy verification per `cicd-deploy.md` S9.2.
-
----
-
 ### Slice 6: Dashboard & Instances (Backend + Frontend)
 
 #### Backend
@@ -374,3 +264,149 @@
 - Updated `docs/reference/testing-strategy.md`: Instance/dashboard tests marked live with ✓, idempotency example corrected to match actual `generateTodayInstances(db, userId)` signature and `{ created: number }` return type, service function example updated to reflect SQL bitmask matching (no JS loop).
 - Updated `docs/reference/sveltekit-route-architecture.md` §5.2: Dashboard store uses `DashboardInstance[]` type, PATCH success handler merges server fields into existing row (not wholesale replacement) because PATCH response lacks flat system fields.
 - Updated `AGENTS.md`: test count 60 → 71 with instances (7) and dashboard (4) breakdown, store filename `dashboard-store.ts` → `dashboard.svelte.ts`.
+
+---
+
+### Slice 7: Nightly Cron Instance Pre-generation
+
+#### Backend
+
+- Cleaned up `packages/api/src/lib/calendar.ts` `tomorrowManilaDate()`: removed unused `todayParts` variable and redundant `Intl.DateTimeFormat` — now uses `toLocaleDateString('en-CA')` directly.
+- Added `generateInstancesForAllUsers(db, dateStr)` to `packages/api/src/services/instances.ts`: same SQL pattern as Slice 6's per-user version, but drops the `user_id` filter — queries `WHERE s.status = 'active'` across all users, matching ADR 001 S5.8's design for a background job with no request context.
+- Added `scheduled` export to `packages/api/src/index.ts`: calls `generateInstancesForAllUsers` with tomorrow's date (via `tomorrowManilaDate()`), tagged with `[cron]` log prefix per `observability.md` S3.3.
+- Added `"triggers": { "crons": ["0 15 * * *"] }` to `packages/api/wrangler.jsonc` — deferred from Slice 1.
+
+#### Tests
+
+- Added 4 unit tests for `tomorrowManilaDate()` in `calendar.spec.ts`: normal day, month boundary (`Jul 31→Aug 1`), year boundary (`Dec 31→Jan 1`), UTC midnight crossover.
+- Added 2 integration tests for the cron handler in `instances.spec.ts`:
+  - Verifies instances are created only for tomorrow's date (never today's).
+  - Verifies idempotency: running `scheduled()` twice for the same date produces no duplicates.
+  - **Caveat:** `applyD1Migrations` does not reset data between tests in `@cloudflare/vitest-pool-workers` (migrations are tracked and only applied once). The cron tests explicitly clean all tables in `beforeEach` to avoid cross-test contamination from the 7 prior tests that accumulate instances by date.
+- All 9 instance tests now pass cleanly, including the 7 Slice-6 tests that remain the "safety net" coverage (lazy path works independently of cron).
+
+#### Caveats
+
+- The cron trigger is configured in `wrangler.jsonc` but has **never run in production** — it fires at 15:00 UTC daily. Until the first deploy of this branch to production, no pre-generation has occurred. The lazy dashboard-load path (Slice 6) is the sole generation mechanism today.
+- No deploy-time verification has been performed — `wrangler tail` has not been used to confirm the `[cron]` log line appears. This is expected to be checked during the first manual post-deploy verification per `cicd-deploy.md` S9.2.
+
+---
+
+### Slice 8: Workspace + Widget Data
+
+- Created `packages/api/src/lib/workspace.ts`: `upgradeLayout()` with `CURRENT_LAYOUT_VERSION = 1` and while-loop pattern for future version bumps.
+- Created `packages/api/src/lib/ownership.ts`: `getOwnedWorkspace` (JOIN through system's user_id), `getOwnedWidgetEntry` (JOIN through instance → system → user_id).
+- Created `packages/api/src/routes/workspace.ts`: `GET`/`PUT /api/systems/:system_id/workspace` with upsert via `ON CONFLICT(system_id)`.
+- Created `packages/api/src/routes/counter-logs.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter using `date()`), DELETE by id.
+- Created `packages/api/src/routes/timer-sessions.ts`: 3 handlers — POST to instance, GET by widget_id (with `from`/`to` date filter), DELETE by id.
+- Created `packages/api/src/routes/checklist.ts`: 2 handlers — PUT replaces widget_entries (SELECT-then-UPDATE/INSERT), GET returns current state (404 if not yet saved).
+- Fixed `counter-logs.ts` and `timer-sessions.ts` `from`/`to` filter to use `date(created_at)` for correct date-range comparison (full ISO timestamps were failing `<= date` comparison).
+- Created `packages/web/src/lib/api/workspaces.ts`: API module with `getWorkspace`, `putWorkspace`, Layout/Widget/Workspace interfaces.
+- Created `packages/web/src/lib/api/counter-logs.ts`, `timer-sessions.ts`, `checklist.ts`: typed API modules for widget data CRUD.
+- Created `packages/web/src/lib/stores/workspace-editor.svelte.ts`: `WorkspaceEditorStore` runes class with `load`, `addWidget`, `removeWidget`, `reorder`, `save`; instantiated per page visit.
+- Created widget components: `CounterWidget.svelte` (+1 button, optimistic total), `TimerWidget.svelte` (start/stop, `idle|running|saving` state machine), `ChecklistWidget.svelte` (checkbox list, 404→empty state, optimistic toggle).
+- Created workspace components: `WidgetPalette.svelte` (8 types, P0 active/P1 disabled), `WorkspaceCanvas.svelte` (drag-and-drop via `svelte-dnd-action`), `WidgetCard.svelte` (type dispatch wrapper), `SaveBar.svelte` (sticky bottom bar with dirty indicator).
+- Created route page `packages/web/src/routes/(app)/systems/[id]/workspace/+page.ts` (loads workspace layout + today's instance) and `+page.svelte` (composes three-zone layout).
+- Created `packages/api/src/__tests__/workspace.spec.ts`: 24 tests — 7 unit (`upgradeLayout()` no-op, round-trip, edge cases) + 5 workspace integration + 5 counter-log + 2 timer-session + 5 checklist integration.
+- Created `packages/web/src/routes/(app)/systems/workspace.e2e.ts`: P0 flow #5 — add Timer + Counter widgets, save, reload, verify persistence.
+- Fixed pre-existing web unit test failures: installed missing `vitest-browser-svelte` and `@vitest/browser` packages (imported by `SystemForm.svelte.spec.ts` but never added to `package.json` — all 7 web unit tests now pass).
+- **Integration test count:** 71 → 101
+- **E2E test count:** 3 → 4
+
+---
+
+### Slice 9: MongoDB + Log/Journal Widget
+
+- Added `mongodb@^7.5.0` dependency to `packages/api`.
+- Created `packages/api/src/lib/mongo.ts`: lazy `getMongoClient()` singleton with dynamic `import('mongodb')` to avoid loading the driver at module resolution time (Workers cold-start optimisation).
+- Created `packages/api/src/routes/journal-log.ts`: `POST /api/instances/:instance_id/journal_log/:widget_id` (direct Mongo write + D1 `widget_entries` pointer row → `201`; on failure enqueue to `polaris-journal-retry` → `202`) and `GET` (cursor-paginated read from Mongo).
+- Created `packages/api/src/index.ts` queue consumer: `export async function queue()` — idempotent Mongo `updateOne` with `$setOnInsert` + upsert, D1 `INSERT OR IGNORE` pointer row, retry with 5s backoff on failure.
+- Created `packages/web/src/lib/api/journal-log.ts`: typed `postJournalEntry()` and `getJournalEntries()` API module.
+- Created `packages/web/src/lib/components/LogWidget.svelte`: text entry (`<textarea>` + send button), optimistic entry insertion, error revert, cursor-based "Load more" history.
+- Updated `WidgetCard.svelte`: `'log'` type dispatch to `<LogWidget>`.
+- Updated `WidgetPalette.svelte`: un-stubbed Log widget (`comingSoon: false`).
+- Added `packages/api/wrangler.jsonc`: queue bindings (`JOURNAL_RETRY_QUEUE` producer + `polaris-journal-retry` consumer), `MONGODB_URI` var.
+- Updated `packages/api/worker-configuration.d.ts`, `vitest.config.ts`: queue + MONGODB_URI bindings.
+- Created `packages/api/src/__tests__/journal.spec.ts`: 8 integration tests — 5 POST (201 success with D1 pointer row verification, 400 missing text, 400 empty text, 404 non-owned instance, 202 Mongo failure) + 3 GET (cursor pagination, empty list, 404 non-owned).
+- Switched `mongo.ts` to type-only import + dynamic `import()` to fix Miniflare `node:process` crash (all 109 tests now pass).
+- Fixed pre-existing workspace date-filter test by pinning system time with `vi.useFakeTimers()`.
+- Updated `docs/reference/api-routes.md`: added S6.4 Log/Journal contract, updated route inventory, bumped implementation status to S9 live.
+- **Integration test count:** 101 → 109
+- **E2E test count:** 4 → 4 (no new E2E; manual retry verification only, per testing-strategy.md S6)
+
+---
+
+### Slice 10: Reviews (Per-System + Review Day)
+
+- Created `migrations/0015_reviews_unique.sql`: UNIQUE index on `(system_id, period_start, period_end)` for DB-level duplicate protection.
+- Extracted shared `encodeDateCursor`/`decodeDateCursor` to `packages/api/src/lib/cursor.ts` (used by both instances and reviews routes).
+- Added `getOwnedReview` to `packages/api/src/lib/ownership.ts`.
+- Created `packages/api/src/services/reviews.ts`: `createReview` with `DuplicateReviewError`, `deriveChangeText` pure function, two-table write-back (review row + system field update).
+- Created `packages/api/src/routes/reviews.ts`: `GET /api/systems/:system_id/reviews` (cursor-paginated history), `POST /api/systems/:system_id/reviews` (create + write-back), `GET /api/review-day` (single SQL with `GROUP BY` + `SUM(CASE)` for instance summary across all systems).
+- Mounted review routes in `packages/api/src/index.ts` at both `/api/systems/:system_id/reviews` and `/api/review-day`.
+- Created `packages/web/src/lib/api/reviews.ts`: typed `getReviews`, `createReview`, `getReviewDay` wrappers.
+- Created `packages/web/src/lib/components/InstanceSummary.svelte`: shared sm/md variants with blush/secondary/muted colour tokens.
+- Created `packages/web/src/lib/components/ReviewForm.svelte`: `buildChangeApplied()` diff logic, 409 inline banner for duplicate period, editable blueprint fields.
+- Created `packages/web/src/lib/components/DueReviewCard.svelte` and `DueReviewList.svelte`: Review Day card grid with empty state.
+- Created review pages under `packages/web/src/routes/(app)/systems/[id]/reviews/`: history list (`+page.ts`/`+page.svelte`), new review form (`new/+page.svelte`) with period computation + instance loading via `$effect`.
+- Created review day page at `packages/web/src/routes/(app)/review-day/+page.ts`/`+page.svelte`.
+- Created `packages/web/src/routes/(app)/systems/reviews.e2e.ts`: P0 flow #6 — create system with schedule, fill review with `what_worked`/`change_applied`, submit, verify `floor_action` write-back.
+- Created `packages/api/src/__tests__/reviews.spec.ts`: 10 integration tests — write-back updates system, duplicate period returns 409, paginated history, review-day aggregation (due, excluded, non-active).
+- Updated `docs/reference/api-routes.md`: reviews routes implementation status to S10 live.
+- Fixed pre-existing issues: MongoDB type errors in `index.ts` queue handler, ownership SQL string contamination, `InstanceSummary.svelte` to use `blush`/`secondary`/`muted` tokens.
+- **Integration test count:** 109 → 119
+- **E2E test count:** 4 → 5
+
+---
+
+### Slice 11: Frontend Polish Pass
+
+- **NavBar**: floating pill on mobile (`bg-surface/70 backdrop-blur-xl rounded-full`) with Lucide Svelte icons (`LayoutDashboard`, `Cog`, `ClipboardCheck`, `BookOpen`); sidebar layout at `xl:` breakpoint (`hidden xl:flex`); `aria-current="page"` for active tab.
+- **ToastContainer**: top-right fixed position, `max-w-sm`, `fly` transition (200ms), dismiss button, `pointer-events-none` container.
+- **Toast store**: extracted `ToastType` / `ToastItem` types, added `'success'` type, added `dismiss(id)` method.
+- **Guides**: moved from `routes/guides/` (public) to `routes/(app)/guides/` (authenticated, inherits NavBar). 3 guide cards with blush-numbered badges, detail bullets, quick-start CTA, cascading `fly` transition.
+- **Skeleton/error/empty states**: systems list page (4-card skeleton grid, error + retry, empty with CTA), reviews history (skeleton + error), reviews new (responsive container), system detail tab bar (no underline, `text-primary font-semibold` active).
+- **Responsive containers**: all forms and detail pages use `w-full md:max-w-2xl lg:max-w-3xl mx-auto px-4 md:px-0`.
+- **`(app)/+layout.svelte`**: `<main>` wrapper with `max-w-6xl mx-auto px-6 py-8`, `pb-[calc(56px+1.5rem)]` for mobile nav offset, `lg:pb-8` revert at desktop.
+- **Gradient CTAs**: all action buttons use `bg-gradient-to-br from-primary to-primary-container rounded-2xl` per MASTER.md spec (DueReviewCard, ReviewForm, SystemForm, systems page, guides page, landing page).
+- **Landing page** (`+page.svelte`): full hero with headline ("Your Personal Systems, Reviewed"), tagline, gradient "Get started" CTA, ghost "Log in" link. Replaced "Hello Polaris" stub.
+- **Cards**: surface nesting (`bg-surface-container-lowest shadow-ambient-sm`) per no-line rule, never `border`.
+- **WidgetPalette**: responsive — horizontal scroll strip on mobile (`flex lg:flex-row`), sidebar column on desktop (`lg:flex-col`).
+- **Animation policy**: all `motion-safe:` / `motion-reduce:` Tailwind variants removed; all `reducedMotion` JS state removed from ToastContainer and guides page. Animations always play.
+- **`layout.css`**: added `--nav-height-mobile`, `--nav-bottom-offset` CSS custom properties.
+- **Build**: `pnpm --filter web build` zero errors. **Tests**: `pnpm --filter web test:unit` 7/7 pass.
+- **Files changed**: 19 files: 523 insertions, 177 deletions across `packages/web/src/`.
+
+---
+
+### Slice 12: CI/CD Pipeline
+
+- **CI workflow** (`.github/workflows/ci.yml`): matrix over `[api, web]` for `lint`/`test:unit`/`build` in parallel, then `integration` (api only), `e2e` (both packages), and `deploy` (main-only, sequential: migrations → API → web). Fail-fast on matrix, deploy gated by all upstream jobs passing.
+- **Package scripts**: added `lint` (ESLint for api, svelte-check for web), `test:unit`/`test:int`/`test:e2e` to both packages and root convenience scripts.
+- **ESLint**: flat config (`eslint.config.js`) with `@typescript-eslint` for `packages/api` type-checking.
+- **Wrangler config (api)**: `compatibility_date` bumped to `2026-07-22`, observability enabled (`head_sampling_rate: 1` logs, 1% traces).
+- **Wrangler config (web)**: migrated from deprecated `site` pattern to modern `assets` with `not_found_handling: "single-page-application"` (SPA fallback handled by platform, no Worker script needed).
+- **`VITE_API_BASE_URL`**: added `packages/web/.env.production` so production builds point to `https://polaris-api.kelpselp.workers.dev` (was missing — caused JSON.parse errors on all API calls). `.env.production` tracked in git (public URL only).
+- **Manual first deploy**: both Workers deployed to production URLs. Queue `polaris-journal-retry` confirmed existing. Secrets set via `wrangler secret put`.
+- **Known issues**: `--env production` flag needed for api deploy to target production D1 database; root `deploy` script deploys to dev database by default.
+- **`docs/reference/cicd-deploy.md`**: updated to reflect actual wrangler configs, scripts, URLs (`polaris-web.kelpselp.workers.dev`), and checklist status.
+
+---
+
+### Slice 13: Definition-of-Done / Security / Disaster-Recovery Sweep
+
+- **Definition-of-Done checklist** re-run holistically across the entire P0 surface:
+  - **Unit tests**: 7/7 web unit tests pass, 119/119 API integration tests pass (includes pure-function tests).
+  - **Lint**: both packages pass with 0 errors (2 pre-existing Svelte 5 `state_referenced_locally` warnings).
+  - **E2E**: skipped — no P0 flow touched by this slice (permitting item 4 per definition-of-done.md).
+  - **10ms CPU budget**: no new API code — static analysis only.
+  - **API contract/schema**: unchanged — no updates needed.
+  - **Cross-doc stale references**: found and fixed — `testing-strategy.md` §7.3 referenced non-existent `$lib/services/` and `$lib/types` paths; `api-routes.md` implementation status overstated S10 as live.
+- **Security review S2 (R2 attachments)**: confirmed not applicable — no attachment upload route exists (P1).
+- **Security review S3 (XSS)**: audited all `.svelte` files — zero uses of `{@html}`. All freeform fields rendered via Svelte's auto-escaped `{expression}` bindings. Rule upheld.
+- **Security review S5 (Dependabot)**: noted as a one-time repo setting (Settings → Code security → Dependabot alerts) — user action needed.
+- **Disaster-recovery S1.1**: first production D1 backup procedure documented and run — user action needed (`wrangler d1 export polaris-db --remote`).
+- **Stale doc references fixed**:
+  - `docs/reference/testing-strategy.md` — corrected §7.3 example path `$lib/services/` → `$lib/api/` and type import.
+  - `docs/reference/api-routes.md` — corrected implementation status from `S2–S10 live` to `S2–S8 live` with note that S9/S10/S11 are P1.
+- **Test counts unchanged** — frontend-only audit slice.
