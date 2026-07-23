@@ -63,9 +63,6 @@
       "r2_buckets": [
         { "bucket_name": "polaris-attachments", "binding": "ATTACHMENTS" }
       ],
-      "vars": {
-        "MONGODB_URI": "mongodb://localhost:27017/polaris"
-      },
       "d1_databases": [
         {
           "binding": "DB",
