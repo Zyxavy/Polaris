@@ -24,6 +24,15 @@ function defaultLabel(type: string): string {
     return labels[type] ?? type;
 }
 
+function deduplicateWidgets(widgets: Widget[]): Widget[] {
+    const seen = new Set<string>();
+    return widgets.filter(w => {
+        if (seen.has(w.id)) return false;
+        seen.add(w.id);
+        return true;
+    });
+}
+
 export class WorkspaceEditorStore {
     layout = $state<Layout>({ v: CURRENT_LAYOUT_VERSION, widgets: []});
     dirty = $state(false);
@@ -31,7 +40,8 @@ export class WorkspaceEditorStore {
 
     load(systemId: string, layout: Layout | null) {
         this.systemId = systemId;
-        this.layout = layout ?? { v: CURRENT_LAYOUT_VERSION, widgets: [] };
+        const widgets = layout?.widgets ? deduplicateWidgets(layout.widgets) : [];
+        this.layout = layout ? { ...layout, widgets } : { v: CURRENT_LAYOUT_VERSION, widgets: [] };
         this.dirty = false;
     }
 
@@ -67,7 +77,7 @@ export class WorkspaceEditorStore {
     reorder(widgets: Widget[]) {
         this.layout = {
             ...this.layout,
-            widgets,
+            widgets: deduplicateWidgets(widgets),
         };
         this.dirty = true;
     }

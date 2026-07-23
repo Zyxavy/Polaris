@@ -4,6 +4,16 @@ import { getOwnedSystem } from "../lib/ownership";
 import { upgradeLayout } from "../lib/workspace";
 import type { User, Session } from "better-auth/types";
 
+function deduplicateWidgets(widgets: any[]): any[] {
+    const seen = new Set<string>();
+    return widgets.filter(w => {
+        if (!w || !w.id) return false;
+        if (seen.has(w.id)) return false;
+        seen.add(w.id);
+        return true;
+    });
+}
+
 const app = new Hono<{
     Bindings: CloudflareBindings;
     Variables: { user: User; session: Session };
@@ -57,6 +67,7 @@ app.put('/', async (c) => {
     }
 
     const layout = upgradeLayout(body.layout);
+    layout.widgets = deduplicateWidgets(layout.widgets);
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
 

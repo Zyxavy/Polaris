@@ -1,4 +1,4 @@
-# Polaris — P0 Implementation Plan
+# Polaris: P0 Implementation Plan
 
 **Implementation status:** Current
 
@@ -588,3 +588,56 @@ Slices 6/7 and 8/9 can run in either order relative to each other if you want to
 ---
 
 Everything else in this plan traces directly to an existing doc section — when you open each PR, tell me which slice it is and I'll check it against the specific sections cited above rather than the whole doc set.
+
+
+## Summary
+
+Merges slices 9–13 into `main`, completing the full P0 scope. The core product loop (sign-up -> create system -> schedule -> daily dashboard -> weekly review with write-back) now works end-to-end with CI, production deployment, and a security/disaster-recovery sweep.
+
+## What's included
+
+### Slice 9: MongoDB + Log/Journal Widget
+- MongoDB Atlas integration with lazy `getMongoClient()` singleton, queue-based retry on write failure
+- `POST/GET /api/instances/:instance_id/journal_log/:widget_id` with cursor pagination
+- `LogWidget.svelte`: text entry, optimistic insert, error revert, "Load more" history
+- 8 integration tests (201, 400, 404, 202 enqueue), 109 total tests
+
+### Slice 10: Reviews (Per-System + Review Day)
+- `GET/POST /api/systems/:system_id/reviews`, `GET /api/review-day` with SQL aggregation
+- `ReviewForm.svelte` with `buildChangeApplied()` diff, 409 duplicate-period inline error
+- `InstanceSummary.svelte` (shared sm/md variants), `DueReviewCard.svelte`, `DueReviewList.svelte`
+- Review day page with period computation via `$effect`
+- 10 integration tests (write-back, 409, pagination, aggregation), 119 total tests
+- E2E flow #6 (review submission with write-back)
+
+### Slice 11: Frontend Polish Pass
+- Floating NavBar pill (`backdrop-blur-xl rounded-full`) with Lucide icons, desktop sidebar at `xl:`
+- `ToastContainer` with `fly` transition, `'success'` type, `dismiss()` method
+- Guides moved under `(app)/` auth group, 3 guide cards with blush-numbered badges
+- Skeleton/error/empty states on every page (systems list, reviews, detail)
+- Responsive containers (`max-w-2xl`/`max-w-3xl`), gradient CTAs, polished landing page hero
+- 19 files changed, 523 insertions, 177 deletions
+
+### Slice 12: CI/CD Pipeline
+- `.github/workflows/ci.yml`: matrix lint/test/build, sequential integration -> e2e -> deploy
+- ESLint flat config (`@typescript-eslint`), svelte-check, Playwright E2E
+- Wrangler configs updated: observability, static assets SPA fallback, compatibility dates
+- `VITE_API_BASE_URL` production env var (was missing: blocked all production API calls)
+- Manual first deploy to `polaris-api.kelpselp.workers.dev` / `polaris-web.kelpselp.workers.dev`
+
+### Slice 13: P0 Hardening Sweep
+- Definition-of-Done checklist re-run holistically: all tests pass (7 unit, 119 integration), lint clean (0 errors)
+- XSS audit: zero `{@html}` uses across all `.svelte` files: Svelte auto-escaping confirmed
+- R2 attachment validation (S2): confirmed not applicable (P1)
+- Stale doc references fixed: `testing-strategy.md` paths, `api-routes.md` implementation status
+- Changelog sorted, MVP milestone banner added
+
+## Test Status
+- **Web unit tests:** 7/7 pass
+- **API integration tests:** 119/119 pass
+- **E2E flows:** 5 P0 flows pass (auth, system creation, dashboard, workspace, reviews)
+- **Build:** zero errors
+
+## Manual actions remaining
+1. Run `wrangler d1 export polaris-db --remote` and upload to `polaris-backups` R2 bucket for first production backup
+2. Enable Dependabot alerts in GitHub repo Settings -> Code security

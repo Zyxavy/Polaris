@@ -30,7 +30,7 @@ app.get('/', async (c) => {
     }).format(now);
 
     const { results: instances } = await db.prepare(
-        ` SELECT instances.*, systems.name, systems.domain, systems.floor_action
+        ` SELECT DISTINCT instances.*, systems.name, systems.domain, systems.floor_action
         FROM instances
         JOIN systems ON systems.id = instances.system_id
         JOIN schedules ON schedules.system_id = instances.system_id
