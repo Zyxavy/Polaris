@@ -1,6 +1,6 @@
 # D1 Schema
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Database schema ADR -- companion to the [PRD](../PRD/PRD-systems-app.md) (owns field-level meaning) and the [Tech Stack ADR](001-tech-stack-adr.md) (owns the decision to use D1 at all). This document owns table shapes, types, constraints, indexes, and migration structure.
 
@@ -63,7 +63,7 @@ CREATE TABLE recovery_codes (
 CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 ```
 
-Stores 3 recovery codes per user, generated at sign-up (see Auth Integration S5.2 for the sign-up flow and recovery route). `code` is stored plaintext so the settings page can display existing codes with a hide/show toggle. Generated with `crypto.randomUUID()` truncated to `POLARIS-XXXX-XXXX` format -- no external dependency.
+Stores 3 recovery codes per user, generated at sign-up (see Auth Integration S5.2 for the sign-up flow and recovery route). `code` is stored plaintext so the settings page can display existing codes with a hide/show toggle. Generated with `crypto.randomUUID()` truncated to `PARAGON-XXXX-XXXX` format -- no external dependency.
 
 ---
 

@@ -1,6 +1,6 @@
 # Auth Integration
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Integration reference; the actual wiring between Better Auth, the Hono API Worker, and the SvelteKit frontend. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) S5.6 (owns the decision to use Better Auth over Clerk) and the [API Route Design](api-routes.md) (owns everything under `/api/*` except `/api/auth/*`, which this document owns). This document owns the actual server config, middleware, and hand-built UI structure.
 
@@ -47,7 +47,7 @@ export function createAuth(env: {
     },
     trustedOrigins: [
       'http://localhost:5173',                          // Vite dev server
-      'https://polaris.kelpselp.workers.dev',       // production frontend origin
+      'https://paragon.kelpselp.workers.dev',       // production frontend origin
     ],
   });
 }
@@ -143,7 +143,7 @@ ADR 001 S8's open risk table flags "Better Auth CSRF blocks Vite proxy in dev" w
 import { createAuthClient } from 'better-auth/svelte';
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_API_BASE_URL,   // e.g. https://polaris-api.kelpselp.workers.dev in prod, proxied path in dev
+  baseURL: import.meta.env.VITE_API_BASE_URL,   // e.g. https://Paragon-api.kelpselp.workers.dev in prod, proxied path in dev
 });
 
 export const { useSession, signIn, signOut, signUp } = authClient;
@@ -221,7 +221,7 @@ CREATE TABLE recovery_codes (
 CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 ```
 
-**Code format:** `POLARIS-XXXX-XXXX` where each `X` is a random alphanumeric char (uppercase + digits). Generated with `crypto.randomUUID()` truncated to 8 chars per segment -- no external dependencies.
+**Code format:** `PARAGON-XXXX-XXXX` where each `X` is a random alphanumeric char (uppercase + digits). Generated with `crypto.randomUUID()` truncated to 8 chars per segment -- no external dependencies.
 
 **Sign-up flow:**
 
@@ -229,13 +229,13 @@ CREATE INDEX idx_recovery_codes_user_id ON recovery_codes(user_id);
 2. On success, frontend calls `POST /api/recovery-codes/generate` (authenticated) which:
    - Deletes any existing unused codes for this user (safety net for re-generation).
    - Generates 3 codes, inserts into `recovery_codes`.
-   - Returns `{ "codes": ["POLARIS-XXXX-XXXX", ...] }`.
+   - Returns `{ "codes": ["PARAGON-XXXX-XXXX", ...] }`.
 3. Frontend displays all 3 codes in a green banner with a "I've saved these" button.
 4. User acknowledges; codes are never shown in full again outside settings.
 
 **Settings display:**
 
-`GET /api/recovery-codes` (authenticated) returns all unused codes for the user. Settings page renders them with a hide/show toggle (toggles between `POLARIS-****-****` and the full plaintext). A "Regenerate" button calls `POST /api/recovery-codes/generate` again.
+`GET /api/recovery-codes` (authenticated) returns all unused codes for the user. Settings page renders them with a hide/show toggle (toggles between `Paragon-****-****` and the full plaintext). A "Regenerate" button calls `POST /api/recovery-codes/generate` again.
 
 **Recovery route (`POST /api/auth/recover`):**
 

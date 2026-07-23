@@ -10,12 +10,12 @@ export default defineConfig(async () => {
         miniflare: {
           d1Databases: { DB: 'test-db' },
           bindings: {
-              BETTER_AUTH_SECRET: 'polaris-test-secret-32-characters-min!',
+              BETTER_AUTH_SECRET: 'paragon-test-secret-32-characters-min!',
               BETTER_AUTH_URL: 'http://localhost:8787',
-              MONGODB_URI: 'mongodb://localhost:27017/polaris',
+              MONGODB_URI: 'mongodb://localhost:27017/paragon',
           },
           queues: {
-              'polaris-journal-retry': { binding: 'JOURNAL_RETRY_QUEUE' },
+              'paragon-journal-retry': { binding: 'JOURNAL_RETRY_QUEUE' },
           },
         },
       }),

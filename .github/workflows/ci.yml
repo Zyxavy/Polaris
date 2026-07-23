@@ -91,7 +91,7 @@ jobs:
 
       - run: pnpm -r build
         env:
-          VITE_API_BASE_URL: "https://polaris-api-production.kelpselp.workers.dev"
+          VITE_API_BASE_URL: "https://paragon-api-production.kelpselp.workers.dev"
 
       - name: Deploy Web static assets
         working-directory: packages/web

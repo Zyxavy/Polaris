@@ -1,6 +1,6 @@
 # Responsive Specs
 
-> Breakpoint behavior for every page layout in Polaris.
+> Breakpoint behavior for every page layout in Paragon.
 > Mobile-first, single-column default. Layout shifts at 768px (tablet) and 1024px (desktop).
 
 ---

@@ -1,10 +1,10 @@
-# Systems Thinking for Polaris - Insights & Synthesis
+# Systems Thinking for Paragon - Insights & Synthesis
 
 **Implementation status:** Planned / Target Architecture
 
-## What the Research Confirms About Polaris's Core Design
+## What the Research Confirms About Paragon's Core Design
 
-The most striking thing across all these videos is that **Polaris already embodies the research**. The floor/full model, health score over streaks, weekly review - these aren't arbitrary product decisions. They map directly to what the literature says actually works.
+The most striking thing across all these videos is that **Paragon already embodies the research**. The floor/full model, health score over streaks, weekly review - these aren't arbitrary product decisions. They map directly to what the literature says actually works.
 
 ---
 
@@ -12,26 +12,26 @@ The most striking thing across all these videos is that **Polaris already embodi
 
 ### On Why Goals Fail Without Systems
 
-Goals provide direction; systems provide motion. Every video converges on this. The practical implication for Polaris: the *System blueprint* (purpose, philosophy, protocol) is the user's way of externalizing the "why" so they don't have to re-justify it every morning. The app removes the internal negotiation.
+Goals provide direction; systems provide motion. Every video converges on this. The practical implication for Paragon: the *System blueprint* (purpose, philosophy, protocol) is the user's way of externalizing the "why" so they don't have to re-justify it every morning. The app removes the internal negotiation.
 
-> Relevant Polaris feature: the Philosophy field. Users who fill this in are building the cognitive anchor that replaces willpower on bad days.
+> Relevant Paragon feature: the Philosophy field. Users who fill this in are building the cognitive anchor that replaces willpower on bad days.
 
 ### On Willpower as a Finite Resource
 
 Roy Baumeister's research (the cookie study, parole board data) shows willpower depletes throughout the day. The implication: **friction removal is design work, not a nice-to-have.** Every tap saved, every pre-answered question, every optimistic UI default is preserving cognitive fuel.
 
-Polaris's dashboard -- one screen, three buttons per instance -- is doing this correctly. Suggested future addition: keyboard shortcuts (f/g/m) for full/floor/missed to reduce taps further; not in v1 scope.
+Paragon's dashboard -- one screen, three buttons per instance -- is doing this correctly. Suggested future addition: keyboard shortcuts (f/g/m) for full/floor/missed to reduce taps further; not in v1 scope.
 
 ### On the Floor Action
 
-Multiple videos independently arrive at the same concept Polaris is built on:
+Multiple videos independently arrive at the same concept Paragon is built on:
 
 - *"The system needs to be so easy it feels almost laughable"*
 - *"Minimum Viable Day"*
 - *"If I feel too tired to work out, then I'll do a 5-minute walk"*
 - *"Start ridiculously small"*
 
-The floor action isn't a consolation prize. It's the mechanism that **keeps the system alive through bad days** without requiring a reset. This is Polaris's most defensible design choice, and the research validates it completely.
+The floor action isn't a consolation prize. It's the mechanism that **keeps the system alive through bad days** without requiring a reset. This is Paragon's most defensible design choice, and the research validates it completely.
 
 ### On If-Then Planning
 
@@ -43,17 +43,17 @@ Worth considering: the floor action is itself an if-then. *"If I can't do the fu
 
 Multiple sources name the review loop as what separates systems that decay from systems that compound. The Productive Peter summary is most explicit: *"Systems decay without maintenance. The weekly review = 1 hour that keeps everything else on track."*
 
-Polaris's review screen already asks the three right questions (what stuck, what went wrong, what to change). The "changes applied" field closing the loop back to the blueprint is exactly the feedback mechanism the research describes.
+Paragon's review screen already asks the three right questions (what stuck, what went wrong, what to change). The "changes applied" field closing the loop back to the blueprint is exactly the feedback mechanism the research describes.
 
 ---
 
-## Guiding Principles That Should Stay True for Polaris
+## Guiding Principles That Should Stay True for Paragon
 
 **1. The system works on the worst day, or it doesn't work.**
 Every feature decision should pass this test. Does this still function when the user is tired, distracted, and behind? The floor action exists for this reason. The debounced auto-save exists for this reason.
 
 **2. Remove the decision, not just the friction.**
-If-then planning works because it eliminates the in-the-moment negotiation entirely. Polaris's instance backfill (auto-generating today's instances on dashboard open) does this - the user never decides whether to engage, they just open the app and the system is already there waiting.
+If-then planning works because it eliminates the in-the-moment negotiation entirely. Paragon's instance backfill (auto-generating today's instances on dashboard open) does this - the user never decides whether to engage, they just open the app and the system is already there waiting.
 
 **3. Capture beats perfection.**
 Several sources emphasize that the brain is for processing, not storage. The System Creator's auto-save (saving even incomplete blueprints) reflects this. A half-written system saved is more valuable than a perfect system not started.
@@ -66,7 +66,7 @@ Without a feedback mechanism, systems drift. The weekly review is what converts 
 
 ---
 
-## Potential Polaris Features the Research Suggests
+## Potential Paragon Features the Research Suggests
 
 These aren't immediate - they're ideas the research surfaces worth logging:
 
@@ -81,7 +81,7 @@ These aren't immediate - they're ideas the research surfaces worth logging:
 
 > *"You don't rise to the level of your goals. You fall to the level of your systems."* - James Clear
 
-Polaris is the infrastructure that determines what level users fall to. The floor action is the floor, not the ceiling. That framing is the entire product.
+Paragon is the infrastructure that determines what level users fall to. The floor action is the floor, not the ceiling. That framing is the entire product.
 
 ---
 

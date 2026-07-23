@@ -1,6 +1,6 @@
 # Observability
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Operational reference -- debugging tools, logging conventions, and triage paths for each runtime component. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) (owns the component architecture this document observes) and the [Deploy and CI/CD doc](cicd-deploy.md) (owns the environments this document debugs against).
 
@@ -148,13 +148,13 @@ Look for `[cron]` tagged lines. If nothing appears, either the Cron trigger isn'
 
 ### 4.3 Queue consumer: journal entries not being written
 
-If the direct Mongo write fails (ADR 001 S5.5), the entry is enqueued to `polaris-journal-retry`. To check whether the consumer is processing the queue:
+If the direct Mongo write fails (ADR 001 S5.5), the entry is enqueued to `paragon-journal-retry`. To check whether the consumer is processing the queue:
 
 ```bash
 wrangler tail --format=json | Select-String "queue"
 ```
 
-Look for `[queue]` tagged lines. If messages are being received but repeatedly failing, the dead-letter queue (DLQ) captures them after the retry budget is exhausted -- check the DLQ via the Cloudflare Dashboard (Queues > `polaris-journal-retry` > Dead-letter queue) or `wrangler queues` commands.
+Look for `[queue]` tagged lines. If messages are being received but repeatedly failing, the dead-letter queue (DLQ) captures them after the retry budget is exhausted -- check the DLQ via the Cloudflare Dashboard (Queues > `paragon-journal-retry` > Dead-letter queue) or `wrangler queues` commands.
 
 ### 4.4 Frontend: UI issue with no visible API error
 
@@ -162,7 +162,7 @@ Open the browser's developer tools (F12 > Console / Network tab). The SPA runs e
 
 - **Network tab:** failed API requests (4xx/5xx), CORS errors, cookie issues (cross-subdomain session cookie per [auth-integration.md](auth-integration.md) S2)
 - **Console tab:** uncaught exceptions in Svelte components, the `apiFetch` wrapper's error handling per [sveltekit-route-architecture.md](sveltekit-route-architecture.md) S4
-- **Application tab > Cookies:** session cookie presence and expiry for the `polaris.kelpselp.workers.dev` domain
+- **Application tab > Cookies:** session cookie presence and expiry for the `paragon.kelpselp.workers.dev` domain
 
 ---
 

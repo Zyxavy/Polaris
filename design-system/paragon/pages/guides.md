@@ -1,6 +1,6 @@
 # Guides — Page Override
 
-> Page-specific overrides for `design-system/polaris/MASTER.md`.
+> Page-specific overrides for `design-system/paragon/MASTER.md`.
 > Only deviations from the Master are listed here. Everything else follows the Master.
 
 ---
@@ -13,7 +13,7 @@ Single-column, scrollable content page. The guides page is highlighted on first 
 <div class="max-w-3xl mx-auto px-6 py-12">
   <!-- Page header -->
   <div class="mb-12">
-    <h1 class="font-display text-3xl font-semibold text-primary mb-3">Welcome to Polaris</h1>
+    <h1 class="font-display text-3xl font-semibold text-primary mb-3">Welcome to Paragon</h1>
     <p class="font-body text-base text-muted-foreground text-balance">
       Systems are repeatable processes that produce results without depending on daily motivation.
       Here's how to build your first one.

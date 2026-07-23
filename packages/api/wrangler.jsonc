@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "polaris-api",
+  "name": "paragon-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-07",
   "compatibility_flags": ["nodejs_compat"],
@@ -19,26 +19,26 @@
     "producers": [
       {
         "binding": "JOURNAL_RETRY_QUEUE",
-        "queue": "polaris-journal-retry"
+        "queue": "paragon-journal-retry"
       }
     ]
   },
 
   "vars": {
-    "MONGODB_URI": "mongodb://localhost:27017/polaris"
+    "MONGODB_URI": "mongodb://localhost:27017/paragon"
   },
 
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "polaris-db-dev",
+      "database_name": "paragon-db-dev",
       "database_id": "bd7d9f42-2c4a-442c-9fd0-a53ded81cc6c"
     }
   ],
 
   "r2_buckets": [
     {
-      "bucket_name": "polaris-attachments",
+      "bucket_name": "paragon-attachments",
       "binding": "ATTACHMENTS"
     }
   ],
@@ -47,16 +47,16 @@
     "production": {
       "queues": {
         "producers": [
-          { "binding": "JOURNAL_RETRY_QUEUE", "queue": "polaris-journal-retry" }
+          { "binding": "JOURNAL_RETRY_QUEUE", "queue": "paragon-journal-retry" }
         ]
       },
       "r2_buckets": [
-        { "bucket_name": "polaris-attachments", "binding": "ATTACHMENTS" }
+        { "bucket_name": "paragon-attachments", "binding": "ATTACHMENTS" }
       ],
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "polaris-db",
+          "database_name": "paragon-db",
           "database_id": "6072aa3b-6fad-48a4-b2d6-72eaaaef6a3e"
         }
       ]

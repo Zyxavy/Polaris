@@ -1,6 +1,6 @@
 # Tech Stack & Architecture Decision Record (ARD)
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Architecture Decision Record -- a companion to the product PRD, covering technology choices, rationale, and component roles (not feature scope or schema, which live in the PRD).
 
@@ -122,7 +122,7 @@ Queues are added to the stack table in S3 as a new entry.
 
 ### 5.6 Auth -- Better Auth (self-hosted on D1)
 
-**Why Better Auth instead of an external provider:** The decision evolved over time. ADR 001 originally selected Clerk, but the deployment reality changed the calculus -- Clerk production mode requires a custom domain, and Polaris runs on `*.workers.dev`. Development mode's 5-user limit and session wipes weren't acceptable. See [Auth Integration](../reference/auth-integration.md) for the full wiring detail.
+**Why Better Auth instead of an external provider:** The decision evolved over time. ADR 001 originally selected Clerk, but the deployment reality changed the calculus -- Clerk production mode requires a custom domain, and Paragon runs on `*.workers.dev`. Development mode's 5-user limit and session wipes weren't acceptable. See [Auth Integration](../reference/auth-integration.md) for the full wiring detail.
 
 Better Auth is an open-source, self-hosted auth library with native D1 support (no adapter packages needed). Key properties:
 

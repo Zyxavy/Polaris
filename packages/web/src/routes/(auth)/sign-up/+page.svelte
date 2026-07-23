@@ -39,7 +39,7 @@
   <div class="w-full max-w-sm flex flex-col items-center gap-8">
     <a href="/" class="flex items-center gap-2 font-display text-2xl font-semibold text-primary">
       <span class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary text-sm font-bold">P</span>
-      Polaris
+      Paragon
     </a>
 
     <div class="w-full bg-surface-container-lowest rounded-xl p-8 shadow-ambient-md">

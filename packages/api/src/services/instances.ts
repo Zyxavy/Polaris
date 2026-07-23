@@ -4,8 +4,8 @@ export async function generateInstancesForAllUsers(db: D1Database, dateStr: stri
     const [y, m, d] = dateStr.split('-').map(Number);
     const dateObj = new Date(Date.UTC(y, m - 1, d));
     const jsDay = dateObj.getUTCDay();
-    const polarisDay = (jsDay + 6) % 7;
-    const dayBit = 1 << polarisDay;
+    const paragonDay = (jsDay + 6) % 7;
+    const dayBit = 1 << paragonDay;
 
     const { results: systems } = await db.prepare(`
         SELECT s.id
@@ -37,8 +37,8 @@ export async function generateInstancesForDate(db: D1Database, userId: string, d
     const [y, m, d] = dateStr.split('-').map(Number);
     const dateObj = new Date(Date.UTC(y, m - 1, d));
     const jsDay = dateObj.getUTCDay();
-    const polarisDay = (jsDay + 6) % 7;
-    const dayBit = 1 << polarisDay;
+    const paragonDay = (jsDay + 6) % 7;
+    const dayBit = 1 << paragonDay;
 
     const { results: systems } = await db.prepare(`
         SELECT s.id

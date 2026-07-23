@@ -1,6 +1,6 @@
 # Testing Strategy
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Testing Strategy - defines testing layers, tooling choices, scope per layer, and the approach for tricky cases (auto-save debounce, Workers AI mocking, D1 bindings in tests).
 

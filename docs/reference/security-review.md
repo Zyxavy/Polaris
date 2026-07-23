@@ -1,6 +1,6 @@
 # Security Review
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Security review -- a short, non-exhaustive pass over the risks that actually apply to a single-user personal app on this stack. Not a formal threat model. Companion to the [Auth Integration doc](auth-integration.md) (owns session/CSRF implementation detail, cross-referenced not repeated here) and the [API Route Design](api-routes.md) (owns the attachment upload contract this document adds validation rules to).
 
@@ -26,7 +26,7 @@ Four risks are covered below because they're the ones that actually apply to thi
 
 **Status: risk accepted for v1, with a cheap mitigation left on the table for later.**
 
-- This is a single-user personal app -- the attacker's search space is "guess the right email" *and* "guess one of 3 codes" for the one account that exists. The recovery codes themselves (`POLARIS-XXXX-XXXX`, 8 random alphanumeric chars per segment via `crypto.randomUUID()` truncation, Auth Integration S5.2) are high-entropy enough that brute-forcing the code itself is not practical even with unlimited attempts -- 36^8 per segment gives an effective search space of roughly 2.8 trillion per code. The realistic risk is closer to zero than it would be for a 4-digit PIN.
+- This is a single-user personal app -- the attacker's search space is "guess the right email" *and* "guess one of 3 codes" for the one account that exists. The recovery codes themselves (`PARAGON-XXXX-XXXX`, 8 random alphanumeric chars per segment via `crypto.randomUUID()` truncation, Auth Integration S5.2) are high-entropy enough that brute-forcing the code itself is not practical even with unlimited attempts -- 36^8 per segment gives an effective search space of roughly 2.8 trillion per code. The realistic risk is closer to zero than it would be for a 4-digit PIN.
 - No lockout counter exists today. If this becomes a concern (e.g. if the app is ever opened to more users per ADR 001 S8's "if opened to additional users" contingency), the cheapest fix is an in-memory or D1-backed attempt counter per `email`, returning `429` after N failed attempts within a window -- this is a small addition to the existing `POST /api/auth/recover` handler (Auth Integration S5.2), not a new subsystem, and is the first thing to add if this document is ever revisited with more users in mind.
 - **Not doing:** CAPTCHA, IP-based blocking, or a third-party rate-limiting service (e.g. Cloudflare's own rate limiting rules) -- all disproportionate to a single-account app and each adds its own dependency/config surface.
 

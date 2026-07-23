@@ -1,6 +1,6 @@
 # AI Workers - Implementation Reference
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** AI feature implementation reference - covers model selection, prompt design, response parsing, system prompt versioning, free-tier budget, and the Hono route implementation.
 **Status:** Draft - v1 scope

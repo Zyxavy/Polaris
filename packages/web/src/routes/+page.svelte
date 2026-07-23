@@ -7,7 +7,7 @@
       Systems that work on your worst day
     </h1>
     <p class="font-body text-base md:text-lg text-muted-foreground max-w-md mt-4 text-balance">
-      Polaris helps you design repeatable processes that produce results without depending on daily motivation.
+      Paragon helps you design repeatable processes that produce results without depending on daily motivation.
     </p>
     <div class="flex items-center gap-4 mt-10">
       <a
@@ -29,6 +29,6 @@
   </div>
 
   <footer class="py-6 text-center">
-    <span class="font-body text-xs text-muted-foreground">Polaris; systems for people, not productivity</span>
+    <span class="font-body text-xs text-muted-foreground">Paragon; systems for people, not productivity</span>
   </footer>
 </div>

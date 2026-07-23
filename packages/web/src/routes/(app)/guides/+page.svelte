@@ -6,7 +6,7 @@
       number: 1,
       title: 'The Systems Framework',
       description:
-        'A Polaris system is built from six parts: domain, purpose, philosophy, protocol, floor action, and trigger, plus barriers and environment cues that shape when and how you act.',
+        'A Paragon system is built from six parts: domain, purpose, philosophy, protocol, floor action, and trigger, plus barriers and environment cues that shape when and how you act.',
       detail: [
         "Domain: the area of life (Study, Health, Creative)",
         "Floor Action: the smallest version that still counts as a win",

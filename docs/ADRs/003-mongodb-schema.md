@@ -1,6 +1,6 @@
 # MongoDB Schema
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Database schema ADR for the one bounded, document-shaped feature in the stack -- companion to the [D1 Schema](002-d1-schema.md) (owns the `widget_entries` pointer row this document's collection is referenced from) and the [Tech Stack ADR](001-tech-stack-adr.md) S5.5 (owns the decision to use MongoDB at all, and the failure-mode/retry strategy via Cloudflare Queues). This document owns the collection shape, field-level meaning, indexes, versioning, and retention for `journal_entries` -- nothing else lives in MongoDB.
 
@@ -118,7 +118,7 @@ The write path, retry strategy, and failure handling are fully specified in ADR 
 
 1. Hono Worker attempts a direct MongoDB write on journal entry save.
 2. Success -> `200`, done.
-3. Failure -> entry payload enqueued to `polaris-journal-retry` (Cloudflare Queue), Worker returns `202 Accepted`, entry shows optimistically in the UI.
+3. Failure -> entry payload enqueued to `paragon-journal-retry` (Cloudflare Queue), Worker returns `202 Accepted`, entry shows optimistically in the UI.
 4. A Queue consumer retries the write with exponential backoff; persistent failure goes to the dead-letter queue for manual inspection.
 
 **One document-shape implication worth noting here:** the queued retry payload must be the *complete* document (including `schema_version`, denormalized IDs, and timestamps) as originally constructed, not just a partial diff -- because the consumer performs the same insert the direct path would have, with no D1 round-trip available to reconstruct missing fields at retry time.
@@ -147,17 +147,17 @@ Miniflare does not emulate MongoDB (Testing Strategy S3.2, S4) -- local developm
 **Getting a local Mongo running:**
 
 ```bash
-docker run -d -p 27017:27017 --name polaris-mongo-dev mongo:7
+docker run -d -p 27017:27017 --name paragon-mongo-dev mongo:7
 ```
 
 **Connection string convention**, consistent with `reference/cicd-deploy.md` S2.1's `MONGODB_URI` entry:
 
 | Environment | `MONGODB_URI` |
 |---|---|
-| Local dev | `mongodb://localhost:27017/polaris` |
+| Local dev | `mongodb://localhost:27017/Paragon` |
 | Production | Atlas cluster connection string, set via `wrangler secret put MONGODB_URI` |
 
-The local dev database needs no manual schema setup -- MongoDB creates the collection and applies the validator (S3.1) on first write if the collection doesn't already exist, or the validator can be applied once manually via `mongosh` against `mongodb://localhost:27017/polaris` using the `createCollection` call in S3.1.
+The local dev database needs no manual schema setup -- MongoDB creates the collection and applies the validator (S3.1) on first write if the collection doesn't already exist, or the validator can be applied once manually via `mongosh` against `mongodb://localhost:27017/Paragon` using the `createCollection` call in S3.1.
 
 **Assumption for anyone working on journal-entry features locally:** the local Mongo container (or an equivalent local instance) must already be running before `wrangler dev` is started in `packages/api` -- there is no automatic startup wiring between the two in v1. If the container isn't running, journal-entry writes fail closed into the Cloudflare Queues retry path (S6) during local dev exactly as they would in production against a genuinely unreachable Atlas cluster -- which is a reasonable way to exercise that failure path locally, incidentally, but isn't a substitute for actually having Mongo up when testing the happy path.
 

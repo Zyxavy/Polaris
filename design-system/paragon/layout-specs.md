@@ -1,6 +1,6 @@
 # Layout Specs
 
-> The three shell layouts that wrap page content in Polaris.
+> The three shell layouts that wrap page content in Paragon.
 > Each layout is a Svelte route group layout file.
 
 ---

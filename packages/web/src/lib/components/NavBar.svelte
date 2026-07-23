@@ -52,7 +52,7 @@
          bg-surface-container-low flex-col justify-between p-6 z-40"
 >
   <div class="flex flex-col gap-1">
-    <span class="font-display font-semibold text-primary text-lg mb-6">Polaris</span>
+    <span class="font-display font-semibold text-primary text-lg mb-6">Paragon</span>
     {#each navItems as item}
       <a
         href={item.href}

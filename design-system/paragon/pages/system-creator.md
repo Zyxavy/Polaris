@@ -1,6 +1,6 @@
 # System Creator — Page Override
 
-> Page-specific overrides for `design-system/polaris/MASTER.md`.
+> Page-specific overrides for `design-system/paragon/MASTER.md`.
 > Only deviations from the Master are listed here. Everything else follows the Master.
 
 ---

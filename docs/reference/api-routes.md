@@ -1,6 +1,6 @@
 # API Route Design
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** API contract -- the request/response shape for every endpoint the SvelteKit frontend calls. Companion to the [D1 Schema](../ADRs/002-d1-schema.md) (owns table shapes) and the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) (owns the decision to use Hono). This document owns paths, methods, payloads, status codes, and auth requirements -- not implementation code beyond the middleware pattern needed to make ownership checks unambiguous.
 
@@ -448,7 +448,7 @@ Response 202: { "entry_id": "...", "created_at": "...", "status": "pending" }   
 Response 400: { "error": "invalid_input", "message": "text must be a non-empty string." }
 ```
 
-The happy path (`201`) means both the Mongo document and the D1 pointer row were written synchronously. The `202` retry path means the direct Mongo write failed, the entry was enqueued to `polaris-journal-retry`, and the frontend should treat the entry as accepted but pending — it will appear once the Queue consumer retries successfully. The frontend does not poll for resolution in v1; the entry becomes visible on next full page load or workspace re-fetch.
+The happy path (`201`) means both the Mongo document and the D1 pointer row were written synchronously. The `202` retry path means the direct Mongo write failed, the entry was enqueued to `paragon-journal-retry`, and the frontend should treat the entry as accepted but pending — it will appear once the Queue consumer retries successfully. The frontend does not poll for resolution in v1; the entry becomes visible on next full page load or workspace re-fetch.
 
 ```
 GET /api/instances/:instance_id/journal_log/:widget_id?cursor=&limit=

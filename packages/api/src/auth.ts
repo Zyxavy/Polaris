@@ -20,7 +20,7 @@ export function createAuth(env: {
     trustedOrigins: [
       'http://localhost:5173',
       'http://localhost:4173',
-      'https://polaris.kelpselp.workers.dev',
+      'https://paragon.kelpselp.workers.dev',
     ],
   });
 }

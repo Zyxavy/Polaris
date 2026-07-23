@@ -1,6 +1,6 @@
 export function generateRecoveryCode(): string {
   const raw = crypto.randomUUID().replace(/-/g, '').toUpperCase();
-  return `POLARIS-${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
+  return `PARAGON-${raw.slice(0, 4)}-${raw.slice(4, 8)}`;
 }
 
 export interface RecoveryResult {

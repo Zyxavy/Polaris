@@ -1,4 +1,4 @@
-# Design System Master File — Polaris
+# Design System Master File — Paragon
 
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
 > If that file exists, its rules **override** this Master file.
@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** Polaris
+**Project:** Paragon
 **Generated:** 2026-07-02
 **Category:** Personal Systems Builder / Journal
 

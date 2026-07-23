@@ -22,7 +22,7 @@ async function getAuthedApp(userId: string) {
 async function signUpAndGetUserId(email: string) {
     const auth = createAuth({
         DB: env.DB as D1Database,
-        BETTER_AUTH_SECRET: 'polaris-test-secret-32-characters-min!',
+        BETTER_AUTH_SECRET: 'paragon-test-secret-32-characters-min!',
         BETTER_AUTH_URL: 'http://localhost:8787',
     });
     const { user } = await (auth.api.signUpEmail({

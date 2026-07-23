@@ -1,6 +1,6 @@
 # Sign Up — Page Override
 
-> Page-specific overrides for `design-system/polaris/MASTER.md`.
+> Page-specific overrides for `design-system/paragon/MASTER.md`.
 > Only deviations from the Master are listed here. Everything else follows the Master.
 
 ---
@@ -16,7 +16,7 @@ Same centered auth-shell as Sign In. The form adds a name field and a "recovery 
     <!-- Logo -->
     <a href="/" class="flex items-center gap-2 font-display text-2xl font-semibold text-primary">
       <span class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary text-sm font-bold">P</span>
-      Polaris
+      Paragon
     </a>
 
     <!-- Form card -->

@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Operational runbook -- backup procedures and recovery paths for each stateful component in the stack. Companion to the [Tech Stack ADR](../ADRs/001-tech-stack-adr.md) (owns why each storage layer was chosen) and the [D1 Schema](../ADRs/002-d1-schema.md) / [MongoDB Schema](../ADRs/003-mongodb-schema.md) (own the shape of what's being backed up). This document owns backup cadence, storage destination, and step-by-step recovery procedures -- not schema, not architecture rationale.
 
@@ -33,16 +33,16 @@ This is a runbook for personal app. Consistent with the proportionality principl
 **Command:**
 
 ```bash
-wrangler d1 export polaris-db --remote --output=backups/polaris-db-$(date -I).sql
-wrangler r2 object put polaris-backups/$(date -I).sql --file=backups/polaris-db-$(date -I).sql
-rm backups/polaris-db-$(date -I).sql   # don't keep local copies lying around after upload
+wrangler d1 export paragon-db --remote --output=backups/Paragon-db-$(date -I).sql
+wrangler r2 object put paragon-backups/$(date -I).sql --file=backups/Paragon-db-$(date -I).sql
+rm backups/Paragon-db-$(date -I).sql   # don't keep local copies lying around after upload
 ```
 
-This exports the full D1 database as a `.sql` file and uploads it into a dedicated R2 bucket (`polaris-backups` -- create this once via `wrangler r2 bucket create polaris-backups`, separate from the `polaris-attachments` bucket per ADR 001 S5.7, so backup retention/cleanup never risks touching live attachment data).
+This exports the full D1 database as a `.sql` file and uploads it into a dedicated R2 bucket (`paragon-backups` -- create this once via `wrangler r2 bucket create paragon-backups`, separate from the `paragon-attachments` bucket per ADR 001 S5.7, so backup retention/cleanup never risks touching live attachment data).
 
 **Why R2, not git:** R2 is already in the stack (zero egress fees on the Cloudflare side, ADR 001 S5.7), and a D1 export contains real user data (journal entry pointers, System blueprints, freeform text) that shouldn't end up in git history -- even a private repo's history is a worse home for that than an object store with no public exposure.
 
-**No automated rotation.** Old backup files accumulate in `polaris-backups` until manually deleted. At personal-app scale and weekly-ish cadence, this is a handful of small `.sql` files a year -- negligible against R2's free-tier storage ceiling (10 GB, ADR 001 S5.7). Clean up manually when you notice it; not worth scripting for v1.
+**No automated rotation.** Old backup files accumulate in `paragon-backups` until manually deleted. At personal-app scale and weekly-ish cadence, this is a handful of small `.sql` files a year -- negligible against R2's free-tier storage ceiling (10 GB, ADR 001 S5.7). Clean up manually when you notice it; not worth scripting for v1.
 
 ### 1.2 Recovery path 1 (default): corrective forward migration
 
@@ -53,8 +53,8 @@ If a migration is bad but the database is still queryable (e.g. a migration appl
 If the database is genuinely broken (a destructive query ran against production, a migration corrupted data in a way no corrective migration can cleanly fix), the only remaining path is restoring from the most recent S1.1 export:
 
 ```bash
-wrangler r2 object get polaris-backups/<date>.sql --file=restore.sql
-wrangler d1 execute polaris-db --remote --file=restore.sql
+wrangler r2 object get paragon-backups/<date>.sql --file=restore.sql
+wrangler d1 execute paragon-db --remote --file=restore.sql
 ```
 
 **Be explicit with yourself about what this costs:** everything written to D1 *after* the backup's timestamp is gone -- every Instance marked, every Review submitted, every System edited since that export. This is why S1.1's cadence matters: a weekly-ish backup means a worst-case restore loses up to a week of data. If this ever feels too risky for how the app is actually being used, the fix is backing up more often, not building more infrastructure -- the command above works the same whether it's run weekly or daily.
@@ -85,11 +85,11 @@ Atlas's free tier (M0) does not include continuous backup or point-in-time recov
 
 This matches the "accepted orphan" precedent already established elsewhere in this stack -- R2 orphaned objects (ADR 001 S5.7), D1's soft-referenced `widget_entries`/`counter_logs`/`timer_sessions` rows (D1 Schema S3.3.1), and Mongo's own orphaned-on-System-hard-delete documents ([MongoDB Schema](../ADRs/003-mongodb-schema.md) S7). Journal entries are reflection text the user wrote for themselves -- losing them is a mild inconvenience, not a data disaster, and is qualitatively different from losing a System's blueprint or Instance history, which live in D1 and *are* covered by S1 above.
 
-**Appendix -- if you want a manual backup anyway:** `mongodump` works against the Atlas connection string and can be run the same way as the D1 export in S1.1, uploaded to the same `polaris-backups` R2 bucket if desired:
+**Appendix -- if you want a manual backup anyway:** `mongodump` works against the Atlas connection string and can be run the same way as the D1 export in S1.1, uploaded to the same `paragon-backups` R2 bucket if desired:
 
 ```bash
 mongodump --uri="$MONGODB_URI" --out=backups/mongo-$(date -I)
-wrangler r2 object put polaris-backups/mongo-$(date -I).tar.gz --file=<tarball of the above>
+wrangler r2 object put paragon-backups/mongo-$(date -I).tar.gz --file=<tarball of the above>
 ```
 
 This is explicitly **not part of v1's backup posture** -- it's documented here only so the option is easy to reach for later if journal entries ever become more valuable than they are today (e.g. if the widget gains features that make entries less trivially replaceable).
@@ -100,7 +100,7 @@ This is explicitly **not part of v1's backup posture** -- it's documented here o
 
 | Component | Backup exists? | Cadence | Destination | Recovery cost if worst case happens |
 |---|---|---|---|---|
-| **D1** | Yes | Manual, weekly-ish + before risky migrations | R2 (`polaris-backups` bucket) | Data loss back to last export's timestamp |
+| **D1** | Yes | Manual, weekly-ish + before risky migrations | R2 (`paragon-backups` bucket) | Data loss back to last export's timestamp |
 | **R2** (attachments) | No -- platform durability only | N/A | N/A | Effectively none (11 nines durability); re-upload if truly lost |
 | **MongoDB** (journal entries) | No -- accepted risk | N/A (manual `mongodump` documented as optional) | N/A | Full loss of journal text; no core app data affected |
 

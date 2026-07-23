@@ -1,6 +1,6 @@
 # SvelteKit Route Architecture
 
-**Project:** *Polaris*
+**Project:** *Paragon*
 
 **Document type:** Frontend architecture -- the page tree, auth guard, store design, component hierarchy, and navigation model for `packages/web`. Companion to the [API Route Design](api-routes.md) (owns every endpoint this frontend calls), [Auth Integration](auth-integration.md) (owns `authClient`/session primitives this document consumes), and the [PRD](../PRD/PRD-systems-app.md) (owns the user flows this route tree implements).
 **Status:** Draft -- v1 scope
@@ -507,7 +507,7 @@ A single-component page with three guide cards describing the core product loop.
 
 ### 7.2 System Creator (`(app)/systems/new/+page.svelte`)
 
-Design override: `design-system/polaris/pages/system-creator.md`. This page is a single scrollable form with stepper-styled section markers, not a gated wizard, so autosave can track every field from one form state.
+Design override: `design-system/paragon/pages/system-creator.md`. This page is a single scrollable form with stepper-styled section markers, not a gated wizard, so autosave can track every field from one form state.
 
 ```
 +page.svelte
@@ -525,7 +525,7 @@ The edit route (`/systems/[id]/edit`) reuses `<SystemForm>` pre-filled from the 
 
 ### 7.3 Workspace Builder (`(app)/systems/[id]/workspace/+page.svelte`)
 
-Design override: `design-system/polaris/pages/workspace-builder.md`. This page uses a drag-and-drop bento canvas with palette/canvas/save zones and widget-specific persistent content rules.
+Design override: `design-system/paragon/pages/workspace-builder.md`. This page uses a drag-and-drop bento canvas with palette/canvas/save zones and widget-specific persistent content rules.
 
 ```
 +page.svelte
@@ -619,7 +619,7 @@ Better Auth's CSRF check can reject proxied requests if `changeOrigin` strips th
 
 | Variable | Dev value | Prod value | Used in |
 |---|---|---|---|
-| `VITE_API_BASE_URL` | `''` (empty -- same-origin via proxy) | `https://polaris-api.kelpselp.workers.dev` | `auth-client.ts`, `api/client.ts` |
+| `VITE_API_BASE_URL` | `''` (empty -- same-origin via proxy) | `https://Paragon-api.kelpselp.workers.dev` | `auth-client.ts`, `api/client.ts` |
 
 In dev, the proxy handles `/api/*` so `VITE_API_BASE_URL` is empty string and fetch paths are relative (`/api/systems`). In production, the frontend and API are on separate subdomains, so `VITE_API_BASE_URL` is the full origin of the API Worker.
 

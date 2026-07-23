@@ -5,7 +5,7 @@ interface __BaseEnv_CloudflareBindings {
 	DB: D1Database;
 	ATTACHMENTS?: R2Bucket;
 	JOURNAL_RETRY_QUEUE?: Queue;
-	MONGODB_URI?: "mongodb://localhost:27017/polaris";
+	MONGODB_URI?: "mongodb://localhost:27017/paragon";
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

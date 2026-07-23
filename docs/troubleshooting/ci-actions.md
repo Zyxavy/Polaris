@@ -69,7 +69,7 @@ CI runs `pnpm -r build` before the e2e job, but `playwright.config.ts` also ran 
 
 ### 9. `VITE_API_BASE_URL` not set during CI web build
 
-E2E tests built the web bundle without `VITE_API_BASE_URL` set. Vite baked the value from `.env.production` (`https://polaris-api-production.kelpselp.workers.dev`) instead of the local API worker (`http://localhost:8787`). All API calls from the test app went to the production URL or fell back to same-origin, causing every e2e test to fail.
+E2E tests built the web bundle without `VITE_API_BASE_URL` set. Vite baked the value from `.env.production` (`https://Paragon-api-production.kelpselp.workers.dev`) instead of the local API worker (`http://localhost:8787`). All API calls from the test app went to the production URL or fell back to same-origin, causing every e2e test to fail.
 
 The CI workflow set the env var on the `test:e2e` step, but Vite reads `VITE_*` vars at build time, not at runtime. The build ran in a separate step without the env var.
 
@@ -77,7 +77,7 @@ The CI workflow set the env var on the `test:e2e` step, but Vite reads `VITE_*` 
 
 ### 10. Deploy job missing `--env production`
 
-The CI deploy job ran `wrangler deploy` without `--env production`, targeting the default (dev) environment and dev D1 database (`polaris-db-dev`). Production must use `--env production` to use `polaris-db`.
+The CI deploy job ran `wrangler deploy` without `--env production`, targeting the default (dev) environment and dev D1 database (`paragon-db-dev`). Production must use `--env production` to use `paragon-db`.
 
 **Fix:** Added `--env production` to both the D1 migration command (`wrangler d1 migrations apply DB --remote --env production`) and the API deploy command (`wrangler deploy --env production`) in the CI workflow.
 
@@ -152,25 +152,25 @@ Test files (`__tests__/*.ts`) use `any` extensively for mock responses and dynam
 ### 19. Queue consumer registration fails during deploy
 
 ```
-✘ [ERROR] Some triggers failed to deploy for polaris-api-production:
+✘ [ERROR] Some triggers failed to deploy for Paragon-api-production:
     - A request to the Cloudflare API (/accounts/.../queues/...) failed.
 ```
 
-The `consumers` block in `wrangler.jsonc` queues config tells wrangler to register the Worker as a consumer on `polaris-journal-retry` during deploy. This can fail when:
+The `consumers` block in `wrangler.jsonc` queues config tells wrangler to register the Worker as a consumer on `paragon-journal-retry` during deploy. This can fail when:
 - The `CLOUDFLARE_API_TOKEN` lacks `Queues:Edit` permission (add it to the token at https://dash.cloudflare.com/profile/api-tokens)
-- The queue doesn't exist yet (create it with `wrangler queues create polaris-journal-retry`)
+- The queue doesn't exist yet (create it with `wrangler queues create paragon-journal-retry`)
 
 **Fix:** Remove the `consumers` block from `wrangler.jsonc` (both top-level and `env.production`) so the deploy doesn't try to register it. Register the consumer manually after deploy:
 
 ```bash
-wrangler queues consumer add polaris-journal-retry --script polaris-api-production --env production
+wrangler queues consumer add paragon-journal-retry --script Paragon-api-production --env production
 ```
 
 ### 20. Deploy job runs on fresh runner — no build artifacts
 
 ```
 ✘ [ERROR] The directory specified by the "assets.directory" field in your configuration file does not exist:
-  /home/runner/work/Polaris/Polaris/packages/web/build
+  /home/runner/work/Paragon/Paragon/packages/web/build
 ```
 
 GitHub Actions jobs run on isolated VMs. The `test` job (which runs `pnpm --filter web build`) and the `e2e` job (which runs `pnpm -r build`) each get a fresh checkout — their build output doesn't persist to the `deploy` job.
@@ -180,7 +180,7 @@ GitHub Actions jobs run on isolated VMs. The `test` job (which runs `pnpm --filt
 ```yaml
 - run: pnpm -r build
   env:
-    VITE_API_BASE_URL: "https://polaris-api-production.kelpselp.workers.dev"
+    VITE_API_BASE_URL: "https://Paragon-api-production.kelpselp.workers.dev"
 - name: Deploy Web static assets
   working-directory: packages/web
   run: pnpm exec wrangler deploy

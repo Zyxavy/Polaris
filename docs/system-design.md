@@ -1,4 +1,4 @@
-# System Design: Polaris
+# System Design: Paragon
 
 **Document type:** System Design Document: a holistic architecture reference covering the full stack, data flow, deployment topology, and key design decisions. Companion to the ADRs (tech stack, schema), PRD (feature scope), and reference docs (auth, routes, testing). This document is the top-level entry point for understanding how the system works.
 
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Polaris is a single-page web application for designing, running, and iterating on personal **systems**: repeatable processes with a floor action, a schedule, a dedicated workspace, and a recurring review loop. The core insight: design for the worst day, not the best one.
+Paragon is a single-page web application for designing, running, and iterating on personal **systems**: repeatable processes with a floor action, a schedule, a dedicated workspace, and a recurring review loop. The core insight: design for the worst day, not the best one.
 
 ### Stack at a Glance
 
@@ -32,7 +32,7 @@ flowchart TB
         CRA["Cloudflare API<br/>(D1 migrations, wrangler deploy)"]
     end
 
-    Browser["Browser<br/>polaris.kelpselp.workers.dev"] --> Assets
+    Browser["Browser<br/>paragon.kelpselp.workers.dev"] --> Assets
     Browser --> API
     API --> D1
     API --> R2
@@ -78,8 +78,8 @@ Four constraints shaped every architectural decision, in priority order:
 ```mermaid
 flowchart LR
     User["User (Browser)"]
-    Domains["polaris.kelpselp.workers.dev<br/>(SvelteKit SPA)"]
-    ApiDomain["polaris-api.kelpselp.workers.dev<br/>(Hono API Worker)"]
+    Domains["paragon.kelpselp.workers.dev<br/>(SvelteKit SPA)"]
+    ApiDomain["Paragon-api.kelpselp.workers.dev<br/>(Hono API Worker)"]
 
     subgraph CF["Cloudflare Workers"]
         SPA["Static Assets<br/>/dashboard, /systems, /guides"]
@@ -114,7 +114,7 @@ flowchart LR
 ### Monorepo Structure
 
 ```
-polaris/
+Paragon/
 ├── package.json                    # Root workspace scripts
 ├── pnpm-workspace.yaml
 ├── docs/                           # All documentation
@@ -151,13 +151,13 @@ flowchart LR
     subgraph Web["packages/web: SvelteKit SPA"]
         WBuild["pnpm build"]
         WDeploy["wrangler deploy"]
-        WS[("Workers Static Assets<br/>polaris.kelpselp.workers.dev")]
+        WS[("Workers Static Assets<br/>paragon.kelpselp.workers.dev")]
     end
 
     subgraph API["packages/api: Hono Worker"]
         ABuild["n/a (no build step)"]
         ADeploy["wrangler deploy"]
-        AS[("Worker<br/>polaris-api.kelpselp.workers.dev")]
+        AS[("Worker<br/>Paragon-api.kelpselp.workers.dev")]
     end
 
     Root["pnpm -r deploy"] --> WBuild --> WDeploy --> WS
@@ -570,13 +570,13 @@ flowchart TB
 ### 5.2 Session Cookie Architecture
 
 ```
-                    polaris.kelpselp.workers.dev (frontend)
+                    paragon.kelpselp.workers.dev (frontend)
                               │
                               │ fetch() + credentials: 'include'
                               │ Cookie: better-auth-session-token=xyz...
                               │
                               ▼
-                   polaris-api.kelpselp.workers.dev (API)
+                   Paragon-api.kelpselp.workers.dev (API)
                               │
                               │ Cookie config:
                               │   httpOnly: true
@@ -597,7 +597,7 @@ flowchart LR
     subgraph SignUp["On Sign-Up"]
         A1["authClient.signUp.email()"]
         A2["POST /api/recovery-codes/generate"]
-        A3["Create 3 POLARIS-XXXX-XXXX codes"]
+        A3["Create 3 PARAGON-XXXX-XXXX codes"]
         A4["Display codes + 'Save these' banner"]
         A1 --> A2 --> A3 --> A4
     end
@@ -614,7 +614,7 @@ flowchart LR
 
     subgraph Settings["Settings Page"]
         C1["GET /api/recovery-codes"]
-        C2["Show POLARIS-****-****<br/>with hide/show toggle"]
+        C2["Show Paragon-****-****<br/>with hide/show toggle"]
         C3["Regenerate button"]
         C1 --> C2 --> C3
     end
@@ -773,7 +773,7 @@ flowchart TB
     end
 
     subgraph Deploy["Deployed to Workers Static Assets"]
-        Assets["polaris.kelpselp.workers.dev"]
+        Assets["paragon.kelpselp.workers.dev"]
         Index["index.html<br/>(SPA fallback)"]
         JS["JS bundles"]
         CSS["CSS (Tailwind)"]
@@ -783,7 +783,7 @@ flowchart TB
         Router["SvelteKit Client Router"]
         Auth["useSession() from better-auth/svelte"]
         Stores["$state-based stores"]
-        API["apiFetch() > polaris-api..."]
+        API["apiFetch() > Paragon-api..."]
     end
 
     Build --> Deploy
@@ -990,8 +990,8 @@ flowchart LR
     end
 
     subgraph Production["Cloudflare"]
-        Web["Workers Static Assets<br/>polaris.kelpselp.workers.dev"]
-        API["Worker<br/>polaris-api.kelpselp.workers.dev"]
+        Web["Workers Static Assets<br/>paragon.kelpselp.workers.dev"]
+        API["Worker<br/>Paragon-api.kelpselp.workers.dev"]
         D1_Prod["D1 Database<br/>(production binding)"]
     end
 
@@ -1030,10 +1030,10 @@ All services are comfortably within their free-tier limits for a personal app. T
 
 | Variable | Dev Value | Production Value |
 |---|---|---|
-| `VITE_API_BASE_URL` | `''` (same-origin via Vite proxy) | `https://polaris-api.kelpselp.workers.dev` |
-| `MONGODB_URI` | `mongodb://localhost:27017/polaris` | Atlas cluster connection string (via `wrangler secret`) |
+| `VITE_API_BASE_URL` | `''` (same-origin via Vite proxy) | `https://Paragon-api.kelpselp.workers.dev` |
+| `MONGODB_URI` | `mongodb://localhost:27017/Paragon` | Atlas cluster connection string (via `wrangler secret`) |
 | `BETTER_AUTH_SECRET` | Dev secret (local) | Production secret (via `wrangler secret`) |
-| `BETTER_AUTH_URL` | `http://localhost:8787` | `https://polaris-api.kelpselp.workers.dev` |
+| `BETTER_AUTH_URL` | `http://localhost:8787` | `https://Paragon-api.kelpselp.workers.dev` |
 
 ---
 

@@ -16,7 +16,7 @@ describe('auth integration', () => {
   it('sign-up returns user and token', async () => {
     const auth = createAuth({
       DB: env.DB as D1Database,
-      BETTER_AUTH_SECRET: 'polaris-test-secret-32-characters-min!',
+      BETTER_AUTH_SECRET: 'paragon-test-secret-32-characters-min!',
       BETTER_AUTH_URL: 'http://localhost:8787',
     });
     const { user, token } = await (auth.api.signUpEmail({
@@ -40,7 +40,7 @@ describe('auth integration', () => {
   it('recovery flow: code resets password and cannot be reused', async () => {
     const auth = createAuth({
       DB: env.DB as D1Database,
-      BETTER_AUTH_SECRET: 'polaris-test-secret-32-characters-min!',
+      BETTER_AUTH_SECRET: 'paragon-test-secret-32-characters-min!',
       BETTER_AUTH_URL: 'http://localhost:8787',
     });
 

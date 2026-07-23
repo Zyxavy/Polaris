@@ -1,4 +1,4 @@
-# Polaris: P1 Implementation Plan
+# Paragon: P1 Implementation Plan
 
 **Implementation status:** Planned / Target Architecture
 
@@ -48,7 +48,7 @@ D1 Schema S6.2's original plan assumed `0011_attachments.sql` and `0012_seed_bui
 ## Slice 15: Template Picker (Frontend) + System Creator Wiring
 
 **Branch:** `feat/template-picker`
-**Docs:** PRD S6.1 (flow 2), `design-system/polaris/pages/system-creator.md` (the `<details>` Template Picker section, stubbed out in P0), `component-inventory.md` (`TemplatePicker.svelte`).
+**Docs:** PRD S6.1 (flow 2), `design-system/paragon/pages/system-creator.md` (the `<details>` Template Picker section, stubbed out in P0), `component-inventory.md` (`TemplatePicker.svelte`).
 
 ### Tasks
 
@@ -185,7 +185,7 @@ Both are **read-only**, derived widgets: no new write endpoints, which keeps thi
 **Branch:** `feat/attachments`
 **Docs:** ADR 001 S5.7 (full upload-flow design, orphan handling), `api-routes.md` S9, `security-review.md` S2 (MIME allowlist + size limit: this document is the source-of-truth contract for validation rules), D1 Schema S3.7.
 
-The last piece of infra P0 provisioned (`polaris-attachments` R2 bucket exists since Slice 0 of the P0 plan) but never wired up.
+The last piece of infra P0 provisioned (`paragon-attachments` R2 bucket exists since Slice 0 of the P0 plan) but never wired up.
 
 ### Backend
 
@@ -194,7 +194,7 @@ The last piece of infra P0 provisioned (`polaris-attachments` R2 bucket exists s
 3. `packages/api/src/routes/attachments.ts`:
    - `POST /api/attachments`: parses `multipart/form-data` (`file`, `workspace_id`, `widget_id`), validates MIME against the allowlist (`400 unsupported_file_type`) and size (`400 file_too_large`, checked **before** any R2 write per the security doc's "reject early" note), generates the R2 key as `{system_id}/{widget_id}/{uuid}.{ext}` (resolve `system_id` from `workspace_id` via `getOwnedWorkspace`), calls `env.ATTACHMENTS.put()`, then writes the D1 pointer row **only after** R2 confirms success (ADR 001 S5.7's ordering requirement: if D1 write fails after a successful R2 put, log the orphaned key per the doc's accepted-risk framing, don't attempt a compensating R2 delete).
    - `GET /api/attachments/:id`: ownership-scoped lookup, then `env.ATTACHMENTS.get(r2_key)`, streamed back with `Content-Type` from the stored `content_type` and `Content-Disposition: inline`.
-4. Add the `r2_buckets` binding for `ATTACHMENTS` to `wrangler.jsonc` if not already present for the `production` env block (the `binding` for `polaris-attachments` exists at the top level per the current `wrangler.jsonc`: confirm the `env.production` block also has it, since Slice 12 of the P0 plan's `env.production` override may not have carried it forward; cross-check against the current file before assuming).
+4. Add the `r2_buckets` binding for `ATTACHMENTS` to `wrangler.jsonc` if not already present for the `production` env block (the `binding` for `paragon-attachments` exists at the top level per the current `wrangler.jsonc`: confirm the `env.production` block also has it, since Slice 12 of the P0 plan's `env.production` override may not have carried it forward; cross-check against the current file before assuming).
 
 ### Frontend
 
@@ -226,9 +226,9 @@ Small, self-contained slice: the backend already exists (P0 Slice 3); this is pu
 ### Frontend only
 
 1. `packages/web/src/routes/(app)/account/+page.ts`: loads `GET /api/recovery-codes`.
-2. `packages/web/src/routes/(app)/account/+page.svelte`: displays codes masked (`POLARIS-****-****`) with a hide/show toggle per `auth-integration.md` S5.2, a "Regenerate" button calling `POST /api/recovery-codes/generate` (with a confirm-before-destructive-action prompt, since regenerating invalidates the old codes: reuse the `<Modal>` pattern).
+2. `packages/web/src/routes/(app)/account/+page.svelte`: displays codes masked (`Paragon-****-****`) with a hide/show toggle per `auth-integration.md` S5.2, a "Regenerate" button calling `POST /api/recovery-codes/generate` (with a confirm-before-destructive-action prompt, since regenerating invalidates the old codes: reuse the `<Modal>` pattern).
 3. Add an "Account" entry to `NavBar.svelte`'s nav items (both mobile pill and desktop sidebar): this is a genuinely new nav destination, not previously in the P0 nav item list (`Dashboard`, `Systems`, `Review Day`, `Guides`).
-4. Update `design-system/polaris/component-inventory.md`'s `NavBar.svelte` entry (nav items table) and its "Page-Specific Components" summary to include `/account`: the inventory doc currently lists only the four P0 nav destinations; this slice is what makes it stale if skipped.
+4. Update `design-system/paragon/component-inventory.md`'s `NavBar.svelte` entry (nav items table) and its "Page-Specific Components" summary to include `/account`: the inventory doc currently lists only the four P0 nav destinations; this slice is what makes it stale if skipped.
 
 ### Tests
 
@@ -265,7 +265,7 @@ Mirrors P0's closing Slice 13: the gate before considering P1 complete.
 - [ ] Every `definition-of-done.md` item confirmed true across P1, or explicitly noted as skipped-with-reason.
 - [ ] `security-review.md` S2 re-run against the live attachment upload route.
 - [ ] `README.md` and `AGENTS.md` tables updated to reflect P1 completion.
-- [ ] Fresh D1 backup taken and uploaded to `polaris-backups`.
+- [ ] Fresh D1 backup taken and uploaded to `paragon-backups`.
 
 **PR:** `chore/p1-hardening` > `main`. **P1 is complete once this merges.**
 

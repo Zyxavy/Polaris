@@ -1,4 +1,4 @@
-# Polaris
+# Paragon
 
 Build systems that survive your worst days. Log daily. Review weekly.
 
