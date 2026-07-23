@@ -144,3 +144,67 @@ Test files (`__tests__/*.ts`) use `any` extensively for mock responses and dynam
 `NavBar.svelte` used `ComponentType` from Svelte 4's `svelte` export. In Svelte 5 runes mode, the correct type is `Component`.
 
 **Fix:** Changed `import type { ComponentType } from 'svelte'` to `import type { Component } from 'svelte'` and updated the NavItem interface accordingly.
+
+---
+
+## CI/CD Deployment
+
+### 19. Queue consumer registration fails during deploy
+
+```
+✘ [ERROR] Some triggers failed to deploy for polaris-api-production:
+    - A request to the Cloudflare API (/accounts/.../queues/...) failed.
+```
+
+The `consumers` block in `wrangler.jsonc` queues config tells wrangler to register the Worker as a consumer on `polaris-journal-retry` during deploy. This can fail when:
+- The `CLOUDFLARE_API_TOKEN` lacks `Queues:Edit` permission (add it to the token at https://dash.cloudflare.com/profile/api-tokens)
+- The queue doesn't exist yet (create it with `wrangler queues create polaris-journal-retry`)
+
+**Fix:** Remove the `consumers` block from `wrangler.jsonc` (both top-level and `env.production`) so the deploy doesn't try to register it. Register the consumer manually after deploy:
+
+```bash
+wrangler queues consumer add polaris-journal-retry --script polaris-api-production --env production
+```
+
+### 20. Deploy job runs on fresh runner — no build artifacts
+
+```
+✘ [ERROR] The directory specified by the "assets.directory" field in your configuration file does not exist:
+  /home/runner/work/Polaris/Polaris/packages/web/build
+```
+
+GitHub Actions jobs run on isolated VMs. The `test` job (which runs `pnpm --filter web build`) and the `e2e` job (which runs `pnpm -r build`) each get a fresh checkout — their build output doesn't persist to the `deploy` job.
+
+**Fix:** Add a `pnpm -r build` step in the deploy job before the web deploy step, with `VITE_API_BASE_URL` set to the production URL:
+
+```yaml
+- run: pnpm -r build
+  env:
+    VITE_API_BASE_URL: "https://polaris-api-production.kelpselp.workers.dev"
+- name: Deploy Web static assets
+  working-directory: packages/web
+  run: pnpm exec wrangler deploy
+```
+
+### 21. `vars` in production env overwrites remote secret
+
+```
+▲ [WARNING] Environment variable `MONGODB_URI` conflicts with an existing remote secret.
+  This deployment will replace the remote secret with your environment variable.
+```
+
+Setting `vars.MONGODB_URI` in `env.production` of `wrangler.jsonc` (git-tracked) replaces the secret set via `wrangler secret put MONGODB_URI --env production`. The Worker connects to the dev `localhost` URI instead of the production MongoDB Atlas URI.
+
+**Fix:** Remove the `vars` block from `env.production` entirely. Secrets set via `wrangler secret put` take precedence over `vars` at runtime and can be scoped per environment. The dev URI stays in the top-level `vars` for local development.
+
+### 22. API token permissions checklist for production deploy
+
+The `CLOUDFLARE_API_TOKEN` GitHub secret needs all of these:
+
+| Resource | Permission | Required for |
+|---|---|---|
+| Workers Scripts | Edit | Deploy Workers |
+| D1 | Edit | Run migrations |
+| Workers R2 Storage | Edit | R2 bucket bindings |
+| Queues | Edit | Register queue producers + consumers |
+| Cloudflare Pages | Edit | Deploy static assets (if using Pages) |
