@@ -461,7 +461,7 @@ Response 200:
 }
 ```
 
-Cursor-based pagination (S1.6), sorted by `{created_at: -1, _id: -1}` (newest first). No `DELETE` endpoint in v1 — journal entries are append-only immutable records (ADR 003 S7).
+Cursor-based pagination (S1.6), sorted by `{created_at: -1, _id: -1}` (newest first). On MongoDB connection failure, returns 200 with `{ entries: [], next_cursor: null }` — the frontend shows an empty state and still accepts new entries (queued via POST). No `DELETE` endpoint in v1 — journal entries are append-only immutable records (ADR 003 S7).
 
 Ownership-scoped via `instance_id -> system_id -> user_id` (POST) and via the same join chain (GET). The `widget_id` is a soft reference into the workspace layout, matching the same non-FK pattern used by all other widget routes.
 
@@ -655,7 +655,7 @@ Already fully specified in the [AI Workers reference](ai-workers.md) S5 (`POST /
 | `PUT` | `/api/instances/:instance_id/checklist/:widget_id` | ownership-scoped | |
 | `GET` | `/api/instances/:instance_id/checklist/:widget_id` | ownership-scoped | |
 | `POST` | `/api/instances/:instance_id/journal_log/:widget_id` | ownership-scoped | MongoDB-backed; `201` direct or `202` queued retry |
-| `GET` | `/api/instances/:instance_id/journal_log/:widget_id` | ownership-scoped | cursor-paginated, newest-first |
+| `GET` | `/api/instances/:instance_id/journal_log/:widget_id` | ownership-scoped | cursor-paginated, newest-first; empty entries on Mongo failure |
 | `PUT` | `/api/workspaces/:workspace_id/link-list/:widget_id` | ownership-scoped | |
 | `GET` | `/api/workspaces/:workspace_id/link-list/:widget_id` | ownership-scoped | |
 | `PUT` | `/api/workspaces/:workspace_id/notes/:widget_id` | ownership-scoped | |

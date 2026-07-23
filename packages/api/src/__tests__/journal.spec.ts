@@ -255,5 +255,20 @@ describe('journal log routes', () => {
             );
             expect(res.status).toBe(404);
         });
+
+        it('returns 200 with empty entries when Mongo is unreachable', async () => {
+            vi.mocked(getMongoClient).mockRejectedValue(new Error('Mongo down'));
+
+            const app = getAuthedApp(userId);
+            const res = await app.fetch(
+                new Request(`http://localhost/api/instances/${instanceId}/journal_log/${widgetId}`),
+                env
+            );
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as any;
+            expect(body.entries).toEqual([]);
+            expect(body.next_cursor).toBeNull();
+        });
     });
 });

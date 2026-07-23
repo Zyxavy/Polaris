@@ -112,7 +112,7 @@ wrangler deploy --env production
 ```jsonc
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "polaris-web",
+  "name": "polaris",
   "compatibility_date": "2026-07-22",
   "assets": {
     "directory": "build",
@@ -381,7 +381,7 @@ jobs:
 | Development (local) | `http://localhost:8787` | `http://localhost:5173` |
 | Production | `https://polaris-api-production.kelpselp.workers.dev` | `https://polaris.kelpselp.workers.dev` |
 
-These URLs are determined by the `name` field in each `wrangler.jsonc` (`polaris-api` and `polaris-web` substituted with the actual account subdomain `kelpselp`).
+These URLs are determined by the `name` field in each `wrangler.jsonc` (`polaris-api` and `polaris` substituted with the actual account subdomain `kelpselp`).
 
 ---
 

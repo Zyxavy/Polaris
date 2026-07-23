@@ -623,7 +623,7 @@ Merges slices 9–13 into `main`, completing the full P0 scope. The core product
 - ESLint flat config (`@typescript-eslint`), svelte-check, Playwright E2E
 - Wrangler configs updated: observability, static assets SPA fallback, compatibility dates
 - `VITE_API_BASE_URL` production env var (was missing: blocked all production API calls)
-- Manual first deploy to `polaris-api.kelpselp.workers.dev` / `polaris-web.kelpselp.workers.dev`
+- Manual first deploy to `polaris-api.kelpselp.workers.dev` / `polaris.kelpselp.workers.dev`
 
 ### Slice 13: P0 Hardening Sweep
 - Definition-of-Done checklist re-run holistically: all tests pass (7 unit, 119 integration), lint clean (0 errors)
