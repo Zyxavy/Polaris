@@ -198,7 +198,7 @@ describe('journal log routes', () => {
 
             expect(res.status).toBe(202);
             const body = await res.json() as any;
-            expect(body).toEqual({ entry_id: expect.any(String), status: 'pending' });
+            expect(body).toEqual({ entry_id: expect.any(String), created_at: expect.any(String), status: 'pending' });
 
             // Verify NO D1 pointer row was written
             const row = await env.DB.prepare(

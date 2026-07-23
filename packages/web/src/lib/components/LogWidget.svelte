@@ -73,7 +73,7 @@
             const result = await postJournalEntry(instanceId, widget.id, content);
             entries = entries.map(e =>
                 e.entry_id === 'pending'
-                    ? { entry_id: result.entry_id, text: content, created_at: result.created_at }
+                    ? { entry_id: result.entry_id, text: content, created_at: result.created_at ?? e.created_at }
                     : e
             );
         } catch {

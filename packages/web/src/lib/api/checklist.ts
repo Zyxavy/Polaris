@@ -15,6 +15,10 @@ export interface ChecklistEntry {
     created_at: string;
 }
 
+export interface ChecklistResponse {
+    steps: ChecklistStep[];
+}
+
 export function putChecklist(instanceId: string, widgetId: string, steps: ChecklistStep[]): Promise<ChecklistEntry> {
     return apiFetch<ChecklistEntry>(`/api/instances/${instanceId}/checklist/${widgetId}`, {
         method: 'PUT',
@@ -22,6 +26,6 @@ export function putChecklist(instanceId: string, widgetId: string, steps: Checkl
     });
 }
 
-export function getChecklist(instanceId: string, widgetId: string): Promise<ChecklistEntry> {
-    return apiFetch<ChecklistEntry>(`/api/instances/${instanceId}/checklist/${widgetId}`);
+export function getChecklist(instanceId: string, widgetId: string): Promise<ChecklistResponse> {
+    return apiFetch<ChecklistResponse>(`/api/instances/${instanceId}/checklist/${widgetId}`);
 }

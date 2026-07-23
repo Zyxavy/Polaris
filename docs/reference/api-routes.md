@@ -431,7 +431,7 @@ Request body: { "steps": [ { "label": "Warm-up", "checked": true }, { "label": "
 Response 200: { "id": "...", "instance_id": "...", "widget_id": "...", "entry_type": "checklist_state", "data": { "steps": [...] }, "created_at": "..." }
 
 GET /api/instances/:instance_id/checklist/:widget_id
-Response 200: same shape, or 404 if the checklist hasn't been touched for this instance yet (frontend renders all-unchecked in that case)
+Response 200: { "steps": [...] }   -- empty array if not yet saved
 ```
 
 `PUT` here too, same reasoning as the Workspace layout -- the client always sends the complete current step list, not a single-step toggle, since a `widget_entries` row is replaced wholesale rather than patched (D1 Schema S3.3.1 stores it as one JSON blob per instance+widget, not one row per step). No `DELETE` for Checklist specifically: correcting a mis-checked step is already a `PUT` with the corrected `steps` array, so a separate delete path would be redundant rather than a missing capability.
@@ -444,7 +444,7 @@ MongoDB-backed, using the D1 `widget_entries` row as a pointer (`entry_type = 'l
 POST /api/instances/:instance_id/journal_log/:widget_id
 Request body: { "text": "Finished chapter 3. Slower going than expected." }
 Response 201: { "entry_id": "...", "created_at": "..." }
-Response 202: { "entry_id": "...", "status": "pending" }   -- Mongo down, queued for retry
+Response 202: { "entry_id": "...", "created_at": "...", "status": "pending" }   -- Mongo down, queued for retry
 Response 400: { "error": "invalid_input", "message": "text must be a non-empty string." }
 ```
 

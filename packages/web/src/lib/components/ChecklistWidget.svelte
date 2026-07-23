@@ -1,7 +1,6 @@
 <script lang="ts">
     import { putChecklist, getChecklist } from '$lib/api/checklist';
     import type { ChecklistStep } from '$lib/api/checklist';
-    import { ApiError } from '$lib/api/client';
     import type { Widget } from '$lib/api/workspaces';
 
     let { widget, instanceId }: { widget: Widget; instanceId: string | null } = $props();
@@ -17,11 +16,9 @@
     async function loadChecklist() {
         try {
             const res = await getChecklist(instanceId!, widget.id);
-            steps = res.data.steps;
-        } catch (e) {
-            if (e instanceof ApiError && e.status === 404) {
-                steps = []; // not saved yet
-            }
+            steps = res.steps;
+        } catch {
+            // network error — show empty state
         } finally {
             loaded = true;
         }

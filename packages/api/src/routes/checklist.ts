@@ -88,10 +88,11 @@ app.get('/instances/:instance_id/checklist/:widget_id', async (c) => {
     `).bind(instanceId, widgetId, ENTRY_TYPE).first<any>();
 
     if (!row) {
-        return c.json({ error: 'not_found', message: 'Checklist not yet saved for this instance.' }, 404);
+        return c.json({ steps: [] });
     }
 
-    return c.json({ ...row, data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data });
+    const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+    return c.json({ steps: data.steps });
 });
 
 export default app;

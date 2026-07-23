@@ -363,9 +363,11 @@ describe('checklist routes', () => {
         app = getAuthedApp(userId);
     });
 
-    it('GET returns 404 when checklist not yet saved', async () => {
+    it('GET returns empty steps when checklist not yet saved', async () => {
         const res = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}/checklist/checklist-widget`), env);
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(200);
+        const body = await res.json() as any;
+        expect(body.steps).toEqual([]);
     });
 
     it('PUT creates checklist, GET returns it', async () => {
@@ -386,7 +388,7 @@ describe('checklist routes', () => {
         const getRes = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}/checklist/checklist-widget`), env);
         expect(getRes.status).toBe(200);
         const getBody = await getRes.json() as any;
-        expect(getBody.data.steps).toEqual(steps);
+        expect(getBody.steps).toEqual(steps);
     });
 
     it('PUT replaces checklist for same instance+widget (not append)', async () => {
@@ -413,8 +415,8 @@ describe('checklist routes', () => {
 
         const getRes = await app.fetch(new Request(`http://localhost/api/instances/${instanceId}/checklist/checklist-widget`), env);
         const getBody = await getRes.json() as any;
-        expect(getBody.data.steps).toHaveLength(1);
-        expect(getBody.data.steps[0].label).toBe('New Step');
+        expect(getBody.steps).toHaveLength(1);
+        expect(getBody.steps[0].label).toBe('New Step');
     });
 
     it('rejects PUT with non-array steps', async () => {

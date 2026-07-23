@@ -125,7 +125,7 @@ app.post('/instances/:instance_id/journal_log/:widget_id', async (c) => {
             created_at: now,
         } satisfies JournalRetryMessage);
 
-        return c.json({ entry_id: entryId, status: 'pending' }, 202);
+        return c.json({ entry_id: entryId, created_at: now, status: 'pending' }, 202);
     }
 
 });
